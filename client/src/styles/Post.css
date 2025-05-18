@@ -1,0 +1,353 @@
+/* THANH ĐĂNG BÀI (BẮT ĐẦU 1 THREAD)*/
+.post-container {
+  display: flex;
+  flex-direction: column;
+  width: 750px;
+}
+.post-bar {
+  display: flex;
+  align-items: center;
+  padding: 25px;
+  background-color: white;
+  border: 1px solid rgba(213, 213, 213, 1);
+  border-bottom: none;
+  border-radius: 15px;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.avatar-image {
+  width: 50px;
+  height: 50px;
+  border: 1px solid rgb(245, 245, 245);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.start-post {
+  display: flex;
+  justify-content: space-between;
+}
+
+.post-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 17.5px;
+  font-weight: 400;
+  color: rgba(153, 153, 153, 1);
+  opacity: 0.8;
+  margin-top: 20px;
+}
+
+.char-counter {
+  text-align: right;
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px;
+}
+
+.post-button-bar {
+  background-color: #fff;
+  color: #000;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 20px;
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* GIAO DIỆN KHI NGƯỜI DÙNG ẤN VÀO THANH ĐĂNG BÀI*/
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  visibility: hidden;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content-post {
+  background-color: white;
+  padding: 20px;
+  border-radius: 16px;
+  max-height: 80vh;
+  overflow-y: auto;
+  max-width: 850px;
+  width: 120%;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+  transition: transform 0.3s ease-in-out;
+}
+
+.modal-content-sub-post {
+  max-width: 780px;
+  width: 100%;
+  transition: transform 0.3s ease-in-out;
+}
+
+.modal-title {
+  color: white;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.modal-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 20px;
+  position: relative;
+}
+
+.modal-header {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header .modal-info-user img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  z-index: 10;
+}
+
+.modal-header .username {
+  font-weight: bold;
+  font-size: 16px;
+  margin-top: -5px;
+  margin-left: 10px;
+}
+
+.modal-info-user {
+  display: flex;
+  z-index: 10;
+}
+
+.modal-information {
+  margin-top: -20px;
+  margin-left: 40px;
+  margin-bottom: -8px;
+}
+
+.modal-input {
+  margin-top: 2px;
+  width: 90%;
+  min-height: 21px;
+  outline: none;
+  font-size: 17.5px;
+  color: #333;
+  opacity: 0.8;
+  border: none;
+}
+
+.icon-post {
+  fill: none;
+  height: 24px;
+  width: 24px;
+}
+
+.icon-post:nth-child(2) {
+  stroke-width: 1.5;
+  stroke: #000;
+}
+
+/* .modal-input input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 17.5px;
+  color: #333;
+  opacity: 0.8;
+} */
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-actions .icons {
+  display: flex;
+  align-items: center;
+}
+
+.modal-actions .icons svg {
+  width: 24px;
+  height: 24px;
+  margin-right: 15px;
+  cursor: pointer;
+}
+
+.modal-actions .post-button {
+  background-color: rgb(255, 255, 255);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  font-size: 18px;
+  border-radius: 12px;
+  padding: 8px 20px;
+  color: #ccc;
+}
+
+.modal-actions .post-button.active {
+  background-color: #000;
+  color: #fff;
+  cursor: pointer;
+}
+
+.post-button {
+  background-color: #000;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+.more-options {
+  margin-left: 30px;
+  display: flex;
+  align-items: center;
+  z-index: 10;
+}
+
+.vertical-divider {
+  position: absolute;
+  width: 3px;
+  height: 100%;
+  background-color: #e0e0e0;
+  margin-left: 20px;
+  margin-right: 10px;
+}
+
+.icons {
+  display: flex;
+  padding: 0 20px;
+  cursor: pointer;
+}
+
+.icons .icon-item {
+  margin-right: 15px;
+  color: rgb(184, 184, 184);
+}
+
+.avatar-small {
+  display: flex;
+  align-items: center;
+  margin-left: 30px;
+  z-index: 9;
+}
+
+.avatar-small span {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 17.5px;
+  font-weight: 600;
+  color: #333;
+  opacity: 0.2;
+  margin-left: 20px;
+}
+
+.privacy-post {
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.privacy-post span {
+  font-size: 18px;
+  opacity: 0.5;
+}
+
+/* GIAO DIỆN BÀI VIẾT */
+.posts-content {
+  border: 1px solid rgba(213, 213, 213, 1);
+}
+
+.post-content {
+  font-size: 18px;
+}
+
+.post {
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.post-hashtags {
+  padding-right: 5px;
+  color: #0095f6;
+  cursor: pointer;
+}
+
+.post-translate {
+  color: #999999;
+  cursor: pointer;
+}
+
+.post-images img,
+.post-videos video {
+  margin-top: 10px;
+  display: block;
+  max-width: 100%;
+  border-radius: 5px;
+}
+
+/* Nút Like */
+
+.like-button {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  transition: color 0.3s ease, transform 0.2s ease;
+  margin-right: 8px;
+}
+.heart-icon {
+  font-size: 24px;
+  transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.heart-icon.red {
+  color: red;
+}
+
+.heart-icon.black {
+  color: black;
+}
+
+.like-button.liked .heart-icon {
+  color: red;
+  transform: scale(1.2);
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

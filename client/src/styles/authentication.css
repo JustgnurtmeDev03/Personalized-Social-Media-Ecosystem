@@ -1,0 +1,402 @@
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+html {
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  font-family: Inter, Helvetica, Arial, sans-serif;
+}
+
+body {
+  display: block;
+  width: 1520px;
+  height: 557px;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+.login-main img {
+  display: block;
+}
+
+.login-main .login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-main .background-login {
+  position: absolute;
+  margin-left: -40px;
+  z-index: 0;
+}
+
+.login-main .form-login {
+  margin-top: 25vh;
+  z-index: 1;
+  padding-top: 24px;
+  width: 25%;
+}
+
+.login-main .form-login .txt-login {
+  font-size: 16px;
+  color: rgb(0, 0, 0);
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.txt-align {
+  text-align: center;
+}
+
+.mg-b {
+  margin-bottom: 15px;
+}
+
+.mg-r10 {
+  margin-right: 10px;
+}
+
+.form-login .form-input {
+  margin-bottom: 8px;
+}
+
+.form-login .form-input input {
+  padding: 18px 18px;
+  border-radius: 12px;
+  border-color: transparent;
+  background-color: rgb(245, 245, 245);
+  outline: none;
+  width: 100%;
+  font-size: 15px;
+}
+
+.form-login .form-input input:focus {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.form-login .login-btn {
+  padding: 18px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(0, 0, 0);
+  border-radius: 12px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.form-login .login-btn .login-btn-styled {
+  /* color: rgb(102, 102, 102); */
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.form-login .forgot-pw a {
+  font-size: 15px;
+  font-weight: 400;
+  color: rgb(153, 153, 153);
+}
+
+.form-login .other-method {
+  position: relative;
+  margin: 24px 24px;
+}
+
+.form-login .other-method .txt-or {
+  transform: translate(-50%, -50%);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: #f9f9f9;
+  padding: 16px 16px;
+  color: rgb(153, 153, 153);
+}
+
+.form-login .other-login {
+  padding: 20px 20px;
+  display: flex;
+  align-items: center;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  margin-top: 30px;
+  cursor: pointer;
+}
+
+.form-login .other-login:first-child {
+  background-color: rgb(29, 155, 240);
+  height: 40px;
+  cursor: pointer;
+}
+
+.form-login .content-method {
+  display: flex;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.form-login .content-method .register {
+  color: #fff;
+  width: 100%;
+}
+
+.form-login .content-method span {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  color: #000;
+}
+
+.footer-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  min-height: ̀50vh;
+}
+
+.footer-styled {
+  height: 70px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.footer-container ul {
+  display: flex;
+  margin: auto;
+}
+
+.footer-container li {
+  margin-right: 10px;
+}
+
+.footer-container li span {
+  font-size: 12px;
+  color: rgb(153, 153, 153);
+  font-weight: 400;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  background-color: rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+/* REGISTER */
+
+.success-message-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffdde1, #1da1f2);
+  padding: 25px;
+  border-radius: 16px;
+  margin: 20px auto;
+  animation: fadeInScale 0.7s ease-in-out;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 650px;
+  position: absolute;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.success-message-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.3) 0%,
+    transparent 70%
+  );
+  opacity: 0.4;
+}
+
+.success-icon {
+  width: 50px;
+  height: 50px;
+  margin-bottom: 15px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.success-message {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 20px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.success-cta-btn {
+  background-color: #ffffff;
+  color: #1da1f2;
+  padding: 12px 30px;
+  border-radius: 25px;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 700;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 11;
+}
+
+.success-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* FORGOT PASSWORD */
+
+/* src/styles/Modal.css */
+.modal-overlay-fgp {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Overlay mờ */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 60px;
+  border-radius: 8px;
+  width: 600px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.title-fg {
+  color: #000;
+  font-size: 35px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.logo-sb-fg {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo-sb-fg svg {
+  width: 60px;
+  height: 60px;
+}
+
+.modal-content p,
+input {
+  margin-bottom: 20px;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #1da1f2; /* Màu xanh của nút */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* CSS cho input bình thường */
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  transition: border 0.3s ease-in-out;
+  background-color: #fff;
+  color: #000;
+}
+
+/* CSS khi focus vào input */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border: 2px solid #1da1f2;
+  outline: none;
+}
+
+/* CSS cho placeholder bình thường */
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder {
+  color: rgb(112, 117, 122);
+  font-size: 16px;
+  transition: transform 0.3s ease, font-size 0.3s ease;
+}
+
+/* CSS khi input được focus - thu nhỏ placeholder */
+input[type="text"]:focus::placeholder,
+input[type="email"]:focus::placeholder,
+input[type="password"]:focus::placeholder {
+  font-size: 13px;
+  color: #1da1f2;
+  transform: translateY(-20px); /* Đẩy placeholder lên một chút */
+}
