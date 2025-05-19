@@ -13,6 +13,8 @@ import {
   passwordSchema,
 } from "../../utils/validationSchema";
 import { loginUser, verifyResetCode } from "../../services/authService";
+import { useAuth } from "../../providers/AuthContext";
+import { jwtDecode } from "jwt-decode";
 
 const Login = ({ setIsAuthenticated }) => {
   const [password, setPassword] = useState("");
@@ -25,7 +27,8 @@ const Login = ({ setIsAuthenticated }) => {
   const [successMessage, setSuccessMessage] = useState("");
   const [loginAttempted, setLoginAttempted] = useState(false); // Added state for loginAttempted
   const { setAccessToken } = useAuthToken();
-  const navigate = useNavigate();
+  const [redirectTo, setRedirectTo] = useState(null);
+  const { updateAuth } = useAuth();
 
   // ======================== LOGIC ===========================
 
@@ -34,22 +37,25 @@ const Login = ({ setIsAuthenticated }) => {
     setLoginAttempted(true); // Update state when clicking "Login"
     try {
       await loginSchema.validate({ password, email });
-
       const data = await loginUser(email, password);
-
       const accessToken = data.result.accessToken;
-      setAccessToken(accessToken);
-
-      // Lưu vào localStorage & cập nhật state
       localStorage.setItem("accessToken", accessToken);
-      setAccessToken(accessToken);
+
+      updateAuth(accessToken);
+
+      const decoded = jwtDecode(accessToken);
+      const roles = decoded.roles || [];
+      const adminRoles = ["admin", "Top admin", "moderator"];
+
+      if (adminRoles.some((role) => roles.includes(role))) {
+        setRedirectTo("/admin/dashboard");
+      } else {
+        setRedirectTo("/home");
+      }
+
       setIsAuthenticated(true);
-
       setSuccessMessage("Login successful");
-
       setErrorMessage("");
-
-      navigate("/home");
     } catch (error) {
       console.error(error);
       setErrorMessage("Mật khẩu hoặc Email không đúng!");

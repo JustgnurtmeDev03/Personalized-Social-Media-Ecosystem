@@ -1,0 +1,10 @@
+/* Trong file CSS của bạn (ví dụ: AdminLayout.css) */
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 20px;
+}

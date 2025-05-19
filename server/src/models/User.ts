@@ -226,7 +226,7 @@ userSchema.methods.generateAuthTokens = async function (): Promise<{
   const user = this;
   // Tạo Access Token
   const accessToken = jwt.sign(
-    { id: user._id.toString() },
+    { id: user._id.toString(), roles: user.roles },
     process.env.JWT_ACCESS_SECRET as string,
     { expiresIn: process.env.JWT_ACCESS_EXPIRATION }
   );

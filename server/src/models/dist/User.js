@@ -224,7 +224,7 @@ userSchema.methods.generateAuthTokens = function () {
             switch (_a.label) {
                 case 0:
                     user = this;
-                    accessToken = jsonwebtoken_1["default"].sign({ id: user._id.toString() }, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.JWT_ACCESS_EXPIRATION });
+                    accessToken = jsonwebtoken_1["default"].sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.JWT_ACCESS_EXPIRATION });
                     refreshToken = jsonwebtoken_1["default"].sign({
                         id: user._id.toString(),
                         tokenVersion: user.tokenVersion

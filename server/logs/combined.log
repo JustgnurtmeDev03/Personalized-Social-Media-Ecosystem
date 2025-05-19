@@ -4403,3 +4403,7 @@ Stack: HttpError: ID is invalid
     at next (G:\ThreadsClone\ThreadsClone\server\node_modules\express\lib\router\route.js:149:13)
     at authMiddleware (G:\ThreadsClone\ThreadsClone\server\src\middlewares\auth.ts:39:5)
     at processTicksAndRejections (node:internal/process/task_queues:95:5)
+2025-05-18T15:27:18.495Z [ERROR]: Cannot find /api/auth/login on this server
+2025-05-18T15:27:20.528Z [ERROR]: Cannot find /favicon.ico on this server
+2025-05-18T15:43:18.418Z [ERROR]: ID is invalid
+2025-05-18T15:51:29.395Z [ERROR]: ID is invalid

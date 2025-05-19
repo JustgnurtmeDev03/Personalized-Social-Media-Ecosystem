@@ -10,10 +10,13 @@ import Profile from "../pages/Profile/Profile";
 import LoginLayout from "../layouts/LoginLayout";
 import ForgotPassword from "../pages/ForgotPassword/ForgotPasswordMain";
 import { ModalProvider } from "../providers/ModalContext";
+import AdminLayout from "../layouts/Admin/AdminLayout";
+import { useAuth } from "../providers/AuthContext";
 
 const AUTO_LOGOUT_TIME = 60 * 60 * 1000; // 60 phút
 
 const AppRoutes = () => {
+  const { auth } = useAuth();
   const [isAuthenticated, setIsAuthenticated] = useState(
     !!localStorage.getItem("accessToken")
   );
@@ -43,13 +46,13 @@ const AppRoutes = () => {
 
   const logout = () => {
     localStorage.removeItem("accessToken");
-    setIsAuthenticated(null);
+    setIsAuthenticated(false);
     window.location.href = "/login";
   };
 
   useEffect(() => {
     const handleStorageChange = () => {
-      setIsAuthenticated(localStorage.getItem("accessToken"));
+      setIsAuthenticated(!!localStorage.getItem("accessToken"));
     };
 
     window.addEventListener("storage", handleStorageChange);
@@ -83,7 +86,22 @@ const AppRoutes = () => {
       <Routes>
         {/* <Route path="/" element={<Home />} /> */}
         {/* <Route path="/login" element={<Login />} /> */}
-
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              auth.roles.some((role) =>
+                ["admin", "Top admin", "moderator"].includes(role)
+              ) ? (
+                <Navigate to="/admin/dashboard" />
+              ) : (
+                <Navigate to="/home" />
+              )
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
         <Route
           path="/home"
           element={
@@ -93,6 +111,15 @@ const AppRoutes = () => {
             />
           }
         />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute
+              element={AdminLayout}
+              requiredRoles={["admin", "Top admin", "moderator"]}
+            />
+          }
+        ></Route>
         <Route
           path="/profile/:userId"
           element={
@@ -108,7 +135,7 @@ const AppRoutes = () => {
           path="/login"
           element={
             isAuthenticated ? (
-              <Navigate to="/home" />
+              <Navigate to="/" />
             ) : (
               <LoginLayout>
                 <Login setIsAuthenticated={setIsAuthenticated} />
