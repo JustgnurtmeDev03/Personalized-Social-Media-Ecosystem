@@ -4385,3 +4385,87 @@ Stack: HttpError: ID is invalid
 2025-05-18T15:27:20.528Z [ERROR]: Cannot find /favicon.ico on this server
 2025-05-18T15:43:18.418Z [ERROR]: ID is invalid
 2025-05-18T15:51:29.395Z [ERROR]: ID is invalid
+2025-05-19T07:37:01.675Z [ERROR]: Already following
+2025-05-19T07:37:46.532Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-19T07:39:20.169Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-19T07:40:19.735Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/follower on this server
+2025-05-19T07:40:29.333Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T07:41:29.403Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T07:41:54.180Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T07:42:30.085Z [ERROR]: Schema hasn't been registered for model "avatar".
+Use mongoose.model(name, schema)
+2025-05-19T07:43:05.689Z [ERROR]: Schema hasn't been registered for model "avatar".
+Use mongoose.model(name, schema)
+2025-05-19T07:44:16.251Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T08:01:32.554Z [ERROR]: ID is invalid
+2025-05-19T08:01:34.999Z [ERROR]: ID is invalid
+2025-05-19T08:01:56.977Z [ERROR]: ID is invalid
+2025-05-19T08:01:57.011Z [ERROR]: ID is invalid
+2025-05-19T08:02:36.592Z [ERROR]: ID is invalid
+2025-05-19T08:02:54.696Z [ERROR]: ID is invalid
+2025-05-19T08:04:28.181Z [ERROR]: ID is invalid
+2025-05-19T08:05:06.712Z [ERROR]: ID is invalid
+2025-05-19T08:05:09.637Z [ERROR]: ID is invalid
+2025-05-19T08:05:18.617Z [ERROR]: ID is invalid
+2025-05-19T08:05:26.301Z [ERROR]: ID is invalid
+2025-05-19T08:11:34.831Z [ERROR]: ID is invalid
+2025-05-19T08:32:57.019Z [ERROR]: ID is invalid
+2025-05-19T08:32:58.170Z [ERROR]: ID is invalid
+2025-05-19T08:33:00.191Z [ERROR]: ID is invalid
+2025-05-19T08:37:44.174Z [ERROR]: ID is invalid
+2025-05-19T08:37:47.440Z [ERROR]: ID is invalid
+2025-05-19T08:42:33.816Z [ERROR]: ID is invalid
+2025-05-19T08:42:36.283Z [ERROR]: ID is invalid
+2025-05-19T08:43:02.782Z [ERROR]: ID is invalid
+2025-05-19T08:44:38.570Z [ERROR]: ID is invalid
+2025-05-19T08:45:22.496Z [ERROR]: ID is invalid
+2025-05-19T08:45:28.759Z [ERROR]: ID is invalid
+2025-05-19T08:45:30.584Z [ERROR]: ID is invalid
+2025-05-19T08:45:31.947Z [ERROR]: ID is invalid
+2025-05-19T08:46:17.316Z [ERROR]: ID is invalid
+2025-05-19T08:46:22.235Z [ERROR]: ID is invalid
+2025-05-19T08:46:23.701Z [ERROR]: ID is invalid
+2025-05-19T08:46:25.459Z [ERROR]: ID is invalid
+2025-05-19T08:46:28.405Z [ERROR]: ID is invalid
+2025-05-19T08:46:29.595Z [ERROR]: ID is invalid
+2025-05-19T08:46:30.695Z [ERROR]: ID is invalid
+2025-05-19T08:46:42.022Z [ERROR]: ID is invalid
+2025-05-19T08:46:43.590Z [ERROR]: ID is invalid
+2025-05-19T08:46:44.724Z [ERROR]: ID is invalid
+2025-05-19T08:49:48.289Z [ERROR]: ID is invalid
+2025-05-19T08:50:47.277Z [ERROR]: ID is invalid
+2025-05-19T08:50:53.234Z [ERROR]: ID is invalid
+2025-05-19T09:04:45.626Z [ERROR]: ID is invalid
+2025-05-19T09:04:56.683Z [ERROR]: ID is invalid
+2025-05-19T09:12:56.432Z [ERROR]: ID is invalid
+2025-05-19T09:12:58.714Z [ERROR]: ID is invalid
+2025-05-19T09:13:05.358Z [ERROR]: ID is invalid
+2025-05-19T09:13:46.609Z [ERROR]: ID is invalid
+2025-05-19T09:31:11.338Z [ERROR]: ID is invalid
+2025-05-19T09:33:12.187Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T09:33:12.268Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T09:33:24.552Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T09:33:47.402Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T09:34:18.495Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T09:34:21.979Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T09:35:08.795Z [ERROR]: Already following
+2025-05-19T09:35:12.855Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T09:35:15.146Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T09:35:19.509Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T09:35:20.702Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)
+2025-05-19T09:35:55.434Z [ERROR]: Schema hasn't been registered for model "name".
+Use mongoose.model(name, schema)

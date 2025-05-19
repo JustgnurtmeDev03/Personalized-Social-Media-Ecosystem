@@ -43,3 +43,19 @@ export const updateUserProfile = async (accessToken, newBio, fileInput) => {
     throw error;
   }
 };
+
+export const fetchFollowers = async (userId, options) => {
+  try {
+    const res = await axios.get(`${API_URL}/${userId}/followers`, options);
+
+    // Kiểm tra dữ liệu trả về
+    if (res.data) {
+      return res.data;
+    } else {
+      throw new Error("Invalid response format");
+    }
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw error; // Để có thể xử lý lỗi ở nơi gọi hàm này
+  }
+};

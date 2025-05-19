@@ -125,7 +125,9 @@ export default function Profile() {
             <div className="minimum-info">
               <div
                 className="followers"
-                onClick={() => setFollowersIsOpen(true)}
+                onClick={() => {
+                  setFollowersIsOpen(true);
+                }}
               >
                 <div className="followers-user-avatar">
                   <img alt="" />
@@ -147,9 +149,9 @@ export default function Profile() {
             <FollowersModal
               isOpen={isFollowersOpen}
               onClose={() => setFollowersIsOpen(false)}
-              user={user}
-              followers={userData.followers}
-              following={userData.following}
+              user={user || {}}
+              followers={userData.followers || []}
+              following={userData.following || []}
             />
             {isOwnProfile ? (
               <div>

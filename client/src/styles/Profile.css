@@ -55,6 +55,27 @@
   border-radius: 50%;
 }
 
+.profile-overlay-follower {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  visibility: hidden;
+  z-index: 20;
+}
+
+.profile-overlay-follower.effect {
+  opacity: 1;
+  visibility: visible;
+}
+
 .profile-container .followers {
   display: flex;
   align-items: center;

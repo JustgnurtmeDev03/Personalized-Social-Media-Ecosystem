@@ -124,6 +124,7 @@ const PostBar = ({ onClick }) => {
       setUserLoading(false);
     }
   }, [auth.userId]);
+
   // useEffect để lấy danh sách bài viết (chỉ chạy khi đã có userData)
   useEffect(() => {
     if (userData) {

@@ -1,5 +1,11 @@
 import express from "express";
 import {
+  followUser,
+  getFollowers,
+  getFollowing,
+  unfollowUser,
+} from "~/controllers/followController";
+import {
   getProfile,
   getProfileByID,
   updateUserProfile,
@@ -23,6 +29,31 @@ router.put(
   upload.single("avatar"),
   authMiddleware,
   updateUserProfile
+);
+
+router.post(
+  "/:_id/follow",
+  authMiddleware,
+  validateObjectId("_id"),
+  followUser
+);
+router.delete(
+  "/:_id/unfollow",
+  authMiddleware,
+  validateObjectId("_id"),
+  unfollowUser
+);
+router.get(
+  "/:_id/followers",
+  authMiddleware,
+  validateObjectId("_id"),
+  getFollowers
+);
+router.get(
+  "/:_id/is-following",
+  authMiddleware,
+  validateObjectId("_id"),
+  getFollowing
 );
 
 export default router;

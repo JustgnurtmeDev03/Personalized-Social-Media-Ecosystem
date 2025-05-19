@@ -31,5 +31,9 @@ exports.USERS_MESSAGES = {
     USER_REFRESH_TOKEN_OR_NOT_EXISTS: "Used refresh token is or not exist",
     GET_ME_SUCCESS: "Get my profile success",
     USER_NOT_VERIFIED: "User not verified",
-    USER_NOT_FOUND: "User not found"
+    USER_NOT_FOUND: "User not found",
+    UNAUTHORIZED: "Unauthorized",
+    CANNOT_FOLLOW_YOURSELF: "You can't follow yourself",
+    FOLLOW_SUCCESS: "Follow successfully",
+    UNFOLLOW_SUCCESS: "Unfollow successfully"
 };

@@ -5,7 +5,6 @@ import asyncHandler from "~/middlewares/asyncHandler";
 import { HttpError } from "~/utils/httpError";
 import { validationResult } from "express-validator";
 import { FollowService } from "~/services/followService";
-import logger from "~/utils/logger";
 
 interface AuthRequest extends Request {
   user?: { _id: string };
@@ -56,7 +55,41 @@ export const unfollowUser = asyncHandler(
     res: Response,
     next: NextFunction
   ): Promise<void> => {
-    try {
-    } catch (error: any) {}
+    if (!req.user?._id) {
+      throw new HttpError(
+        HTTP_STATUS.UNAUTHORIZED,
+        USERS_MESSAGES.UNAUTHORIZED
+      );
+    }
+    const followerId = req.user._id.toString();
+    const followeeId = req.params._id;
+
+    if (followerId === followeeId) {
+      throw new HttpError(
+        HTTP_STATUS.BAD_REQUEST,
+        USERS_MESSAGES.CANNOT_FOLLOW_YOURSELF
+      );
+    }
+
+    await FollowService.unfollowUser(followerId, followeeId);
+    res
+      .status(HTTP_STATUS.OK)
+      .json({ message: USERS_MESSAGES.UNFOLLOW_SUCCESS });
+  }
+);
+
+export const getFollowers = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { _id } = req.params;
+    const followers = await FollowService.getFollowers(_id);
+    res.status(HTTP_STATUS.OK).json(followers);
+  }
+);
+
+export const getFollowing = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { _id } = req.params;
+    const following = await FollowService.getFollowing(_id);
+    res.status(HTTP_STATUS.OK).json(following);
   }
 );
