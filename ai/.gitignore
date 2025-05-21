@@ -1,1 +1,1 @@
-venv/ logs/ models/ data/processed/ data/interim/ *.pyc pycache/ *.log
+venv/ logs/ models/ data/ data/processed/ data/interim/ *.pyc pycache/ *.logs
