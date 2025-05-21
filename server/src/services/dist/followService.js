@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -88,7 +99,7 @@ var FollowService = /** @class */ (function () {
     };
     FollowService.getFollowers = function (_id) {
         return __awaiter(this, void 0, Promise, function () {
-            var user, follows;
+            var user, follows, following, followingIds, followersWithMutual;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, User_1["default"].findById(_id)];
@@ -105,7 +116,17 @@ var FollowService = /** @class */ (function () {
                         if (!follows.length) {
                             return [2 /*return*/, []];
                         }
-                        return [2 /*return*/, follows.map(function (f) { return f.followerId; })];
+                        return [4 /*yield*/, Follow_1["default"].find({ followerId: _id })
+                                .select("followeeId")
+                                .lean()];
+                    case 3:
+                        following = _a.sent();
+                        followingIds = following.map(function (f) { return f.followeeId.toString(); });
+                        followersWithMutual = follows.map(function (f) {
+                            var followerId = f.followerId._id.toString();
+                            return __assign(__assign({}, f.followerId), { isMutual: followingIds.includes(followerId) });
+                        });
+                        return [2 /*return*/, followersWithMutual];
                 }
             });
         });

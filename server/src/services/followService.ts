@@ -47,7 +47,22 @@ export class FollowService {
       return [];
     }
 
-    return follows.map((f) => f.followerId);
+    // Lấy dánh sách những người dùng mà người dùng hiện tại đang follow'
+    const following = await Follow.find({ followerId: _id })
+      .select("followeeId")
+      .lean();
+    const followingIds = following.map((f) => f.followeeId.toString());
+
+    // Thêm trường isMutual để kiểm tra follow lẫn nhau
+    const followersWithMutual = follows.map((f) => {
+      const followerId = f.followerId._id.toString();
+
+      return {
+        ...f.followerId,
+        isMutual: followingIds.includes(followerId),
+      };
+    });
+    return followersWithMutual;
   }
 
   static async getFollowing(_id: string): Promise<IUser[]> {

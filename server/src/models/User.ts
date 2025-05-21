@@ -96,14 +96,14 @@ const userSchema: Schema<IUser> = new Schema(
       trim: true,
       minlength: 3,
       maxlength: 30,
-      validate: {
-        validator: function (value: string) {
-          // Kiểm tra username có bắt đầu bằng '@' và chỉ chứa ký tự hợp lệ
-          return /^@[a-zA-Z0-9_]{2,29}$/.test(value);
-        },
-        message: (props) =>
-          `Username phải bắt đầu bằng '@' và chỉ chứa chữ cái, số, gạch dưới, dài từ 3 đến 30 ký tự.`,
-      },
+      // validate: {
+      //   validator: function (value: string) {
+      //     // Kiểm tra username có bắt đầu bằng '@' và chỉ chứa ký tự hợp lệ
+      //     return /^@[a-zA-Z0-9_]{2,29}$/.test(value);
+      //   },
+      //   message: (props) =>
+      //     `Username phải bắt đầu bằng '@' và chỉ chứa chữ cái, số, gạch dưới, dài từ 3 đến 30 ký tự.`,
+      // },
     },
     email: {
       type: String,

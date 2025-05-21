@@ -55,7 +55,23 @@ export const fetchFollowers = async (userId, options) => {
       throw new Error("Invalid response format");
     }
   } catch (error) {
-    console.error("Error fetching user profile:", error);
+    console.error("Error fetching follower:", error);
+    throw error; // Để có thể xử lý lỗi ở nơi gọi hàm này
+  }
+};
+
+export const fetchFollowing = async (userId, options) => {
+  try {
+    const res = await axios.get(`${API_URL}/${userId}/is-following`, options);
+
+    // Kiểm tra dữ liệu trả về
+    if (res.data) {
+      return res.data;
+    } else {
+      throw new Error("Invalid response format");
+    }
+  } catch (error) {
+    console.error("Error fetching follower:", error);
     throw error; // Để có thể xử lý lỗi ở nơi gọi hàm này
   }
 };

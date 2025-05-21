@@ -84,16 +84,7 @@ var userSchema = new mongoose_1.Schema({
         unique: true,
         trim: true,
         minlength: 3,
-        maxlength: 30,
-        validate: {
-            validator: function (value) {
-                // Kiểm tra username có bắt đầu bằng '@' và chỉ chứa ký tự hợp lệ
-                return /^@[a-zA-Z0-9_]{2,29}$/.test(value);
-            },
-            message: function (props) {
-                return "Username ph\u1EA3i b\u1EAFt \u0111\u1EA7u b\u1EB1ng '@' v\u00E0 ch\u1EC9 ch\u1EE9a ch\u1EEF c\u00E1i, s\u1ED1, g\u1EA1ch d\u01B0\u1EDBi, d\u00E0i t\u1EEB 3 \u0111\u1EBFn 30 k\u00FD t\u1EF1.";
-            }
-        }
+        maxlength: 30
     },
     email: {
         type: String,
