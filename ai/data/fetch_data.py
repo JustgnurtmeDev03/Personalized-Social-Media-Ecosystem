@@ -16,6 +16,7 @@ Cấu hình kết nối có thể được điều chỉnh qua tham số.
 import logging;
 from pymongo import MongoClient, errors
 import pandas as pd 
+from typing import List, Optional
 
 # Cấu hình logging để ghi lại thông tị và lỗi
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
@@ -24,7 +25,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(mes
 def fetch_data(
     mongo_uri: str = 'mongodb+srv://trungthpthy:trungdeptrai123@threads.a8gao0g.mongodb.net/Threads?retryWrites=true&w=majority',
     database: str = 'Threads',
-    collection: str = 'threads'
+    collection: str = 'threads',
     ) -> pd.DataFrame: 
     
     try: 

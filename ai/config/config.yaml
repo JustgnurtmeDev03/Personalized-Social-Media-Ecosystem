@@ -1,0 +1,4 @@
+mongo:
+  uri: "mongodb+srv://trungthpthy:trungdeptrai123@threads.a8gao0g.mongodb.net/Threads?retryWrites=true&w=majority"
+  database: "Threads"
+  collection: "threads"
