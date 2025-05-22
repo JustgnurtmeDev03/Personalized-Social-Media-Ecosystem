@@ -1,5 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { fetchFollowers, fetchFollowing } from "../../services/userService";
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  fetchFollowers,
+  fetchFollowing,
+  followUser,
+  unfollowUser,
+} from "../../services/userService";
 import { useAuth } from "../../providers/AuthContext";
 
 export default function FollowersModal({ isOpen, onClose, user }) {
@@ -8,46 +13,94 @@ export default function FollowersModal({ isOpen, onClose, user }) {
   const [followingData, setFollowingData] = useState([]);
   const [loadingFollowers, setLoadingFollowers] = useState(false);
   const [loadingFollowing, setLoadingFollowing] = useState(false);
-  const [errorsFollowers, setErrorFollowers] = useState(null);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("followers");
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
   };
 
-  useEffect(() => {
-    if (isOpen && user?._id) {
-      const fetchData = async () => {
-        try {
-          if (!auth.accessToken || !auth.userId) {
-            throw new Error("Không có token hoặc userId để xác thực");
-          }
-          const followers = await fetchFollowers(auth.userId, {
-            // Sử dụng auth.userId thay vì userId từ useParams
-            headers: { Authorization: `Bearer ${auth.accessToken}` },
-          });
-          const following = await fetchFollowing(auth.userId, {
-            headers: { Authorization: `Bearer ${auth.accessToken}` },
-          });
-          setFollowersData(followers);
-          setFollowingData(following);
-        } catch (error) {
-          setErrorFollowers("Lỗi khi lấy thông tin người dùng");
-          console.error(error);
-        } finally {
-          setLoadingFollowers(false);
-          setLoadingFollowing(false);
-        }
-      };
-      fetchData();
+  // Hàm fetch dữ liệu chung
+  const fetchData = useCallback(async () => {
+    if (!auth.accessToken || !auth.userId || !isOpen || !user?._id) return;
+
+    setLoadingFollowers(true);
+    setLoadingFollowing(true);
+    try {
+      const [followers, following] = await Promise.all([
+        fetchFollowers(auth.userId, {
+          headers: { Authorization: `Bearer ${auth.accessToken}` },
+        }),
+        fetchFollowing(auth.userId, {
+          headers: { Authorization: `Bearer ${auth.accessToken}` },
+        }),
+      ]);
+      setFollowersData(followers);
+      setFollowingData(following);
+    } catch (error) {
+      setError("Lỗi khi lấy thông tin người dùng");
+      console.error(error);
+    } finally {
+      setLoadingFollowers(false);
+      setLoadingFollowing(false);
     }
-  }, [isOpen, user?._id, auth.accessToken, auth.userId]);
+  }, [auth.accessToken, auth.userId, isOpen, user?._id]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleFollowBack = async (followeeId) => {
+    try {
+      const followerToFollow = followersData.find((f) => f._id === followeeId);
+      if (followerToFollow) {
+        setFollowingData((prev) => [...prev, followerToFollow]);
+        setFollowersData((prev) =>
+          prev.map((f) => (f._id === followeeId ? { ...f, isMutual: true } : f))
+        );
+      }
+      await followUser(auth.userId, followeeId, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      });
+      await fetchData(); // Lấy lại dữ liệu để đồng bộ với server
+    } catch (error) {
+      console.error("Lỗi khi follow back:", error);
+      setError("Không thể theo dõi lại người dùng");
+    }
+  };
+
+  const handleDeleteFollower = async (followerId) => {
+    try {
+      await unfollowUser(auth.userId, followerId, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      });
+      const updatedFollowers = await fetchFollowers(user._id, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      });
+      setFollowersData(updatedFollowers);
+    } catch (error) {
+      console.error("Lỗi khi xóa follower:", error);
+      setError("Không thể xóa người theo dõi");
+    }
+  };
+
+  const handleUnfollow = async (followeeId) => {
+    try {
+      await unfollowUser(auth.userId, followeeId, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      });
+      await fetchData();
+    } catch (error) {
+      console.error("Lỗi khi hủy theo dõi:", error);
+      setError("Không thể hủy theo dõi");
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) {
       setFollowersData([]);
 
-      setErrorFollowers(null);
+      setError(null);
     }
   }, [isOpen]);
 
@@ -130,8 +183,18 @@ export default function FollowersModal({ isOpen, onClose, user }) {
                       <div className="text-gray-500">{follower.name}</div>
                     </div>
                   </div>
-                  {!follower.isMutual && (
-                    <button className="bg-[#EFEFEF] text-black font-medium px-4 py-2 rounded-full">
+                  {follower.isMutual ? (
+                    <button
+                      className="bg-[#EFEFEF] text-black font-medium px-4 py-2 rounded-full"
+                      onClick={() => handleDeleteFollower(follower._id)}
+                    >
+                      Xoá
+                    </button>
+                  ) : (
+                    <button
+                      className="bg-[#EFEFEF] text-black font-medium px-4 py-2 rounded-full"
+                      onClick={() => handleFollowBack(follower._id)}
+                    >
                       Follow lại
                     </button>
                   )}
@@ -166,7 +229,10 @@ export default function FollowersModal({ isOpen, onClose, user }) {
                     <div className="text-gray-500">{following.name}</div>
                   </div>
                 </div>
-                <button className="bg-black text-white font-medium px-4 py-2 rounded-full">
+                <button
+                  className="bg-black text-white font-medium px-4 py-2 rounded-full"
+                  onClick={() => handleUnfollow(following._id)}
+                >
                   Hủy theo dõi
                 </button>
               </div>

@@ -154,13 +154,13 @@ const userSchema: Schema<IUser> = new Schema(
     followers: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "Follow",
       },
     ],
     following: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "Follow",
       },
     ],
     posts: [

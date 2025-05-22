@@ -99,21 +99,38 @@ var FollowService = /** @class */ (function () {
     };
     FollowService.getFollowers = function (_id) {
         return __awaiter(this, void 0, Promise, function () {
-            var user, follows, following, followingIds, followersWithMutual;
+            var user, followersData, following, followingIds, followersWithMutual;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, User_1["default"].findById(_id)];
                     case 1:
                         user = _a.sent();
                         if (!user) {
-                            throw new AppError_1.AppError(message_1.USERS_MESSAGES.USER_NOT_FOUND, httpStatus_1["default"].BAD_REQUEST);
+                            throw new AppError_1.AppError(message_1.USERS_MESSAGES.USER_NOT_FOUND, httpStatus_1["default"].NOT_FOUND);
                         }
-                        return [4 /*yield*/, Follow_1["default"].find({ followeeId: _id })
-                                .populate("followerId", "username name avatar")
-                                .lean()];
+                        return [4 /*yield*/, Follow_1["default"].aggregate([
+                                { $match: { followeeId: user._id } },
+                                {
+                                    $lookup: {
+                                        from: "users",
+                                        localField: "followerId",
+                                        foreignField: "_id",
+                                        as: "follower"
+                                    }
+                                },
+                                { $unwind: "$follower" },
+                                {
+                                    $project: {
+                                        _id: "$follower._id",
+                                        username: "$follower.username",
+                                        name: "$follower.name",
+                                        avatar: "$follower.avatar"
+                                    }
+                                },
+                            ])];
                     case 2:
-                        follows = _a.sent();
-                        if (!follows.length) {
+                        followersData = _a.sent();
+                        if (!followersData.length) {
                             return [2 /*return*/, []];
                         }
                         return [4 /*yield*/, Follow_1["default"].find({ followerId: _id })
@@ -122,10 +139,7 @@ var FollowService = /** @class */ (function () {
                     case 3:
                         following = _a.sent();
                         followingIds = following.map(function (f) { return f.followeeId.toString(); });
-                        followersWithMutual = follows.map(function (f) {
-                            var followerId = f.followerId._id.toString();
-                            return __assign(__assign({}, f.followerId), { isMutual: followingIds.includes(followerId) });
-                        });
+                        followersWithMutual = followersData.map(function (follower) { return (__assign(__assign({}, follower), { isMutual: followingIds.includes(follower._id.toString()) })); });
                         return [2 /*return*/, followersWithMutual];
                 }
             });
@@ -133,24 +147,41 @@ var FollowService = /** @class */ (function () {
     };
     FollowService.getFollowing = function (_id) {
         return __awaiter(this, void 0, Promise, function () {
-            var user, follows;
+            var user, followingData;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, User_1["default"].findById(_id)];
                     case 1:
                         user = _a.sent();
                         if (!user) {
-                            throw new AppError_1.AppError(message_1.USERS_MESSAGES.USER_NOT_FOUND, httpStatus_1["default"].BAD_REQUEST);
+                            throw new AppError_1.AppError(message_1.USERS_MESSAGES.USER_NOT_FOUND, httpStatus_1["default"].NOT_FOUND);
                         }
-                        return [4 /*yield*/, Follow_1["default"].find({ followerId: _id })
-                                .populate("followeeId", "username name avatar")
-                                .lean()];
+                        return [4 /*yield*/, Follow_1["default"].aggregate([
+                                { $match: { followerId: user._id } },
+                                {
+                                    $lookup: {
+                                        from: "users",
+                                        localField: "followeeId",
+                                        foreignField: "_id",
+                                        as: "followee"
+                                    }
+                                },
+                                { $unwind: "$followee" },
+                                {
+                                    $project: {
+                                        _id: "$followee._id",
+                                        username: "$followee.username",
+                                        name: "$followee.name",
+                                        avatar: "$followee.avatar"
+                                    }
+                                },
+                            ])];
                     case 2:
-                        follows = _a.sent();
-                        if (!follows.length) {
+                        followingData = _a.sent();
+                        if (!followingData.length) {
                             return [2 /*return*/, []];
                         }
-                        return [2 /*return*/, follows.map(function (f) { return f.followeeId; })];
+                        return [2 /*return*/, followingData];
                 }
             });
         });

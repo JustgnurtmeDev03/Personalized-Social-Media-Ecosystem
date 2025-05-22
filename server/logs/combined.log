@@ -4546,3 +4546,77 @@ Use mongoose.model(name, schema)
 2025-05-21T09:21:39.286Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/unfollow on this server
 2025-05-21T09:21:39.471Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/unfollow on this server
 2025-05-21T09:24:30.875Z [ERROR]: ID is invalid
+2025-05-22T08:28:27.577Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:28:40.452Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:28:40.797Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:28:46.531Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:30:04.530Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/unfollow on this server
+2025-05-22T08:30:54.671Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:32:46.026Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T08:34:11.686Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/unfollow on this server
+2025-05-22T08:36:20.195Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:39:14.556Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T08:39:27.767Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T08:41:52.398Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:42:24.439Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:43:33.902Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:43:35.709Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:43:35.959Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:43:36.170Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:43:36.360Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:44:03.962Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:44:05.081Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:44:05.231Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:44:05.497Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:45:30.601Z [ERROR]: Cannot find /api/users/681c376158ac95ae022b4c4a/unfollow on this server
+2025-05-22T08:48:07.644Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T08:48:14.000Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T09:03:46.376Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T09:07:08.448Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T09:10:56.545Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T09:15:45.776Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T09:15:57.340Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T09:16:05.469Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T09:17:25.470Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T09:17:30.311Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T09:22:37.707Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T09:22:39.945Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T09:22:53.336Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T09:22:55.293Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T09:24:26.522Z [ERROR]: ID is invalid
+2025-05-22T09:26:03.700Z [ERROR]: ID is invalid
+2025-05-22T09:26:05.621Z [ERROR]: ID is invalid
+2025-05-22T09:56:40.918Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T09:56:42.678Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T10:02:32.293Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/following on this server
+2025-05-22T10:02:32.345Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/following on this server
+2025-05-22T10:02:32.394Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/following on this server
+2025-05-22T10:02:32.450Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/following on this server
+2025-05-22T10:02:34.949Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/following on this server
+2025-05-22T10:02:36.018Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/following on this server
+2025-05-22T10:03:11.850Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/following on this server
+2025-05-22T10:03:17.906Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/following on this server
+2025-05-22T10:03:43.336Z [ERROR]: Cannot find /api/users/66dfbd050bdfe18c723f1066/following on this server
+2025-05-22T10:08:43.767Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T10:08:44.646Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T10:08:48.474Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T10:08:49.259Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T10:08:51.811Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T10:09:00.458Z [ERROR]: Not following
+2025-05-22T10:09:02.316Z [ERROR]: Not following
+2025-05-22T10:09:02.482Z [ERROR]: Not following
+2025-05-22T10:09:02.696Z [ERROR]: Not following
+2025-05-22T10:09:02.854Z [ERROR]: Not following
+2025-05-22T10:11:30.998Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T10:11:36.821Z [ERROR]: Already following
+2025-05-22T10:11:39.466Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T10:11:41.885Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T10:11:43.838Z [ERROR]: Already following
+2025-05-22T10:11:45.885Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T10:11:51.655Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T10:11:54.164Z [ERROR]: Already following
+2025-05-22T10:18:58.376Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T10:20:22.464Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-22T10:20:24.082Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-22T10:22:04.349Z [ERROR]: You can't follow yourself
+2025-05-22T10:22:14.845Z [ERROR]: Already following

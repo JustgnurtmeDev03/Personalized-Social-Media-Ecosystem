@@ -135,13 +135,13 @@ var userSchema = new mongoose_1.Schema({
     followers: [
         {
             type: mongoose_1["default"].Schema.Types.ObjectId,
-            ref: "User"
+            ref: "Follow"
         },
     ],
     following: [
         {
             type: mongoose_1["default"].Schema.Types.ObjectId,
-            ref: "User"
+            ref: "Follow"
         },
     ],
     posts: [

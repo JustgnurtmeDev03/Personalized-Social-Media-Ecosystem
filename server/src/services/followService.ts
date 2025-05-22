@@ -33,55 +33,82 @@ export class FollowService {
   static async getFollowers(_id: string): Promise<IUser[]> {
     const user = await User.findById(_id);
     if (!user) {
-      throw new AppError(
-        USERS_MESSAGES.USER_NOT_FOUND,
-        HTTP_STATUS.BAD_REQUEST
-      );
+      throw new AppError(USERS_MESSAGES.USER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    const follows = await Follow.find({ followeeId: _id })
-      .populate<{ followerId: IUser }>("followerId", "username name avatar")
-      .lean();
+    // Tối ưu hóa truy vấn bằng cách sử dụng aggregate để giảm số lần gọi DB
+    const followersData = await Follow.aggregate([
+      { $match: { followeeId: user._id } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "followerId",
+          foreignField: "_id",
+          as: "follower",
+        },
+      },
+      { $unwind: "$follower" },
+      {
+        $project: {
+          _id: "$follower._id",
+          username: "$follower.username",
+          name: "$follower.name",
+          avatar: "$follower.avatar",
+        },
+      },
+    ]);
 
-    if (!follows.length) {
+    if (!followersData.length) {
       return [];
     }
 
-    // Lấy dánh sách những người dùng mà người dùng hiện tại đang follow'
+    // Lấy danh sách following của user để kiểm tra mutual
     const following = await Follow.find({ followerId: _id })
       .select("followeeId")
       .lean();
     const followingIds = following.map((f) => f.followeeId.toString());
 
-    // Thêm trường isMutual để kiểm tra follow lẫn nhau
-    const followersWithMutual = follows.map((f) => {
-      const followerId = f.followerId._id.toString();
+    // Thêm trường isMutual
+    const followersWithMutual = followersData.map((follower) => ({
+      ...follower,
+      isMutual: followingIds.includes(follower._id.toString()),
+    }));
 
-      return {
-        ...f.followerId,
-        isMutual: followingIds.includes(followerId),
-      };
-    });
     return followersWithMutual;
   }
 
   static async getFollowing(_id: string): Promise<IUser[]> {
     const user = await User.findById(_id);
     if (!user) {
-      throw new AppError(
-        USERS_MESSAGES.USER_NOT_FOUND,
-        HTTP_STATUS.BAD_REQUEST
-      );
+      throw new AppError(USERS_MESSAGES.USER_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    const follows = await Follow.find({ followerId: _id })
-      .populate<{ followeeId: IUser }>("followeeId", "username name avatar")
-      .lean();
+    // Tối ưu hóa truy vấn bằng aggregate
+    const followingData = await Follow.aggregate([
+      { $match: { followerId: user._id } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "followeeId",
+          foreignField: "_id",
+          as: "followee",
+        },
+      },
+      { $unwind: "$followee" },
+      {
+        $project: {
+          _id: "$followee._id",
+          username: "$followee.username",
+          name: "$followee.name",
+          avatar: "$followee.avatar",
+        },
+      },
+    ]);
 
-    if (!follows.length) {
+    if (!followingData.length) {
       return [];
     }
 
-    return follows.map((f) => f.followeeId);
+    return followingData;
   }
 }

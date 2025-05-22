@@ -75,3 +75,33 @@ export const fetchFollowing = async (userId, options) => {
     throw error; // Để có thể xử lý lỗi ở nơi gọi hàm này
   }
 };
+
+export const followUser = async (followerId, followeeId, options) => {
+  try {
+    const res = await axios.post(
+      `${API_URL}/${followeeId}/follow`,
+      {
+        followerId,
+      },
+      options
+    );
+    return res.data;
+  } catch (error) {
+    console.error("Error following user:", error);
+    throw error;
+  }
+};
+
+export const unfollowUser = async (followerId, followeeId, options) => {
+  try {
+    const res = await axios.delete(
+      `${API_URL}/${followeeId}/unfollow`,
+      { followerId },
+      options
+    );
+    return res.data;
+  } catch (error) {
+    console.error("Error unfollowing user:", error);
+    throw error;
+  }
+};

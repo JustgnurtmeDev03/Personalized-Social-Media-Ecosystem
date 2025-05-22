@@ -90,6 +90,19 @@ export default function Profile() {
   // Tính số lượng phần chưa hoàn thành
   const incompleteCount = (!isBioUpdated ? 1 : 0) + (!isAvatarUpdated ? 1 : 0);
 
+  //Lấy danh sách avatar của người theo dõi
+  const followers = userData.followers || [];
+  const followerAvatars = followers
+    .slice(0, 2)
+    .map((follower) => (
+      <Avatar
+        key={follower._id}
+        _id={follower._id}
+        avatarUrl={follower.avatar}
+        size={24}
+      />
+    ));
+
   // ======================== RENDER ===========================
 
   return (
@@ -129,12 +142,9 @@ export default function Profile() {
                   setFollowersIsOpen(true);
                 }}
               >
-                <div className="followers-user-avatar">
-                  <img alt="" />
-                  <img alt="" />
-                </div>
+                <div className="followers-user-avatar">{followerAvatars}</div>
                 <div className="quantity-followers">
-                  {userData.followers.length} người theo dõi
+                  {followers.length} người theo dõi
                 </div>
               </div>
               <div className="joined-in">
