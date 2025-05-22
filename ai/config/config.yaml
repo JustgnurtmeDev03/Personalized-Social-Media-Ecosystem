@@ -1,4 +1,8 @@
-mongo:
+mongodb:
   uri: "mongodb+srv://trungthpthy:trungdeptrai123@threads.a8gao0g.mongodb.net/Threads?retryWrites=true&w=majority"
   database: "Threads"
-  collection: "threads"
+  posts_collection: "threads"
+  likes_collection: "likes"
+preprocessing:
+  max_features: 5000
+  stop_words: "english"
