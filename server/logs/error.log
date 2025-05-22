@@ -4562,3 +4562,5 @@ Use mongoose.model(name, schema)
 2025-05-22T10:11:54.164Z [ERROR]: Already following
 2025-05-22T10:22:04.349Z [ERROR]: You can't follow yourself
 2025-05-22T10:22:14.845Z [ERROR]: Already following
+2025-05-22T13:27:30.783Z [ERROR]: ID is invalid
+2025-05-22T13:27:30.820Z [ERROR]: ID is invalid

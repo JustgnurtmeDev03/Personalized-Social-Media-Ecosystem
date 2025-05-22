@@ -313,7 +313,7 @@ const PostBar = ({ onClick }) => {
                               aspectRatio:
                                 mediaDimensions[index]?.width /
                                   mediaDimensions[index]?.height || "1/1", // Giữ tỷ lệ gốc
-                              maxWidth: "650px",
+                              maxWidth: "580px",
                               maxHeight: "400px",
                             }}
                           >
