@@ -44,4 +44,31 @@ export class UserService {
           );
     }
   }
+  static async getTotalUsers(): Promise<{
+    current: number;
+    previous: number;
+  }> {
+    try {
+      const currentDate = new Date();
+      const sevenDaysAgo = new Date(currentDate);
+      sevenDaysAgo.setDate(currentDate.getDate() - 7);
+
+      // Tổng số người dùng hiện tại
+      const currentUsers = await User.countDocuments();
+
+      // Tổng số người dùng 7 ngày trước (lấy số người dùng đã tạo trước 7 ngày)
+      const previousUsers = await User.countDocuments({
+        createdAt: { $lt: sevenDaysAgo },
+      });
+      return { current: currentUsers, previous: previousUsers };
+    } catch (error: any) {
+      logger.error(`Get total users service error: ${error.message}`, {
+        error,
+      });
+      throw new HttpError(
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Internal server error"
+      );
+    }
+  }
 }

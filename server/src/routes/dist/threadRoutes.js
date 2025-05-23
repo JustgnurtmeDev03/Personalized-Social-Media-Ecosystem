@@ -9,4 +9,5 @@ router.post("/upload", uploadMiddleware_1["default"].array("media", 10), auth_1[
 router.get("/posts", auth_1["default"], threadController_1.getThread);
 router.post("/like", auth_1["default"], threadController_1.toggleLike);
 router.get("/posts/liked", auth_1["default"], threadController_1.getLikedThreads);
+router.get("/total-posts", auth_1["default"], threadController_1.getTotalPosts);
 exports["default"] = router;

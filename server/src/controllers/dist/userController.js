@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.updateUserProfile = exports.getProfileByID = exports.getProfile = void 0;
+exports.getTotalUsers = exports.updateUserProfile = exports.getProfileByID = exports.getProfile = void 0;
 var User_1 = require("~/models/User");
 var asyncHandler_1 = require("~/middlewares/asyncHandler");
 var AppError_1 = require("~/utils/AppError");
@@ -181,6 +181,29 @@ exports.updateUserProfile = asyncHandler_1["default"](function (req, res, next) 
                 res.status(500).json({ error: "Server error" });
                 return [3 /*break*/, 10];
             case 10: return [2 /*return*/];
+        }
+    });
+}); });
+exports.getTotalUsers = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var totalUsers, error_4;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, userService_1.UserService.getTotalUsers()];
+            case 1:
+                totalUsers = _a.sent();
+                res.status(httpStatus_1["default"].OK).json({
+                    totalUsers: totalUsers
+                });
+                return [3 /*break*/, 3];
+            case 2:
+                error_4 = _a.sent();
+                res
+                    .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
+                    .send({ error: "Failed to fetch totals" });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
         }
     });
 }); });

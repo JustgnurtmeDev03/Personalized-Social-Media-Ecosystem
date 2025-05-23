@@ -142,3 +142,23 @@ export const updateUserProfile = asyncHandler(
     }
   }
 );
+
+export const getTotalUsers = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const totalUsers = await UserService.getTotalUsers();
+
+      res.status(HTTP_STATUS.OK).json({
+        totalUsers,
+      });
+    } catch (error: any) {
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .send({ error: "Failed to fetch totals" });
+    }
+  }
+);

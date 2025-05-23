@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -10,6 +10,10 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { useAuth } from "../../providers/AuthContext";
+import { fetchUserProfile } from "../../services/userService";
+import Avatar from "../../assets/Avatar";
+import { jwtDecode } from "jwt-decode";
 
 // Đăng ký các thành phần cần thiết của Chart.js
 ChartJS.register(
@@ -23,6 +27,40 @@ ChartJS.register(
 );
 
 const AdminDashBoard = () => {
+  const { auth } = useAuth();
+
+  const [adminData, setAdminData] = useState(null);
+  const [adminError, setAdminError] = useState(null);
+  const [adminLoading, setAdminLoading] = useState(true);
+  const [roles, setRoles] = useState([]);
+
+  const fetchAdminData = async () => {
+    try {
+      if (!auth.accessToken || !auth.userId) {
+        throw new Error("Không có token hoặc userId để xác thực");
+      }
+      // Giải mã accessToken để lấy roles
+      const decoded = jwtDecode(auth.accessToken);
+      setRoles(decoded.roles || []);
+      console.log(decoded.roles);
+      const user = await fetchUserProfile(auth.userId, {
+        // Sử dụng auth.userId thay vì userId từ useParams
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      });
+      setAdminData(user);
+    } catch (error) {
+      setAdminError("Lỗi khi lấy thông tin người dùng");
+      console.error(error);
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  // Mảng vai trò ưu tiên
+  const adminRoles = ["Top Admin", "Admin", "Moderator"];
+  const normalizeRole = (role) =>
+    role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+
   // Dữ liệu cho biểu đồ
   const chartData = {
     labels: [
@@ -64,38 +102,56 @@ const AdminDashBoard = () => {
     },
   };
 
+  useEffect(
+    () => {
+      if (auth.userId) {
+        fetchAdminData();
+      } else {
+        setAdminError("Không có userId để lấy thông tin người quản trị");
+        setAdminLoading(false);
+      }
+    },
+    [auth.userId],
+    auth.accessToken
+  );
+
   return (
     <div className="bg-[#fafafa] min-h-screen w-full h-full">
       {/* Header */}
       <div className="header w-full bg-[#fafafa] border-b border-gray-200 flex justify-end items-center pr-5">
-        <img
-          alt="User avatar"
-          className="w-8 h-8 rounded-full"
-          height="32"
-          src="https://storage.googleapis.com/a1aa/image/2edf31e8-a62b-4d12-71fd-d2cf6866d5aa.jpg"
-          width="32"
-        />
+        <Avatar _id={adminData?._id} avatarUrl={adminData?.avatar} size={50} />
       </div>
 
       <div className="px-2 py-6 max-w-[1340px] mx-auto">
         <section className="bg-white w-full rounded-lg border border-gray-200 p-4 flex items-center gap-4 max-w-[1210px]">
-          <img
-            alt="User avatar with brown hair and glasses, wearing a dark shirt"
-            className="w-12 h-12 rounded-full"
-            height="48"
-            src="https://storage.googleapis.com/a1aa/image/2edf31e8-a62b-4d12-71fd-d2cf6866d5aa.jpg"
-            width="48"
+          <Avatar
+            _id={adminData?._id}
+            avatarUrl={adminData?.avatar}
+            size={50}
           />
           <div className="text-lg leading-tight">
             <p className="font-bold text-black flex items-center gap-1">
-              tkavinn03
+              {adminData?.username}
             </p>
             <p className="text-sm text-gray-700">
-              <span className="font-semibold pr-2">Top Admin</span>
-              <span>·</span>
-              <span className="font-semibold px-2">Admin</span>
-              <span>·</span>
-              <span className="font-semibold px-2">Moderator</span>
+              {roles.length > 0 ? (
+                roles.length === 1 ? (
+                  <span className="font-semibold px-2">{roles[0]}</span>
+                ) : (
+                  adminRoles
+                    .filter((role) =>
+                      roles.map(normalizeRole).includes(normalizeRole(role))
+                    )
+                    .map((role, index, filteredRoles) => (
+                      <React.Fragment key={index}>
+                        <span className="font-semibold px-2">{role}</span>
+                        {index < filteredRoles.length - 1 && <span>·</span>}
+                      </React.Fragment>
+                    ))
+                )
+              ) : (
+                <span className="font-semibold px-2">Không có vai trò</span>
+              )}
             </p>
           </div>
         </section>

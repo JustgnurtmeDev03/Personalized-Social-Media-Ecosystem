@@ -47,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.getLikedThreads = exports.toggleLike = exports.createThread = exports.getThread = void 0;
+exports.getLikedThreads = exports.toggleLike = exports.createThread = exports.getThread = exports.getTotalPosts = void 0;
 var Thread_1 = require("~/models/Thread");
 var User_1 = require("~/models/User");
 var Hashtag_1 = require("~/models/Hashtag");
@@ -295,6 +295,29 @@ var getLikedThreads = asyncHandler_1["default"](function (req, res, next) { retu
     });
 }); });
 exports.getLikedThreads = getLikedThreads;
+exports.getTotalPosts = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var totalPosts, error_2;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, threadService_1.PostService.getTotalPosts()];
+            case 1:
+                totalPosts = _a.sent();
+                res.status(httpStatus_1["default"].OK).json({
+                    totalPosts: totalPosts
+                });
+                return [3 /*break*/, 3];
+            case 2:
+                error_2 = _a.sent();
+                res
+                    .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
+                    .send({ error: "Failed to fetch totals" });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
 function generateRandomUsername() {
     var words = [
         "cool",

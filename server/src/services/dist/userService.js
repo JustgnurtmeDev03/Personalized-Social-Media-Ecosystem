@@ -88,6 +88,36 @@ var UserService = /** @class */ (function () {
             });
         });
     };
+    UserService.getTotalUsers = function () {
+        return __awaiter(this, void 0, Promise, function () {
+            var currentDate, sevenDaysAgo, currentUsers, previousUsers, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        currentDate = new Date();
+                        sevenDaysAgo = new Date(currentDate);
+                        sevenDaysAgo.setDate(currentDate.getDate() - 7);
+                        return [4 /*yield*/, User_1["default"].countDocuments()];
+                    case 1:
+                        currentUsers = _a.sent();
+                        return [4 /*yield*/, User_1["default"].countDocuments({
+                                createdAt: { $lt: sevenDaysAgo }
+                            })];
+                    case 2:
+                        previousUsers = _a.sent();
+                        return [2 /*return*/, { current: currentUsers, previous: previousUsers }];
+                    case 3:
+                        error_2 = _a.sent();
+                        logger_1["default"].error("Get total users service error: " + error_2.message, {
+                            error: error_2
+                        });
+                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
     return UserService;
 }());
 exports.UserService = UserService;

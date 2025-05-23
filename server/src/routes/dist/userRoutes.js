@@ -11,6 +11,7 @@ var router = express_1["default"].Router();
 router.get("/profile", auth_1["default"], userController_1.getProfile);
 router.get("/profile/:_id", auth_1["default"], validation_1.validateObjectId("_id"), userController_1.getProfileByID);
 router.put("/update-profile", uploadMiddleware_1["default"].single("avatar"), auth_1["default"], userController_1.updateUserProfile);
+router.get("/total-users", auth_1["default"], userController_1.getTotalUsers);
 router.post("/:_id/follow", auth_1["default"], validation_1.validateObjectId("_id"), followController_1.followUser);
 router["delete"]("/:_id/unfollow", auth_1["default"], validation_1.validateObjectId("_id"), followController_1.unfollowUser);
 router.get("/:_id/followers", auth_1["default"], validation_1.validateObjectId("_id"), followController_1.getFollowers);

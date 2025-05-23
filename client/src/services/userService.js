@@ -44,6 +44,22 @@ export const updateUserProfile = async (accessToken, newBio, fileInput) => {
   }
 };
 
+export const fetchTotalUsers = async (accessToken) => {
+  try {
+    const res = await axios.get(`${API_URL}/total-users`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.totalUsers) {
+      return res.totalUsers;
+    } else {
+      throw new Error("Invalid response format");
+    }
+  } catch (error) {
+    console.error("Error following user:", error);
+    throw error;
+  }
+};
+
 export const fetchFollowers = async (userId, options) => {
   try {
     const res = await axios.get(`${API_URL}/${userId}/followers`, options);

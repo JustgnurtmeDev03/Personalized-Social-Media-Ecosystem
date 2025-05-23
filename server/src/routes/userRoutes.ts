@@ -8,6 +8,7 @@ import {
 import {
   getProfile,
   getProfileByID,
+  getTotalUsers,
   updateUserProfile,
 } from "~/controllers/userController";
 import authMiddleware from "~/middlewares/auth";
@@ -30,6 +31,8 @@ router.put(
   authMiddleware,
   updateUserProfile
 );
+
+router.get("/total-users", authMiddleware, getTotalUsers);
 
 router.post(
   "/:_id/follow",

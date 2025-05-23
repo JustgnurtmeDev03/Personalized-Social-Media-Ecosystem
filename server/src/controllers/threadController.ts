@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from "uuid";
 import Like from "~/models/Like";
 import cloudinary from "~/config/cloudinary";
 import { CloudinaryUploadResponse } from "~/models/cloudinary";
-import { processPostContent } from "~/services/threadService";
+import { PostService, processPostContent } from "~/services/threadService";
 import HTTP_STATUS from "~/constants/httpStatus";
 
 const createThread = asyncHandler(
@@ -210,6 +210,26 @@ const getLikedThreads = asyncHandler(
     const likedThreads = await Like.find({ user: userId }).populate("threadId");
     const likedThreadData = likedThreads.map((like) => like.threadId) || [];
     res.status(HTTP_STATUS.OK).json(likedThreadData);
+  }
+);
+
+export const getTotalPosts = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const totalPosts = await PostService.getTotalPosts();
+
+      res.status(HTTP_STATUS.OK).json({
+        totalPosts,
+      });
+    } catch (error: any) {
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .send({ error: "Failed to fetch totals" });
+    }
   }
 );
 
