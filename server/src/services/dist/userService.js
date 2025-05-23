@@ -64,9 +64,7 @@ var UserService = /** @class */ (function () {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
                         return [4 /*yield*/, User_1["default"].findById(_id)
-                                .select("name username avatar bio link followers following createdAt")
-                                .populate("followers", "username avatar")
-                                .populate("following", "username avatar")
+                                .select("name username avatar bio link created_at")
                                 .lean()];
                     case 1:
                         user = _a.sent();

@@ -10,9 +10,8 @@ export class UserService {
   ): Promise<{ user: Partial<IUser> }> {
     try {
       const user = await User.findById(_id)
-        .select("name username avatar bio link followers following createdAt")
-        .populate("followers", "username avatar")
-        .populate("following", "username avatar")
+        .select("name username avatar bio link created_at")
+
         .lean();
       if (!user) {
         throw new HttpError(

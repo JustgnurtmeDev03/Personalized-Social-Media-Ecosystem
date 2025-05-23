@@ -16,6 +16,8 @@ export default function FollowersModal({ isOpen, onClose, user }) {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("followers");
 
+  const isOwnProfile = auth.userId === user._id;
+
   const handleTabChange = (tab) => {
     setActiveTab(tab);
   };
@@ -28,10 +30,10 @@ export default function FollowersModal({ isOpen, onClose, user }) {
     setLoadingFollowing(true);
     try {
       const [followers, following] = await Promise.all([
-        fetchFollowers(auth.userId, {
+        fetchFollowers(user._id, {
           headers: { Authorization: `Bearer ${auth.accessToken}` },
         }),
-        fetchFollowing(auth.userId, {
+        fetchFollowing(user._id, {
           headers: { Authorization: `Bearer ${auth.accessToken}` },
         }),
       ]);
@@ -50,37 +52,35 @@ export default function FollowersModal({ isOpen, onClose, user }) {
     fetchData();
   }, [fetchData]);
 
-  const handleFollowBack = async (followeeId) => {
+  const handleFollow = async (targetUserId) => {
     try {
-      const followerToFollow = followersData.find((f) => f._id === followeeId);
-      if (followerToFollow) {
-        setFollowingData((prev) => [...prev, followerToFollow]);
-        setFollowersData((prev) =>
-          prev.map((f) => (f._id === followeeId ? { ...f, isMutual: true } : f))
-        );
-      }
-      await followUser(auth.userId, followeeId, {
+      await followUser(auth.userId, targetUserId, {
         headers: { Authorization: `Bearer ${auth.accessToken}` },
       });
-      await fetchData(); // Lấy lại dữ liệu để đồng bộ với server
+      await fetchData(); // Làm mới dữ liệu
     } catch (error) {
-      console.error("Lỗi khi follow back:", error);
-      setError("Không thể theo dõi lại người dùng");
+      console.error("Lỗi khi theo dõi:", error);
+      setError("Không thể theo dõi người dùng");
     }
   };
 
   const handleDeleteFollower = async (followerId) => {
+    // Lưu lại danh sách follower hiện tại để khôi phục nếu API thất bại
+    const previousFollowers = followersData;
+
+    // Cập nhật giao diện ngay lập tức bằng cách lọc bỏ follower vừa xóa
+    setFollowersData((prev) => prev.filter((f) => f._id !== followerId));
+
     try {
-      await unfollowUser(auth.userId, followerId, {
+      // Giả định có API `removeFollower` để xóa người theo dõi bạn
+      await removeFollower(followerId, {
         headers: { Authorization: `Bearer ${auth.accessToken}` },
       });
-      const updatedFollowers = await fetchFollowers(user._id, {
-        headers: { Authorization: `Bearer ${auth.accessToken}` },
-      });
-      setFollowersData(updatedFollowers);
     } catch (error) {
+      // Nếu lỗi, khôi phục danh sách cũ và hiển thị thông báo
       console.error("Lỗi khi xóa follower:", error);
       setError("Không thể xóa người theo dõi");
+      setFollowersData(previousFollowers);
     }
   };
 
@@ -96,10 +96,13 @@ export default function FollowersModal({ isOpen, onClose, user }) {
     }
   };
 
+  const isFollowingUser = (targetUserId) => {
+    return followingData.some((u) => u._id === targetUserId);
+  };
+
   useEffect(() => {
     if (!isOpen) {
       setFollowersData([]);
-
       setError(null);
     }
   }, [isOpen]);
@@ -183,19 +186,37 @@ export default function FollowersModal({ isOpen, onClose, user }) {
                       <div className="text-gray-500">{follower.name}</div>
                     </div>
                   </div>
-                  {follower.isMutual ? (
+                  {isOwnProfile ? (
+                    isFollowingUser(follower._id) ? (
+                      <button
+                        className="bg-[#EFEFEF] text-black font-medium px-4 py-2 rounded-full"
+                        onClick={() => handleDeleteFollower(follower._id)}
+                      >
+                        Xóa
+                      </button>
+                    ) : (
+                      <button
+                        className="bg-[#EFEFEF] text-black font-medium px-4 py-2 rounded-full"
+                        onClick={() => handleFollow(follower._id)}
+                      >
+                        Follow lại
+                      </button>
+                    )
+                  ) : follower._id === auth.userId ? (
+                    ""
+                  ) : isFollowingUser(follower._id) ? (
                     <button
-                      className="bg-[#EFEFEF] text-black font-medium px-4 py-2 rounded-full"
-                      onClick={() => handleDeleteFollower(follower._id)}
+                      className="bg-black text-white font-medium px-4 py-2 rounded-full"
+                      onClick={() => handleUnfollow(follower._id)}
                     >
-                      Xoá
+                      Hủy theo dõi
                     </button>
                   ) : (
                     <button
                       className="bg-[#EFEFEF] text-black font-medium px-4 py-2 rounded-full"
-                      onClick={() => handleFollowBack(follower._id)}
+                      onClick={() => handleFollow(follower._id)}
                     >
-                      Follow lại
+                      Follow
                     </button>
                   )}
                 </div>
@@ -229,12 +250,30 @@ export default function FollowersModal({ isOpen, onClose, user }) {
                     <div className="text-gray-500">{following.name}</div>
                   </div>
                 </div>
-                <button
-                  className="bg-black text-white font-medium px-4 py-2 rounded-full"
-                  onClick={() => handleUnfollow(following._id)}
-                >
-                  Hủy theo dõi
-                </button>
+                {isOwnProfile ? (
+                  <button
+                    className="bg-black text-white font-medium px-4 py-2 rounded-full"
+                    onClick={() => handleUnfollow(following._id)}
+                  >
+                    Hủy theo dõi
+                  </button>
+                ) : following._id === auth.userId ? (
+                  ""
+                ) : isFollowingUser(following._id) ? (
+                  <button
+                    className="bg-black text-white font-medium px-4 py-2 rounded-full"
+                    onClick={() => handleUnfollow(following._id)}
+                  >
+                    Hủy theo dõi
+                  </button>
+                ) : (
+                  <button
+                    className="bg-[#EFEFEF] text-black font-medium px-4 py-2 rounded-full"
+                    onClick={() => handleFollow(following._id)}
+                  >
+                    Follow
+                  </button>
+                )}
               </div>
             ))
           ) : (

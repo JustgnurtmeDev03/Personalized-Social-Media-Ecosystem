@@ -5,6 +5,8 @@ import {
   fetchUserProfile,
   fetchFollowers,
   fetchFollowing,
+  unfollowUser,
+  followUser,
 } from "../../services/userService";
 import "../../styles/Profile.css";
 import Sidebar from "../../components/Sidebar/sidebar";
@@ -29,6 +31,7 @@ export default function Profile() {
   const { userId } = useParams();
   const { auth } = useAuth();
   const isOwnProfile = String(auth.userId) === String(userId);
+  const [isFollowing, setIsFollowing] = useState(false);
 
   // State để quản lý danh sách bài viết
   const [posts, setPosts] = useState([]);
@@ -41,7 +44,7 @@ export default function Profile() {
     }
   }, [auth.accessToken, navigate]);
 
-  // Truy vấn để lấy thông tin user profile
+  // FETCH USER PROFILE
   const {
     data: user,
     isLoading: isUserLoading,
@@ -63,7 +66,7 @@ export default function Profile() {
     enabled: !!auth.accessToken && !!userId,
   });
 
-  // Truy vấn để lấy danh sách followers
+  // FETCH FOLLOWERS LIST
   const {
     data: followersData,
     isLoading: isFollowersLoading,
@@ -83,7 +86,7 @@ export default function Profile() {
     enabled: !!auth.accessToken && !!userId,
   });
 
-  // Truy vấn để lấy danh sách following
+  // FETCH FOLLOWING LIST
   const {
     data: followingData,
     isLoading: isFollowingLoading,
@@ -103,7 +106,32 @@ export default function Profile() {
     enabled: !!auth.accessToken && !!userId,
   });
 
-  // Truy vấn để lấy danh sách bài viết của người dùng
+  useEffect(() => {
+    if (!isOwnProfile && followingData && userData) {
+      const alreadyFollowed = followingData.some((u) => u._id === userData._id);
+      setIsFollowing(alreadyFollowed);
+    }
+  }, [followingData, userData, isOwnProfile]);
+
+  const handleToggleFollow = async () => {
+    try {
+      if (isFollowing) {
+        await unfollowUser(auth.userId, userData._id, {
+          headers: { Authorization: `Bearer ${auth.accessToken}` },
+        });
+        setIsFollowing(false);
+      } else {
+        await followUser(auth.userId, userData._id, {
+          headers: { Authorization: `Bearer ${auth.accessToken}` },
+        });
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error("Error toggling follow state:", error);
+    }
+  };
+
+  // FETCH POSTS OF USER
   const {
     data: postsData,
     isLoading: isPostsLoading,
@@ -122,6 +150,7 @@ export default function Profile() {
     enabled: !!auth.accessToken && !!userId,
   });
 
+  // FETCH LIKED POSTS OF USER
   const {
     data: likedPosts,
     isLoading: isLikedLoading,
@@ -139,7 +168,7 @@ export default function Profile() {
     enabled: !!auth.accessToken,
   });
 
-  // Đồng bộ posts với isLiked
+  // SYNC WITH ISLIKED
   useEffect(() => {
     if (postsData && likedPosts) {
       const enrichedPosts = postsData.map((post) => ({
@@ -150,9 +179,9 @@ export default function Profile() {
     }
   }, [postsData, likedPosts]);
 
-  // Hàm xử lý like/unlike bài viết
+  // FUNC TOGGLE LIKE & UNLIKE
   const handleToggleLike = async (postId) => {
-    console.log("Toggling like for postId:", postId); // Debug
+    console.log("Toggling like for postId:", postId);
     try {
       const authToken = auth.accessToken;
       const response = await fetch(`${API_URL}/like`, {
@@ -242,8 +271,16 @@ export default function Profile() {
   const isBioUpdated = userData.bio && userData.bio.trim() !== "";
   const incompleteCount = (!isBioUpdated ? 1 : 0) + (!isAvatarUpdated ? 1 : 0);
 
+  const formatJoinedDate = (date) => {
+    const d = new Date(date);
+    const month = d.getMonth() + 1;
+    const year = d.getFullYear();
+    return `Đã tham gia ${month}/${year}`;
+  };
+
   // Sử dụng followersData thay vì userData.followers
   const followers = followersData || [];
+  const following = followingData || [];
   const followerAvatars = followers
     .slice(0, 2)
     .map((follower) => (
@@ -256,7 +293,6 @@ export default function Profile() {
     ));
 
   // Sử dụng followingData thay vì userData.following
-  const following = followingData || [];
 
   return (
     <div className="profile-main">
@@ -304,15 +340,15 @@ export default function Profile() {
                     <path d="M7 4V3h2v1h6V3h2v1h1.5C19.89 4 21 5.12 21 6.5v12c0 1.38-1.11 2.5-2.5 2.5h-13C4.12 21 3 19.88 3 18.5v-12C3 5.12 4.12 4 5.5 4H7zm0 2H5.5c-.27 0-.5.22-.5.5v12c0 .28.23.5.5.5h13c.28 0 .5-.22.5-.5v-12c0-.28-.22-.5-.5-.5H17v1h-2V6H9v1H7V6zm0 6h2v-2H7v2zm0 4h2v-2H7v2zm4-4h2v-2h-2v2zm0 4h2v-2h-2v2zm4-4h2v-2h-2v2z"></path>
                   </g>
                 </svg>
-                <span>Đã tham gia 11/2023</span>
+                <span>{formatJoinedDate(userData.created_at)}</span>
               </div>
             </div>
             <FollowersModal
               isOpen={isFollowersOpen}
               onClose={() => setFollowersIsOpen(false)}
               user={user || {}}
-              followers={followers}
-              following={following}
+              followers={followersData}
+              following={followingData}
             />
             {isOwnProfile ? (
               <div>
@@ -325,8 +361,15 @@ export default function Profile() {
               </div>
             ) : (
               <div className="flex space-x-2 justify-center pt-5">
-                <button className="w-[300px] follow-button bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600">
-                  Theo dõi
+                <button
+                  onClick={handleToggleFollow}
+                  className={`w-[300px] follow-button px-4 py-2 rounded-full font-medium transition-colors duration-200 ${
+                    isFollowing
+                      ? "bg-gray-300 text-black hover:bg-gray-400"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                  }`}
+                >
+                  {isFollowing ? "Đang theo dõi" : "Theo dõi"}
                 </button>
                 <button className="w-[300px] message-button bg-gray-200 text-black px-4 py-2 rounded-full hover:bg-gray-300">
                   Nhắn tin

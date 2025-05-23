@@ -4677,3 +4677,69 @@ Use mongoose.model(name, schema)
 2025-05-23T09:43:36.269Z [ERROR]: ID is invalid
 2025-05-23T09:48:43.343Z [ERROR]: ID is invalid
 2025-05-23T09:49:03.265Z [ERROR]: ID is invalid
+2025-05-23T13:36:39.518Z [ERROR]: Already following
+2025-05-23T13:37:44.405Z [ERROR]: Already following
+2025-05-23T13:37:50.138Z [ERROR]: Already following
+2025-05-23T13:58:19.329Z [ERROR]: Already following
+2025-05-23T14:10:40.121Z [ERROR]: ID is invalid
+2025-05-23T14:41:30.818Z [ERROR]: ID is invalid
+2025-05-23T14:41:33.101Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:41:35.246Z [ERROR]: Not following
+2025-05-23T14:41:40.842Z [ERROR]: Not following
+2025-05-23T14:42:07.371Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:42:08.700Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:42:38.241Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:42:39.137Z [ERROR]: You can't follow yourself
+2025-05-23T14:42:48.667Z [ERROR]: You can't follow yourself
+2025-05-23T14:42:51.093Z [ERROR]: ID is invalid
+2025-05-23T14:42:53.742Z [ERROR]: You can't follow yourself
+2025-05-23T14:44:03.118Z [ERROR]: You can't follow yourself
+2025-05-23T14:45:29.403Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:45:43.060Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:47:41.574Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:47:43.111Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:47:45.861Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:47:46.803Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:48:15.405Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:48:30.777Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:48:41.869Z [ERROR]: You can't follow yourself
+2025-05-23T14:48:43.399Z [ERROR]: You can't follow yourself
+2025-05-23T14:48:44.248Z [ERROR]: You can't follow yourself
+2025-05-23T14:48:44.758Z [ERROR]: You can't follow yourself
+2025-05-23T14:48:48.336Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:48:49.369Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:48:51.929Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:48:52.869Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:49:02.484Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:49:03.782Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:50:02.962Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:50:07.044Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:50:10.162Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:50:12.791Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:50:59.803Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:51:05.260Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:51:24.552Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:51:34.684Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:51:59.493Z [ERROR]: You can't follow yourself
+2025-05-23T14:52:00.856Z [ERROR]: You can't follow yourself
+2025-05-23T14:52:01.247Z [ERROR]: You can't follow yourself
+2025-05-23T14:52:04.216Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:52:06.164Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:52:07.526Z [ERROR]: You can't follow yourself
+2025-05-23T14:52:13.338Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:52:20.426Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:54:37.215Z [ERROR]: You can't follow yourself
+2025-05-23T14:54:38.164Z [ERROR]: You can't follow yourself
+2025-05-23T14:54:38.639Z [ERROR]: You can't follow yourself
+2025-05-23T14:54:38.822Z [ERROR]: You can't follow yourself
+2025-05-23T14:54:39.007Z [ERROR]: You can't follow yourself
+2025-05-23T14:54:39.163Z [ERROR]: You can't follow yourself
+2025-05-23T14:54:39.315Z [ERROR]: You can't follow yourself
+2025-05-23T14:56:15.323Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:56:16.867Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T14:58:42.425Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T14:58:56.630Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T15:01:29.588Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T15:01:30.978Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
+2025-05-23T15:01:36.387Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 681c376158ac95ae022b4c4a
+2025-05-23T15:01:42.382Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 681c376158ac95ae022b4c4a
