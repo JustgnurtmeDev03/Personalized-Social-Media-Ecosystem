@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchUserProfile } from "../../services/userService";
+import {
+  fetchUserProfile,
+  fetchFollowers,
+  fetchFollowing,
+} from "../../services/userService";
 import "../../styles/Profile.css";
 import Sidebar from "../../components/Sidebar/sidebar";
 import EditProfileModal from "./EditProfile";
@@ -11,6 +15,9 @@ import { useModal } from "../../providers/ModalContext";
 import Avatar, { getDefaultAvatar } from "../../assets/Avatar";
 import PostModal from "../../components/Post/PostModal";
 import { useAuth } from "../../providers/AuthContext";
+import { fetchUserPosts } from "../../services/threadService";
+import PostItem from "../../components/Post/PostItem"; // Import PostItem
+import { API_URL } from "../../services/threadService"; // Import API_URL
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -18,17 +25,28 @@ export default function Profile() {
   const [isFollowersOpen, setFollowersIsOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [userData, setUserData] = useState(null);
-  const [editSection, setEditSection] = useState(null); // NEW: Xác định phần nào được mở trong modal
+  const [editSection, setEditSection] = useState(null);
   const { userId } = useParams();
   const { auth } = useAuth();
   const isOwnProfile = String(auth.userId) === String(userId);
 
-  // ======================== LOGIC ===========================
+  // State để quản lý danh sách bài viết
+  const [posts, setPosts] = useState([]);
+
+  // Kiểm tra auth.accessToken và chuyển hướng nếu không có
+  useEffect(() => {
+    if (!auth.accessToken) {
+      console.warn("No access token found. Redirecting to login...");
+      navigate("/login");
+    }
+  }, [auth.accessToken, navigate]);
+
+  // Truy vấn để lấy thông tin user profile
   const {
     data: user,
-    isLoading,
-    isError,
-    isFetching,
+    isLoading: isUserLoading,
+    isError: isUserError,
+    isFetching: isUserFetching,
   } = useQuery({
     queryKey: ["userProfile", auth.accessToken, userId],
     queryFn: async () => {
@@ -38,60 +56,194 @@ export default function Profile() {
       const profile = await fetchUserProfile(userId, {
         headers: { Authorization: `Bearer ${auth.accessToken}` },
       });
-      setUserData(profile); // Gán dữ liệu user vào state mới
-      console.log("Fetched Profile:", profile); // Log profile
+      setUserData(profile);
+      console.log("Fetched Profile:", profile);
       return profile;
     },
     enabled: !!auth.accessToken && !!userId,
   });
-  if (isLoading || isFetching) return <Loading></Loading>;
-  if (isError) return <div>Error loading user profile</div>;
+
+  // Truy vấn để lấy danh sách followers
+  const {
+    data: followersData,
+    isLoading: isFollowersLoading,
+    isError: isFollowersError,
+  } = useQuery({
+    queryKey: ["followers", auth.accessToken, userId],
+    queryFn: async () => {
+      if (!auth.accessToken || !userId)
+        throw new Error("No access token or userId");
+
+      const followers = await fetchFollowers(userId, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      });
+      console.log("Fetched Followers:", followers);
+      return followers;
+    },
+    enabled: !!auth.accessToken && !!userId,
+  });
+
+  // Truy vấn để lấy danh sách following
+  const {
+    data: followingData,
+    isLoading: isFollowingLoading,
+    isError: isFollowingError,
+  } = useQuery({
+    queryKey: ["following", auth.accessToken, userId],
+    queryFn: async () => {
+      if (!auth.accessToken || !userId)
+        throw new Error("No access token or userId");
+
+      const following = await fetchFollowing(userId, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      });
+      console.log("Fetched Following:", following);
+      return following;
+    },
+    enabled: !!auth.accessToken && !!userId,
+  });
+
+  // Truy vấn để lấy danh sách bài viết của người dùng
+  const {
+    data: postsData,
+    isLoading: isPostsLoading,
+    isError: isPostsError,
+    error: postsError,
+  } = useQuery({
+    queryKey: ["userPosts", auth.accessToken, userId],
+    queryFn: async () => {
+      if (!auth.accessToken || !userId)
+        throw new Error("No access token or userId");
+
+      const posts = await fetchUserPosts(userId, auth.accessToken);
+      console.log("Fetched Posts:", posts);
+      return posts;
+    },
+    enabled: !!auth.accessToken && !!userId,
+  });
+
+  const {
+    data: likedPosts,
+    isLoading: isLikedLoading,
+    isError: isLikedError,
+  } = useQuery({
+    queryKey: ["likedPosts", auth.accessToken],
+    queryFn: async () => {
+      if (!auth.accessToken) throw new Error("No access token");
+      const response = await fetch(`${API_URL}/posts/liked`, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      });
+      if (!response.ok) throw new Error("Failed to fetch liked posts");
+      return response.json();
+    },
+    enabled: !!auth.accessToken,
+  });
+
+  // Đồng bộ posts với isLiked
+  useEffect(() => {
+    if (postsData && likedPosts) {
+      const enrichedPosts = postsData.map((post) => ({
+        ...post,
+        isLiked: likedPosts.some((likedPost) => likedPost._id === post._id),
+      }));
+      setPosts(enrichedPosts);
+    }
+  }, [postsData, likedPosts]);
+
+  // Hàm xử lý like/unlike bài viết
+  const handleToggleLike = async (postId) => {
+    console.log("Toggling like for postId:", postId); // Debug
+    try {
+      const authToken = auth.accessToken;
+      const response = await fetch(`${API_URL}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ threadId: postId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data); // Debug
+      const { isLiked, likesCount } = data;
+
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post._id === postId ? { ...post, isLiked, likesCount } : post
+        )
+      );
+    } catch (err) {
+      console.error("Error toggling like:", err.message);
+    }
+  };
+
+  // Xử lý trạng thái loading và error
+  if (
+    isUserLoading ||
+    isUserFetching ||
+    isFollowersLoading ||
+    isFollowingLoading ||
+    isPostsLoading
+  ) {
+    return <Loading />;
+  }
+
+  if (isUserError || isFollowersError || isFollowingError) {
+    return <div>Error loading profile or follow data</div>;
+  }
+
+  if (isPostsError) {
+    if (postsError.message === "Authentication failed. Please log in again.") {
+      return (
+        <div>
+          <p>Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.</p>
+          <button
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+            onClick={() => navigate("/login")}
+          >
+            Đăng nhập
+          </button>
+        </div>
+      );
+    }
+    return <div>Error loading posts: {postsError.message}</div>;
+  }
+
   if (!user) {
     return <div>No user data available</div>;
   }
 
-  const handleOpenModal = () => {
-    setIsPostModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsPostModalOpen(false);
-  };
-
+  const handleOpenModal = () => setIsPostModalOpen(true);
+  const handleCloseModal = () => setIsPostModalOpen(false);
   const handleEditProfileClick = () => {
     setEditSection(null);
     setIsProfileModalOpen(true);
   };
-
-  const handleProfileCloseModal = () => {
-    setIsProfileModalOpen(false);
-  };
-
-  // Khi bấm "Thêm Bio"/ "Thêm Avatar" - chức năng phụ "Thêm" tiểu sử ngoài chức năng chính "chỉnh sửa hồ sơ"
+  const handleProfileCloseModal = () => setIsProfileModalOpen(false);
   const handleEditBioClick = () => {
-    setEditSection("bio"); // Mở modal và focus vào bio
+    setEditSection("bio");
     setIsProfileModalOpen(true);
   };
-
   const handleEditAvatarClick = () => {
     setEditSection("avatar");
     setIsProfileModalOpen(true);
   };
 
-  // Xác định trạng thái cập nhật
   const defaultAvatarUrl = getDefaultAvatar(userData._id);
   const isAvatarUpdated =
     userData.avatar &&
     userData.avatar.trim() !== "" &&
     userData.avatar !== defaultAvatarUrl;
-
-  const isBioUpdated = userData.bio && userData.bio.trim() != "";
-
-  // Tính số lượng phần chưa hoàn thành
+  const isBioUpdated = userData.bio && userData.bio.trim() !== "";
   const incompleteCount = (!isBioUpdated ? 1 : 0) + (!isAvatarUpdated ? 1 : 0);
 
-  //Lấy danh sách avatar của người theo dõi
-  const followers = userData.followers || [];
+  // Sử dụng followersData thay vì userData.followers
+  const followers = followersData || [];
   const followerAvatars = followers
     .slice(0, 2)
     .map((follower) => (
@@ -103,7 +255,8 @@ export default function Profile() {
       />
     ));
 
-  // ======================== RENDER ===========================
+  // Sử dụng followingData thay vì userData.following
+  const following = followingData || [];
 
   return (
     <div className="profile-main">
@@ -138,9 +291,7 @@ export default function Profile() {
             <div className="minimum-info">
               <div
                 className="followers"
-                onClick={() => {
-                  setFollowersIsOpen(true);
-                }}
+                onClick={() => setFollowersIsOpen(true)}
               >
                 <div className="followers-user-avatar">{followerAvatars}</div>
                 <div className="quantity-followers">
@@ -160,8 +311,8 @@ export default function Profile() {
               isOpen={isFollowersOpen}
               onClose={() => setFollowersIsOpen(false)}
               user={user || {}}
-              followers={userData.followers || []}
-              following={userData.following || []}
+              followers={followers}
+              following={following}
             />
             {isOwnProfile ? (
               <div>
@@ -173,11 +324,11 @@ export default function Profile() {
                 </button>
               </div>
             ) : (
-              <div className="flex space-x-2">
-                <button className="follow-button bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600">
+              <div className="flex space-x-2 justify-center pt-5">
+                <button className="w-[300px] follow-button bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600">
                   Theo dõi
                 </button>
-                <button className="message-button bg-gray-200 text-black px-4 py-2 rounded-full hover:bg-gray-300">
+                <button className="w-[300px] message-button bg-gray-200 text-black px-4 py-2 rounded-full hover:bg-gray-300">
                   Nhắn tin
                 </button>
               </div>
@@ -189,7 +340,6 @@ export default function Profile() {
               setUserData={setUserData}
               editSection={editSection}
             />
-            {/* Tách profile-options ra khỏi detail-profile */}
             <div className="profile-options">
               <div className="pro-options-item border-active">
                 <div className="item-text">Chủ đề</div>
@@ -201,135 +351,151 @@ export default function Profile() {
                 <div className="item-text">Đăng lại</div>
               </div>
             </div>
-            {/* Chỉ hiển thị detail-profile khi isOwnProfile là true */}
             {isOwnProfile && (
               <div className="detail-profile">
-                <div className="flex items-center border-b pb-4 my-4">
-                  <Avatar
-                    className="cursor-pointer"
-                    _id={userData._id}
-                    avatarUrl={userData.avatar || ""}
-                    size={40}
-                  />
-                  <div
-                    className="flex-grow bg-transparent text-gray-500 focus:outline-none ml-2 w-20"
-                    onClick={handleOpenModal}
-                  >
-                    <span>Có điều gì mới không?</span>
+                {/* Ẩn phần "Có điều gì mới không?" nếu có bài viết */}
+                {posts.length === 0 && (
+                  <div className="flex items-center border-b pb-4 my-4">
+                    <Avatar
+                      className="cursor-pointer"
+                      _id={userData._id}
+                      avatarUrl={userData.avatar || ""}
+                      size={40}
+                    />
+                    <div
+                      className="flex-grow bg-transparent text-gray-500 focus:outline-none ml-2 w-20"
+                      onClick={handleOpenModal}
+                    >
+                      <span>Có điều gì mới không?</span>
+                    </div>
+                    <button
+                      className="ml-4 px-4 py-2 border rounded-full text-black"
+                      onClick={handleOpenModal}
+                    >
+                      Đăng
+                    </button>
                   </div>
-                  <button
-                    className="ml-4 px-4 py-2 border rounded-full text-black"
-                    onClick={handleOpenModal}
-                  >
-                    Đăng
-                  </button>
-                </div>
+                )}
                 <PostModal
                   isOpen={isPostModalOpen}
                   onClose={handleCloseModal}
                 />
                 <div className="profile-info-detail">
-                  {incompleteCount === 0 ? (
-                    <div className="flex justify-center py-6">
-                      <button
-                        className="px-6 py-3 border rounded-full text-black font-medium"
-                        onClick={handleOpenModal}
-                      >
-                        Hãy bắt đầu với một bài viết
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="finish-profile">
-                        <span className="title-finish">
-                          Hoàn thành hồ sơ của bạn
-                        </span>
-                        <span className="unfinished">
-                          chỉ còn {incompleteCount}
-                        </span>
+                  {posts.length === 0 ? (
+                    incompleteCount === 0 ? (
+                      <div className="flex justify-center py-6">
+                        <button
+                          className="px-6 py-3 border rounded-full text-black font-medium"
+                          onClick={handleOpenModal}
+                        >
+                          Hãy bắt đầu với một bài viết
+                        </button>
                       </div>
-                      <div className="info-profile">
-                        <div className="info-item">
-                          <div className="icon-item">
-                            <svg aria-label="" role="img" viewBox="0 0 24 24">
-                              <title></title>
-                              <path
-                                d="M6.17225,22H2V17.82775L17.29142,2.53634a1.83117,1.83117,0,0,1,2.58967,0l1.58257,1.58257a1.83117,1.83117,0,0,1,0,2.58967Z"
+                    ) : (
+                      <div>
+                        <div className="finish-profile">
+                          <span className="title-finish">
+                            Hoàn thành hồ sơ của bạn
+                          </span>
+                          <span className="unfinished">
+                            chỉ còn {incompleteCount}
+                          </span>
+                        </div>
+                        <div className="info-profile">
+                          <div className="info-item">
+                            <div className="icon-item">
+                              <svg aria-label="" role="img" viewBox="0 0 24 24">
+                                <title></title>
+                                <path
+                                  d="M6.17225,22H2V17.82775L17.29142,2.53634a1.83117,1.83117,0,0,1,2.58967,0l1.58257,1.58257a1.83117,1.83117,0,0,1,0,2.58967Z"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.25"
+                                ></path>
+                                <line
+                                  x1="15.01842"
+                                  x2="19.19067"
+                                  y1="4.80933"
+                                  y2="8.98158"
+                                ></line>
+                              </svg>
+                            </div>
+                            <div className="content-item">Thêm bio</div>
+                            <div className="guess-item">
+                              Giới thiệu bản thân và cho mọi người biết sở thích
+                              của bạn.
+                            </div>
+                            <div
+                              className={`btn-item ${
+                                isBioUpdated ? "" : "unactive"
+                              }`}
+                              onClick={
+                                isBioUpdated ? undefined : handleEditBioClick
+                              }
+                            >
+                              <button className="btn-text">
+                                {userData.bio ? "Đã hoàn thành" : "Thêm"}
+                              </button>
+                            </div>
+                          </div>
+                          <div className="info-item">
+                            <div className="icon-item">
+                              <svg
+                                aria-label=""
+                                role="img"
+                                viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="1.25"
-                              ></path>
-                              <line
-                                x1="15.01842"
-                                x2="19.19067"
-                                y1="4.80933"
-                                y2="8.98158"
-                              ></line>
-                            </svg>
-                          </div>
-                          <div className="content-item">Thêm bio</div>
-                          <div className="guess-item">
-                            Giới thiệu bản thân và cho mọi người biết sở thích
-                            của bạn.
-                          </div>
-                          <div
-                            className={`btn-item ${
-                              isBioUpdated ? "" : "unactive"
-                            } `}
-                            onClick={
-                              isBioUpdated ? undefined : handleEditBioClick
-                            }
-                          >
-                            <button className="btn-text">
-                              {userData.bio ? "Đã hoàn thành" : "Thêm"}
-                            </button>
-                          </div>
-                        </div>
-                        <div className="info-item">
-                          <div className="icon-item">
-                            <svg
-                              aria-label=""
-                              role="img"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.25"
+                              >
+                                <title></title>
+                                <polyline points="21.648 5.352 9.002 17.998 2.358 11.358"></polyline>
+                              </svg>
+                            </div>
+                            <div className="content-item">
+                              Thêm ảnh cho hồ sơ
+                            </div>
+                            <div className="guess-item">
+                              Giúp mọi người dễ dàng nhận ra bạn hơn.
+                            </div>
+                            <div
+                              className={`btn-item ${
+                                isAvatarUpdated ? "" : "unactive"
+                              }`}
+                              onClick={
+                                isAvatarUpdated
+                                  ? undefined
+                                  : handleEditAvatarClick
+                              }
                             >
-                              <title></title>
-                              <polyline points="21.648 5.352 9.002 17.998 2.358 11.358"></polyline>
-                            </svg>
+                              <button
+                                className="btn-text"
+                                disabled={isAvatarUpdated}
+                              >
+                                {isAvatarUpdated ? "Đã hoàn thành" : "Thêm"}
+                              </button>
+                            </div>
                           </div>
-                          <div className="content-item">Thêm ảnh cho hồ sơ</div>
-                          <div className="guess-item">
-                            Giúp mọi người dễ dàng nhận ra bạn hơn.
-                          </div>
-                          <div
-                            className={`btn-item ${
-                              isAvatarUpdated ? "" : "unactive"
-                            } `}
-                            onClick={
-                              isAvatarUpdated
-                                ? undefined
-                                : handleEditAvatarClick
-                            }
-                          >
-                            <button
-                              className="btn-text"
-                              disabled={isAvatarUpdated}
-                            >
-                              {isAvatarUpdated ? "Đã hoàn thành" : "Thêm"}
-                            </button>
-                          </div>
+                          <div className="info-item"></div>
+                          <div className="info-item"></div>
                         </div>
-                        <div className="info-item"></div>
-                        <div className="info-item"></div>
                       </div>
+                    )
+                  ) : (
+                    <div className="posts-list w-full">
+                      {posts.map((post) => (
+                        <PostItem
+                          key={post._id}
+                          post={post}
+                          userData={userData}
+                          handleToggleLike={handleToggleLike}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
             )}
-            {/* Giao diện thay thế khi xem hồ sơ người khác */}
             {!isOwnProfile && (
               <div className="other-profile-content">
                 <div className="flex justify-center py-6">

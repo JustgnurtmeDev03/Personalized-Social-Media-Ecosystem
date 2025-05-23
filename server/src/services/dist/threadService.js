@@ -44,9 +44,34 @@ var logger_1 = require("~/utils/logger");
 var PostService = /** @class */ (function () {
     function PostService() {
     }
+    PostService.getUserPosts = function (_id) {
+        return __awaiter(this, void 0, Promise, function () {
+            var posts, error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, Thread_1["default"].find({ author: _id })
+                                .select("content hashtags images videos createdAt likesCount")
+                                .lean()];
+                    case 1:
+                        posts = _a.sent();
+                        console.log("Found posts for userId " + _id + ":", posts); // Debug
+                        return [2 /*return*/, posts];
+                    case 2:
+                        error_1 = _a.sent();
+                        logger_1["default"].error("Get user posts service error: " + error_1.message, {
+                            error: error_1
+                        });
+                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
     PostService.getTotalPosts = function () {
         return __awaiter(this, void 0, Promise, function () {
-            var currentDate, sevenDaysAgo, currentPosts, previousPosts, error_1;
+            var currentDate, sevenDaysAgo, currentPosts, previousPosts, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -64,9 +89,9 @@ var PostService = /** @class */ (function () {
                         previousPosts = _a.sent();
                         return [2 /*return*/, { current: currentPosts, previous: previousPosts }];
                     case 3:
-                        error_1 = _a.sent();
-                        logger_1["default"].error("Get toltal posts service error: " + error_1.message, {
-                            error: error_1
+                        error_2 = _a.sent();
+                        logger_1["default"].error("Get toltal posts service error: " + error_2.message, {
+                            error: error_2
                         });
                         throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
                     case 4: return [2 /*return*/];

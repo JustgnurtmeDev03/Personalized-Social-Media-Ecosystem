@@ -10,4 +10,5 @@ router.get("/posts", auth_1["default"], threadController_1.getThread);
 router.post("/like", auth_1["default"], threadController_1.toggleLike);
 router.get("/posts/liked", auth_1["default"], threadController_1.getLikedThreads);
 router.get("/total-posts", auth_1["default"], threadController_1.getTotalPosts);
+router.get("/:_id/posts", auth_1["default"], threadController_1.getUserPosts);
 exports["default"] = router;

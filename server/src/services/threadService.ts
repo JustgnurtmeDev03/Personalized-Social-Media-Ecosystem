@@ -4,6 +4,25 @@ import { HttpError } from "~/utils/httpError";
 import logger from "~/utils/logger";
 
 export class PostService {
+  static async getUserPosts(_id: string): Promise<any[]> {
+    try {
+      const posts = await Thread.find({ author: _id })
+        .select("content hashtags images videos createdAt likesCount")
+        .lean();
+
+      console.log(`Found posts for userId ${_id}:`, posts); // Debug
+      return posts;
+    } catch (error: any) {
+      logger.error(`Get user posts service error: ${error.message}`, {
+        error,
+      });
+      throw new HttpError(
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Internal server error"
+      );
+    }
+  }
+
   static async getTotalPosts(): Promise<{
     current: number;
     previous: number;

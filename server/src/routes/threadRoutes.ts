@@ -5,6 +5,7 @@ import {
   getLikedThreads,
   getThread,
   getTotalPosts,
+  getUserPosts,
   toggleLike,
 } from "~/controllers/threadController";
 import authMiddleware from "~/middlewares/auth";
@@ -16,5 +17,6 @@ router.get("/posts", authMiddleware, getThread);
 router.post("/like", authMiddleware, toggleLike);
 router.get("/posts/liked", authMiddleware, getLikedThreads);
 router.get("/total-posts", authMiddleware, getTotalPosts);
+router.get("/:_id/posts", authMiddleware, getUserPosts);
 
 export default router;

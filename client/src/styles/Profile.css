@@ -12,6 +12,8 @@
   align-items: center;
   overflow: hidden;
   z-index: 5;
+  overflow-y: auto;
+  max-height: 100vh;
 }
 
 .profile-main-content .profile-title {
@@ -170,6 +172,11 @@
   font-weight: 600;
   color: rgb(153, 153, 153);
   font-size: 14px;
+}
+
+.profile-info-detail {
+  width: 100%;
+  padding: 20px 0;
 }
 
 .profile-info-detail .finish-profile {

@@ -233,6 +233,27 @@ export const getTotalPosts = asyncHandler(
   }
 );
 
+export const getUserPosts = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { _id } = req.params;
+      const posts = await PostService.getUserPosts(_id);
+
+      res.status(HTTP_STATUS.OK).json({
+        posts,
+      });
+    } catch (error: any) {
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .send({ error: "Failed to fetch user posts" });
+    }
+  }
+);
+
 function generateRandomUsername(): string {
   const words = [
     "cool",
