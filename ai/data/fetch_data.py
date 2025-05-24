@@ -5,22 +5,25 @@ Tập tin này kết nối đến MongoDB và truy xuất dữ liệu bài viế
 Các bài viết sẽ được chuyển đổi thành một pandas DataFrame với các trường:
     - post_id
     - content
-    - tags
+    - hashtags
     - videos
     - images
-    - metadata
+    - author (dictionary chứa _id, username, avatar)
+    - createdAt
+    - likesCount
+    - commentsCount
 
 Cấu hình kết nối có thể được điều chỉnh qua tham số.
-
 """
-import logging;
+import logging
 from pymongo import MongoClient, errors
-import pandas as pd 
-from typing import  Optional
+import pandas as pd
+from typing import Optional
 import yaml
 from datetime import datetime
+from bson.objectid import ObjectId
 
-# Cấu hình logging để ghi lại thông tị và lỗi
+# Cấu hình logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
 # Load cấu hình từ config.yaml
@@ -31,7 +34,6 @@ DATABASE = config['mongodb']['database']
 POSTS_COLLECTION = config['mongodb']['posts_collection']
 LIKES_COLLECTION = config['mongodb']['likes_collection']
 
-# Kết nối với MongoDB
 def fetch_data(
     mongo_uri: str = MONGO_URI,
     database: str = DATABASE,
@@ -40,21 +42,24 @@ def fetch_data(
     skip: int = 0,
     limit: int = 1000,
     date_from: Optional[str] = None,
-    date_to: Optional[str] = None
-    ) -> pd.DataFrame: 
-    
-    try: 
-        # Kết nối đến MongoDB với timeout để tránh treo
+    date_to: Optional[str] = None,
+    post_ids: Optional[list] = None
+) -> pd.DataFrame:
+    try:
         client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
-        # Kiểm tra kết nối
-        client.server_info() # Nếu không có kết nối, sẽ ném exception 
+        client.server_info()
         db = client[database]
         posts_collection = db[collection]
 
-        # Truy vấn với điều kiện visibility, phân trang và projection
+        # Xây dựng query
         query = {'visibility': visibility}
+        if post_ids:
+            try:
+                query['_id'] = {'$in': [ObjectId(pid) for pid in post_ids]}
+            except Exception as e:
+                logging.warning(f"Không thể chuyển post_ids thành ObjectId: {e}")
+                query['_id'] = {'$in': post_ids}
 
-        # Thêm điều kiện thời gian nếu được cung cấp
         if date_from or date_to:
             query['createdAt'] = {}
             if date_from:
@@ -64,46 +69,88 @@ def fetch_data(
                 date_to_dt = datetime.strptime(date_to, '%Y-%m-%d')
                 query['createdAt']['$lte'] = date_to_dt
 
-        # Projection để chỉ lấy các trường cần thiết
-        projection = {
-            '_id': 1,
-            'content': 1,
-            'hashtags': 1,
-            'images': 1,
-            'videos': 1,
-            'author': 1,
-            'createdAt': 1,
-            'likesCount': 1,
-            'commentsCount': 1,
-        }
+        # Aggregation pipeline để populate author từ collection users
+        pipeline = [
+            {"$match": query},
+            {
+                "$lookup": {
+                    "from": "users",  # Collection users
+                    "localField": "author",
+                    "foreignField": "_id",
+                    "as": "author_details"
+                }
+            },
+            {
+                "$unwind": {
+                    "path": "$author_details",
+                    "preserveNullAndEmptyArrays": True
+                }
+            },
+            {
+                "$project": {
+                    "_id": 1,
+                    "content": 1,
+                    "hashtags": 1,
+                    "images": 1,
+                    "videos": 1,
+                    "createdAt": 1,
+                    "likesCount": 1,
+                    "commentsCount": 1,
+                    "author": {
+                        "$cond": {
+                            "if": {"$ne": ["$author_details", None]},
+                            "then": {
+                                "_id": "$author_details._id",
+                                "username": "$author_details.username",
+                                "avatar": "$author_details.avatar"
+                            },
+                            "else": {
+                                "_id": "$author",
+                                "username": "Không xác định",
+                                "avatar": ""
+                            }
+                        }
+                    }
+                }
+            },
+            {"$skip": skip},
+            {"$limit": limit}
+        ]
 
-        # Lấy tất cả bài viết từ collection 'threads'
-        posts = list(posts_collection.find(query, projection).skip(skip).limit(limit))
+        posts = list(posts_collection.aggregate(pipeline))
         logging.info(f"Đã lấy được {len(posts)} bài viết từ MongoDB (skip={skip}, limit={limit}).")
 
         if not posts:
             logging.warning("Không tìm thấy dữ liệu trong collection.")
+            return pd.DataFrame(columns=["post_id", "content", "hashtags", "images", "videos", "author", "createdAt", "likesCount", "commentsCount"])
 
-        # Chuyển dữ liệu MongoDB thành DataFrame của pandas
         data = []
         for post in posts:
+            # Chuẩn hóa createdAt
+            created_at = post.get('createdAt')
+            if created_at:
+                try:
+                    created_at = pd.to_datetime(created_at, errors='coerce').isoformat()
+                except Exception as e:
+                    logging.warning(f"Invalid createdAt format for post {post['_id']}: {e}")
+                    created_at = datetime.now().isoformat()
+            else:
+                created_at = datetime.now().isoformat()
+
             data.append([
-                post['_id'],
-                post['content'],
-                post['hashtags'], 
-                post['images'], 
-                post['videos'],
-                post['author'],
-                post['createdAt'],
-                post['likesCount'],
-                post['commentsCount'],
-                ])
+                str(post.get('_id', '')),
+                post.get('content', ''),
+                post.get('hashtags', []),
+                post.get('images', []),
+                post.get('videos', []),
+                post.get('author', {'_id': '', 'username': 'Không xác định', 'avatar': ''}),
+                created_at,
+                post.get('likesCount', 0),
+                post.get('commentsCount', 0),
+            ])
 
-        # Đổi dữ liệu thành pandas DataFrame 
-        df = pd.DataFrame(data, columns = ["post_id","content","hashtags","images","videos", "author", "createdAt",
-            "likesCount", "commentsCount"])    
-
-        return df 
+        df = pd.DataFrame(data, columns=["post_id", "content", "hashtags", "images", "videos", "author", "createdAt", "likesCount", "commentsCount"])
+        return df
     except errors.ServerSelectionTimeoutError as err:
         logging.error(f"Không thể kết nối đến MongoDB: {err}")
         raise
@@ -125,7 +172,6 @@ def fetch_likes(
         db = client[database]
         likes_collection = db[collection]
 
-        # Truy vấn với điều kiện user_id (nếu có), phân trang
         query = {'user': user_id} if user_id else {}
         projection = {'user': 1, 'threadId': 1, 'createdAt': 1}
         likes = list(likes_collection.find(query, projection).skip(skip).limit(limit))
@@ -133,14 +179,13 @@ def fetch_likes(
 
         if not likes:
             logging.warning("Không tìm thấy dữ liệu trong collection.")
+            return pd.DataFrame(columns=["user_id", "post_id", "createdAt"])
 
-        # Chuyển dữ liệu thành DataFrame
         df = pd.DataFrame([
-            [like['user'], like['threadId'], like['createdAt']]
+            [like['user'], str(like['threadId']), like['createdAt']]
             for like in likes
         ], columns=["user_id", "post_id", "createdAt"])
         return df
-
     except errors.ServerSelectionTimeoutError as err:
         logging.error(f"Không thể kết nối đến MongoDB: {err}")
         raise
@@ -148,17 +193,15 @@ def fetch_likes(
         logging.error(f"Đã xảy ra lỗi khi truy xuất dữ liệu: {e}")
         raise
 
-# Kiểm tra hàm và in ra dữ liệu
 if __name__ == "__main__":
     df_posts = fetch_data(
         visibility='public',
         skip=0,
         limit=5,
-        date_from='2025-01-01', 
-        date_to='2025-06-30'    
+        date_from='2025-01-01',
+        date_to='2025-06-30'
     )
     print("Dữ liệu bài viết:\n", df_posts.head())
 
-    # Test lấy lượt thích
     df_likes = fetch_likes(skip=0, limit=5)
     print("Dữ liệu lượt thích:\n", df_likes.head())

@@ -4643,3 +4643,25 @@ Use mongoose.model(name, schema)
 2025-05-23T14:54:39.007Z [ERROR]: You can't follow yourself
 2025-05-23T14:54:39.163Z [ERROR]: You can't follow yourself
 2025-05-23T14:54:39.315Z [ERROR]: You can't follow yourself
+2025-05-24T02:52:09.529Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T02:52:09.682Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T02:53:12.969Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T02:53:12.991Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T02:54:23.254Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T02:54:54.237Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T02:58:36.123Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T02:58:36.224Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T02:58:51.825Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T02:58:52.368Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T02:58:56.352Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T02:58:56.382Z [ERROR]: Cannot find /api/threads/recommendations on this server
+2025-05-24T03:09:27.781Z [ERROR]: Cannot find /api/threads/posts/multiple on this server
+2025-05-24T03:09:29.022Z [ERROR]: Cannot find /api/threads/posts/multiple on this server
+2025-05-24T03:09:51.925Z [ERROR]: Cannot find /api/threads/posts/multiple on this server
+2025-05-24T03:09:53.429Z [ERROR]: Cannot find /api/threads/posts/multiple on this server
+2025-05-24T08:57:45.543Z [ERROR]: Register service error: E11000 duplicate key error collection: Threads.users index: name_1 dup key: { name: "cristiano" }
+2025-05-24T08:57:45.545Z [ERROR]: Register error: Internal server error
+2025-05-24T09:07:58.786Z [ERROR]: ID is invalid
+2025-05-24T09:21:35.647Z [ERROR]: ID is invalid
+2025-05-24T09:23:45.182Z [ERROR]: ID is invalid
+2025-05-24T09:26:17.984Z [ERROR]: Already following

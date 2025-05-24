@@ -1,6 +1,9 @@
 import axios from "axios";
 
 export const API_URL = "http://localhost:5000/api/threads";
+export const recommendationApi = axios.create({
+  baseURL: "http://localhost:8000", // Không có tiền tố
+});
 
 const api = axios.create({
   baseURL: API_URL,
