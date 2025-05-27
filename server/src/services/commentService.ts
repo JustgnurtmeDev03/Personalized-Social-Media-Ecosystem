@@ -4,9 +4,11 @@ import HTTP_STATUS from "../constants/httpStatus";
 import logger from "../utils/logger";
 import Comment from "~/models/comment";
 import Thread from "~/models/Thread";
+import CommentLike from "~/models/commentLike";
+import User from "~/models/User";
 
 export class CommentService {
-  static async getCommentsBythreadId(threadId: string) {
+  static async getCommentsBythreadId(threadId: string, userId?: string) {
     try {
       logger.info(`Fetching comments for post ID: ${threadId}`);
       if (!mongoose.Types.ObjectId.isValid(threadId)) {
@@ -18,7 +20,26 @@ export class CommentService {
         .populate("user", "username _id avatar")
         .sort({ createdAt: -1 })
         .lean();
-      return comments;
+
+      // Lấy danh sách lượt thích cho các bình luận
+      const commentIds = comments.map((c) => c._id);
+      const likes = await CommentLike.find({
+        commentId: { $in: commentIds },
+      }).lean();
+
+      // Thêm thông tin likesCount và isLiked vào mỗi bình luận
+      return comments.map((comment) => {
+        const commentLikes = likes.filter(
+          (like) => like.commentId.toString() === comment._id.toString()
+        );
+        return {
+          ...comment,
+          likesCount: commentLikes.length,
+          isLiked: userId
+            ? commentLikes.some((like) => like.user.toString() === userId)
+            : false,
+        };
+      });
     } catch (error: any) {
       logger.error(`Get comments by post id error: ${error.message}`, {
         error,
@@ -76,6 +97,129 @@ export class CommentService {
       };
     } catch (error: any) {
       logger.error(`Create comment error: ${error.message}`, { error });
+      throw error instanceof HttpError
+        ? error
+        : new HttpError(
+            HTTP_STATUS.INTERNAL_SERVER_ERROR,
+            "Internal server error"
+          );
+    }
+  }
+
+  static async likeComment(userId: string, commentId: string) {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(commentId)) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Invalid comment ID");
+      }
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Invalid user ID");
+      }
+
+      const existingLike = await CommentLike.findOne({
+        user: userId,
+        commentId,
+      });
+      if (existingLike) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          "You have already liked this comment"
+        );
+      }
+
+      const user = await User.findById(userId).select("username");
+      if (!user) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "User not found");
+      }
+
+      const newLike = new CommentLike({
+        user: userId,
+        commentId,
+        username: user.username,
+      });
+      await newLike.save();
+      return { message: "Comment liked successfully" };
+    } catch (error: any) {
+      logger.error(`Like comment error: ${error.message}`, { error });
+      throw error instanceof HttpError
+        ? error
+        : new HttpError(
+            HTTP_STATUS.INTERNAL_SERVER_ERROR,
+            "Internal server error"
+          );
+    }
+  }
+
+  static async unlikeComment(userId: string, commentId: string) {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(commentId)) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Invalid comment ID");
+      }
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Invalid user ID");
+      }
+
+      const like = await CommentLike.findOneAndDelete({
+        user: userId,
+        commentId,
+      });
+      if (!like) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          "You have not liked this comment"
+        );
+      }
+      return { message: "Comment unliked successfully" };
+    } catch (error: any) {
+      logger.error(`Unlike comment error: ${error.message}`, { error });
+      throw error instanceof HttpError
+        ? error
+        : new HttpError(
+            HTTP_STATUS.INTERNAL_SERVER_ERROR,
+            "Internal server error"
+          );
+    }
+  }
+
+  static async addReply(
+    threadId: string,
+    userId: string,
+    content: string,
+    parentCommentId: string
+  ) {
+    try {
+      if (
+        !mongoose.Types.ObjectId.isValid(threadId) ||
+        !mongoose.Types.ObjectId.isValid(parentCommentId)
+      ) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          "Invalid thread or comment ID"
+        );
+      }
+      const parentComment = await Comment.findById(parentCommentId);
+      if (!parentComment) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "Parent comment not found");
+      }
+      const user = await User.findById(userId).select("username avatar");
+      if (!user) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "User not found");
+      }
+      const newComment = new Comment({
+        threadId,
+        user: userId,
+        content,
+        parentComment: parentCommentId,
+      });
+      await newComment.save();
+      await Thread.findByIdAndUpdate(threadId, { $inc: { commentsCount: 1 } });
+      return {
+        ...newComment.toObject(),
+        user: { _id: userId, username: user.username, avatar: user.avatar },
+        isLiked: false,
+        likesCount: 0,
+      };
+    } catch (error: any) {
+      logger.error(`Add reply error: ${error.message}`, { error });
       throw error instanceof HttpError
         ? error
         : new HttpError(

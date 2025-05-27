@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -43,16 +54,18 @@ var httpStatus_1 = require("../constants/httpStatus");
 var logger_1 = require("../utils/logger");
 var comment_1 = require("~/models/comment");
 var Thread_1 = require("~/models/Thread");
+var commentLike_1 = require("~/models/commentLike");
+var User_1 = require("~/models/User");
 var CommentService = /** @class */ (function () {
     function CommentService() {
     }
-    CommentService.getCommentsBythreadId = function (threadId) {
+    CommentService.getCommentsBythreadId = function (threadId, userId) {
         return __awaiter(this, void 0, void 0, function () {
-            var comments, error_1;
+            var comments, commentIds, likes_1, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
+                        _a.trys.push([0, 3, , 4]);
                         logger_1["default"].info("Fetching comments for post ID: " + threadId);
                         if (!mongoose_1["default"].Types.ObjectId.isValid(threadId)) {
                             logger_1["default"].warn("Invalid post ID: " + threadId);
@@ -64,8 +77,20 @@ var CommentService = /** @class */ (function () {
                                 .lean()];
                     case 1:
                         comments = _a.sent();
-                        return [2 /*return*/, comments];
+                        commentIds = comments.map(function (c) { return c._id; });
+                        return [4 /*yield*/, commentLike_1["default"].find({
+                                commentId: { $in: commentIds }
+                            }).lean()];
                     case 2:
+                        likes_1 = _a.sent();
+                        // Thêm thông tin likesCount và isLiked vào mỗi bình luận
+                        return [2 /*return*/, comments.map(function (comment) {
+                                var commentLikes = likes_1.filter(function (like) { return like.commentId.toString() === comment._id.toString(); });
+                                return __assign(__assign({}, comment), { likesCount: commentLikes.length, isLiked: userId
+                                        ? commentLikes.some(function (like) { return like.user.toString() === userId; })
+                                        : false });
+                            })];
+                    case 3:
                         error_1 = _a.sent();
                         logger_1["default"].error("Get comments by post id error: " + error_1.message, {
                             error: error_1
@@ -73,7 +98,7 @@ var CommentService = /** @class */ (function () {
                         throw error_1 instanceof httpError_1.HttpError
                             ? error_1
                             : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
-                    case 3: return [2 /*return*/];
+                    case 4: return [2 /*return*/];
                 }
             });
         });
@@ -117,6 +142,135 @@ var CommentService = /** @class */ (function () {
                             ? error_2
                             : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
                     case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    CommentService.likeComment = function (userId, commentId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var existingLike, user, newLike, error_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 4, , 5]);
+                        if (!mongoose_1["default"].Types.ObjectId.isValid(commentId)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid comment ID");
+                        }
+                        if (!mongoose_1["default"].Types.ObjectId.isValid(userId)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid user ID");
+                        }
+                        return [4 /*yield*/, commentLike_1["default"].findOne({
+                                user: userId,
+                                commentId: commentId
+                            })];
+                    case 1:
+                        existingLike = _a.sent();
+                        if (existingLike) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "You have already liked this comment");
+                        }
+                        return [4 /*yield*/, User_1["default"].findById(userId).select("username")];
+                    case 2:
+                        user = _a.sent();
+                        if (!user) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "User not found");
+                        }
+                        newLike = new commentLike_1["default"]({
+                            user: userId,
+                            commentId: commentId,
+                            username: user.username
+                        });
+                        return [4 /*yield*/, newLike.save()];
+                    case 3:
+                        _a.sent();
+                        return [2 /*return*/, { message: "Comment liked successfully" }];
+                    case 4:
+                        error_3 = _a.sent();
+                        logger_1["default"].error("Like comment error: " + error_3.message, { error: error_3 });
+                        throw error_3 instanceof httpError_1.HttpError
+                            ? error_3
+                            : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    CommentService.unlikeComment = function (userId, commentId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var like, error_4;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        if (!mongoose_1["default"].Types.ObjectId.isValid(commentId)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid comment ID");
+                        }
+                        if (!mongoose_1["default"].Types.ObjectId.isValid(userId)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid user ID");
+                        }
+                        return [4 /*yield*/, commentLike_1["default"].findOneAndDelete({
+                                user: userId,
+                                commentId: commentId
+                            })];
+                    case 1:
+                        like = _a.sent();
+                        if (!like) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "You have not liked this comment");
+                        }
+                        return [2 /*return*/, { message: "Comment unliked successfully" }];
+                    case 2:
+                        error_4 = _a.sent();
+                        logger_1["default"].error("Unlike comment error: " + error_4.message, { error: error_4 });
+                        throw error_4 instanceof httpError_1.HttpError
+                            ? error_4
+                            : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    CommentService.addReply = function (threadId, userId, content, parentCommentId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var parentComment, user, newComment, error_5;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 5, , 6]);
+                        if (!mongoose_1["default"].Types.ObjectId.isValid(threadId) ||
+                            !mongoose_1["default"].Types.ObjectId.isValid(parentCommentId)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid thread or comment ID");
+                        }
+                        return [4 /*yield*/, comment_1["default"].findById(parentCommentId)];
+                    case 1:
+                        parentComment = _a.sent();
+                        if (!parentComment) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "Parent comment not found");
+                        }
+                        return [4 /*yield*/, User_1["default"].findById(userId).select("username avatar")];
+                    case 2:
+                        user = _a.sent();
+                        if (!user) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "User not found");
+                        }
+                        newComment = new comment_1["default"]({
+                            threadId: threadId,
+                            user: userId,
+                            content: content,
+                            parentComment: parentCommentId
+                        });
+                        return [4 /*yield*/, newComment.save()];
+                    case 3:
+                        _a.sent();
+                        return [4 /*yield*/, Thread_1["default"].findByIdAndUpdate(threadId, { $inc: { commentsCount: 1 } })];
+                    case 4:
+                        _a.sent();
+                        return [2 /*return*/, __assign(__assign({}, newComment.toObject()), { user: { _id: userId, username: user.username, avatar: user.avatar }, isLiked: false, likesCount: 0 })];
+                    case 5:
+                        error_5 = _a.sent();
+                        logger_1["default"].error("Add reply error: " + error_5.message, { error: error_5 });
+                        throw error_5 instanceof httpError_1.HttpError
+                            ? error_5
+                            : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
+                    case 6: return [2 /*return*/];
                 }
             });
         });

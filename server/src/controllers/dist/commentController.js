@@ -36,25 +36,30 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.createComment = exports.getComments = void 0;
+exports.addReply = exports.unlikeComment = exports.likeComment = exports.createComment = exports.getComments = void 0;
 var asyncHandler_1 = require("../middlewares/asyncHandler");
 var commentService_1 = require("~/services/commentService");
 var logger_1 = require("../utils/logger");
+var mongoose_1 = require("mongoose");
+var httpError_1 = require("~/utils/httpError");
+var httpStatus_1 = require("~/constants/httpStatus");
 exports.getComments = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var threadId, comments, error_1;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var threadId, userId, comments, error_1;
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
-                _a.trys.push([0, 2, , 3]);
+                _b.trys.push([0, 2, , 3]);
                 threadId = req.params.id;
+                userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
                 logger_1["default"].info("Fetching comments for post ID: " + threadId);
-                return [4 /*yield*/, commentService_1.CommentService.getCommentsBythreadId(threadId)];
+                return [4 /*yield*/, commentService_1.CommentService.getCommentsBythreadId(threadId, userId)];
             case 1:
-                comments = _a.sent();
+                comments = _b.sent();
                 res.status(200).json(comments);
                 return [3 /*break*/, 3];
             case 2:
-                error_1 = _a.sent();
+                error_1 = _b.sent();
                 next(error_1);
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -84,6 +89,70 @@ exports.createComment = asyncHandler_1["default"](function (req, res, next) { re
                 next(error_2);
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
+        }
+    });
+}); });
+// CommentController.ts
+exports.likeComment = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var commentId, userId, result;
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
+            case 0:
+                commentId = req.body.commentId;
+                userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+                if (!userId) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].UNAUTHORIZED, "User not authenticated");
+                }
+                if (!mongoose_1["default"].Types.ObjectId.isValid(userId)) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid user ID");
+                }
+                return [4 /*yield*/, commentService_1.CommentService.likeComment(userId, commentId)];
+            case 1:
+                result = _b.sent();
+                res.status(200).json(result);
+                return [2 /*return*/];
+        }
+    });
+}); });
+exports.unlikeComment = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var commentId, userId, result;
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
+            case 0:
+                commentId = req.body.commentId;
+                userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+                if (!userId) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].UNAUTHORIZED, "User not authenticated");
+                }
+                if (!mongoose_1["default"].Types.ObjectId.isValid(userId)) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid user ID");
+                }
+                return [4 /*yield*/, commentService_1.CommentService.unlikeComment(userId, commentId)];
+            case 1:
+                result = _b.sent();
+                res.status(200).json(result);
+                return [2 /*return*/];
+        }
+    });
+}); });
+exports.addReply = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var _a, threadId, content, parentCommentId, userId, newComment;
+    var _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                _a = req.body, threadId = _a.threadId, content = _a.content, parentCommentId = _a.parentCommentId;
+                userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b.id;
+                if (!userId) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].UNAUTHORIZED, "User not authenticated");
+                }
+                return [4 /*yield*/, commentService_1.CommentService.addReply(threadId, userId, content, parentCommentId)];
+            case 1:
+                newComment = _c.sent();
+                res.status(201).json(newComment);
+                return [2 /*return*/];
         }
     });
 }); });

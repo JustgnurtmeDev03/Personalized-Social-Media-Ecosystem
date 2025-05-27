@@ -5021,3 +5021,18 @@ Use mongoose.model(name, schema)
 2025-05-26T10:59:43.810Z [ERROR]: Thread validation failed: content: Content must be at least 1 character
 2025-05-26T11:04:01.709Z [ERROR]: At least one of content, images, or videos must be provided
 2025-05-26T11:04:03.373Z [ERROR]: At least one of content, images, or videos must be provided
+2025-05-27T07:30:27.963Z [ERROR]: Cannot find /api/threads/like-comment on this server
+2025-05-27T07:30:37.506Z [ERROR]: Cannot find /api/threads/like-comment on this server
+2025-05-27T07:32:03.445Z [ERROR]: Internal server error
+2025-05-27T07:35:55.689Z [ERROR]: Internal server error
+2025-05-27T07:45:19.015Z [ERROR]: Internal server error
+2025-05-27T07:49:30.318Z [ERROR]: Like comment error: You have already liked this comment
+2025-05-27T07:49:30.320Z [ERROR]: You have already liked this comment
+2025-05-27T07:49:31.177Z [ERROR]: Like comment error: You have already liked this comment
+2025-05-27T07:49:31.178Z [ERROR]: You have already liked this comment
+2025-05-27T07:49:31.374Z [ERROR]: Like comment error: You have already liked this comment
+2025-05-27T07:49:31.375Z [ERROR]: You have already liked this comment
+2025-05-27T07:49:31.540Z [ERROR]: Like comment error: You have already liked this comment
+2025-05-27T07:49:31.540Z [ERROR]: You have already liked this comment
+2025-05-27T07:49:40.417Z [ERROR]: Like comment error: You have already liked this comment
+2025-05-27T07:49:40.418Z [ERROR]: You have already liked this comment
