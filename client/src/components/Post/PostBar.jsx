@@ -267,13 +267,55 @@ const PostBar = ({ onClick }) => {
   }, []);
 
   const handleToggleLike = useCallback(
-    async (postId) => {
+    async (e, postId) => {
+      e.stopPropagation(); // Ngăn chặn click lan tỏa đến Link
+      e.preventDefault(); // Ngăn chặn bất kỳ hành vi mặc định nào
+
+      // Cập nhật giao diện ngay lập tức (lạc quan)
+      const isCurrentlyLiked = likedPosts.includes(postId);
+      const optimisticIsLiked = !isCurrentlyLiked;
+      const optimisticLikesCount = optimisticIsLiked
+        ? (posts.find((p) => p._id === postId)?.likesCount || 0) + 1
+        : (posts.find((p) => p._id === postId)?.likesCount || 0) - 1;
+
+      // Cập nhật state trước khi gọi API
+      setPosts((prev) =>
+        prev.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                isLiked: optimisticIsLiked,
+                likesCount: optimisticLikesCount,
+              }
+            : post
+        )
+      );
+      setRecommendedPosts((prev) =>
+        prev.map((post) =>
+          post._id === postId
+            ? {
+                ...post,
+                isLiked: optimisticIsLiked,
+                likesCount: optimisticLikesCount,
+              }
+            : post
+        )
+      );
+      setLikedPosts((prev) =>
+        optimisticIsLiked
+          ? [...prev, postId]
+          : prev.filter((id) => id !== postId)
+      );
+
       try {
         const authToken = localStorage.getItem("accessToken");
-        const isLiked = likedPosts.includes(postId);
         const response = await api.post(
           "/like",
-          { user_id: auth.userId, threadId: postId, isLiked: !isLiked },
+          {
+            user_id: auth.userId,
+            threadId: postId,
+            isLiked: optimisticIsLiked,
+          },
           { headers: { Authorization: `Bearer ${authToken}` } }
         );
 
@@ -281,6 +323,7 @@ const PostBar = ({ onClick }) => {
           const { isLiked, likesCount } = response.data;
           socket.current.emit("likePost", { postId, isLiked, likesCount });
 
+          // Cập nhật lại state nếu cần để đảm bảo đồng bộ với server
           setPosts((prev) =>
             prev.map((post) =>
               post._id === postId ? { ...post, isLiked, likesCount } : post
@@ -294,12 +337,70 @@ const PostBar = ({ onClick }) => {
           setLikedPosts((prev) =>
             isLiked ? [...prev, postId] : prev.filter((id) => id !== postId)
           );
+        } else {
+          // Hoàn tác nếu API thất bại
+          setPosts((prev) =>
+            prev.map((post) =>
+              post._id === postId
+                ? {
+                    ...post,
+                    isLiked: isCurrentlyLiked,
+                    likesCount: post.likesCount,
+                  }
+                : post
+            )
+          );
+          setRecommendedPosts((prev) =>
+            prev.map((post) =>
+              post._id === postId
+                ? {
+                    ...post,
+                    isLiked: isCurrentlyLiked,
+                    likesCount: post.likesCount,
+                  }
+                : post
+            )
+          );
+          setLikedPosts((prev) =>
+            isCurrentlyLiked
+              ? [...prev, postId]
+              : prev.filter((id) => id !== postId)
+          );
+          console.error("API trả về trạng thái không thành công");
         }
       } catch (error) {
+        // Hoàn tác nếu có lỗi
+        setPosts((prev) =>
+          prev.map((post) =>
+            post._id === postId
+              ? {
+                  ...post,
+                  isLiked: isCurrentlyLiked,
+                  likesCount: post.likesCount,
+                }
+              : post
+          )
+        );
+        setRecommendedPosts((prev) =>
+          prev.map((post) =>
+            post._id === postId
+              ? {
+                  ...post,
+                  isLiked: isCurrentlyLiked,
+                  likesCount: post.likesCount,
+                }
+              : post
+          )
+        );
+        setLikedPosts((prev) =>
+          isCurrentlyLiked
+            ? [...prev, postId]
+            : prev.filter((id) => id !== postId)
+        );
         console.error("Lỗi khi xử lý lượt thích:", error.message);
       }
     },
-    [auth.userId, likedPosts]
+    [auth.userId, likedPosts, posts]
   );
 
   useEffect(() => {
@@ -380,7 +481,9 @@ const PostBar = ({ onClick }) => {
 
   const preventDefaultDrag = (e) => e.preventDefault();
 
-  const handleFollow = async (targetUserId) => {
+  const handleFollow = async (e, targetUserId) => {
+    e.stopPropagation(); // Ngăn chặn click lan tỏa đến Link
+    e.preventDefault(); // Ngăn chặn hành vi mặc định
     try {
       await followUser(auth.userId, targetUserId, {
         headers: { Authorization: `Bearer ${auth.accessToken}` },
@@ -401,7 +504,7 @@ const PostBar = ({ onClick }) => {
   if (userError || isFollowingError) {
     return (
       <p className="text-center text-red-500">
-        {userError || "Error loading follow data"}
+        {userError || "Lỗi khi tải dữ liệu theo dõi"}
       </p>
     );
   }
@@ -438,11 +541,8 @@ const PostBar = ({ onClick }) => {
           <p className="text-center">Đang tải bài viết...</p>
         ) : posts.length > 0 ? (
           posts.map((post) => (
-            <Link to={`/post/${post._id}`}>
-              <div
-                key={post._id}
-                className="posts-content bg-white p-4 rounded-lg shadow mb-4"
-              >
+            <Link to={`/post/${post._id}`} key={post._id}>
+              <div className="posts-content bg-white p-4 rounded-lg shadow mb-4">
                 <div className="flex items-center mb-4 relative">
                   <Avatar
                     _id={post.author._id}
@@ -453,7 +553,7 @@ const PostBar = ({ onClick }) => {
                     !currentUserFollowing.includes(post.author._id) && (
                       <button
                         className="follow-btn border-white absolute left-6 top-6 bg-black text-white text-center rounded-full w-4 h-4 flex items-center justify-center text-sm z-10"
-                        onClick={() => handleFollow(post.author._id)}
+                        onClick={(e) => handleFollow(e, post.author._id)}
                       >
                         <svg aria-label="Follow" role="img" viewBox="0 0 10 9">
                           <title>Follow</title>
@@ -575,7 +675,7 @@ const PostBar = ({ onClick }) => {
                     className={`like-button ${
                       post.isLiked ? "liked text-red-500" : ""
                     }`}
-                    onClick={() => handleToggleLike(post._id)}
+                    onClick={(e) => handleToggleLike(e, post._id)}
                   >
                     <i className="fa fa-heart heart-icon"></i>
                     <span className="ml-1">{post.likesCount}</span>
@@ -621,7 +721,7 @@ const PostBar = ({ onClick }) => {
                     !currentUserFollowing.includes(post.author._id) && (
                       <button
                         className="follow-btn border-white absolute left-6 top-6 bg-black text-white text-center rounded-full w-4 h-4 flex items-center justify-center text-sm z-10"
-                        onClick={() => handleFollow(post.author._id)}
+                        onClick={(e) => handleFollow(e, post.author._id)}
                       >
                         <svg aria-label="Follow" role="img" viewBox="0 0 10 9">
                           <title>Follow</title>
@@ -746,7 +846,7 @@ const PostBar = ({ onClick }) => {
                     className={`like-button ${
                       post.isLiked ? "liked text-red-500" : ""
                     }`}
-                    onClick={() => handleToggleLike(post._id)}
+                    onClick={(e) => handleToggleLike(e, post._id)}
                   >
                     <i className="fa fa-heart heart-icon"></i>
                     <span className="ml-1">{post.likesCount || 0}</span>
