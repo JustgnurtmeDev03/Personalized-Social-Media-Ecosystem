@@ -1,0 +1,165 @@
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>
+   Thread Post
+  </title>
+  <script src="https://cdn.tailwindcss.com">
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <style>
+   /* Custom font to mimic Instagram's system font */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    }
+  </style>
+ </head>
+ <body class="bg-white text-black">
+  <div class="max-w-3xl mx-auto min-h-screen flex flex-col">
+   <!-- Header -->
+   <header class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+    <button aria-label="Back" class="p-2 rounded-full hover:bg-gray-200">
+     <i class="fas fa-arrow-left text-lg">
+     </i>
+    </button>
+    <div class="text-center flex flex-col">
+     <span class="font-semibold text-base leading-5">
+      Thread
+     </span>
+     <span class="text-gray-400 text-xs leading-4 mt-0.5">
+      1K views
+     </span>
+    </div>
+    <button aria-label="More options" class="p-2 rounded-full hover:bg-gray-200">
+     <i class="fas fa-ellipsis-h text-lg">
+     </i>
+    </button>
+   </header>
+   <!-- Post container -->
+   <article class="flex flex-col bg-white rounded-2xl border border-gray-200 m-4 p-4 space-y-3">
+    <!-- User info -->
+    <div class="flex items-center space-x-3">
+     <img alt="Profile image of a man with short hair and beard wearing green shirt outdoors" class="w-10 h-10 rounded-full object-cover" height="40" src="https://storage.googleapis.com/a1aa/image/d51b7d9c-cbac-4b05-da0e-e27f0bfcfa9c.jpg" width="40"/>
+     <div class="flex items-center space-x-1">
+      <span class="font-semibold text-sm leading-5">
+       matthgray
+      </span>
+      <i aria-label="Verified" class="fas fa-check-circle text-blue-500 text-xs" title="Verified">
+      </i>
+      <span class="text-gray-500 text-xs leading-4">
+       2h
+      </span>
+     </div>
+    </div>
+    <!-- Post text -->
+    <div class="text-sm leading-6 text-black">
+     <p>
+      The 5-point delegation framework:
+     </p>
+     <p class="my-2">
+      ___
+     </p>
+     <p>
+      Want to join a team of legends building the future of entrepreneurship?
+     </p>
+     <p>
+      Comment “Freedom” below to apply.
+     </p>
+    </div>
+    <!-- Images container -->
+    <div class="flex space-x-2">
+     <img alt="The 5-point Delegation Framework text on light gray background" class="w-1/3 rounded-xl object-cover aspect-square" height="200" src="https://storage.googleapis.com/a1aa/image/68af1e4b-d57e-4138-5f7c-ddf92fb8566e.jpg" width="200"/>
+     <img alt="Text about helping a founder making $125K/month on light gray background" class="w-1/3 rounded-xl object-cover aspect-square" height="200" src="https://storage.googleapis.com/a1aa/image/b4abfdca-2933-4b05-c5e4-bf2e5510813b.jpg" width="200"/>
+     <img alt="5-Point Delegation Framework list on black background" class="w-1/3 rounded-xl object-cover aspect-square" height="200" src="https://storage.googleapis.com/a1aa/image/baa37228-0f81-4c64-f9f4-f0464ba3c131.jpg" width="200"/>
+    </div>
+    <!-- Post actions -->
+    <div class="flex items-center space-x-6 text-gray-600 text-sm mt-2">
+     <button aria-label="Like" class="flex items-center space-x-1 hover:text-black">
+      <i class="far fa-heart text-lg">
+      </i>
+      <span>
+       8
+      </span>
+     </button>
+     <button aria-label="Comment" class="flex items-center space-x-1 hover:text-black">
+      <i class="far fa-comment text-lg">
+      </i>
+      <span>
+       1
+      </span>
+     </button>
+     <button aria-label="Repost" class="flex items-center space-x-1 hover:text-black">
+      <i class="fas fa-retweet text-lg">
+      </i>
+      <span>
+       1
+      </span>
+     </button>
+     <button aria-label="Share" class="flex items-center space-x-1 hover:text-black">
+      <i class="far fa-paper-plane text-lg">
+      </i>
+     </button>
+    </div>
+   </article>
+   <!-- Sort bar -->
+   <div class="flex justify-between items-center px-6 py-2 border-t border-b border-gray-200 text-sm font-semibold">
+    <button class="flex items-center space-x-1 text-black">
+     <span>
+      Top
+     </span>
+     <i class="fas fa-chevron-down text-xs">
+     </i>
+    </button>
+    <button class="text-gray-400 flex items-center space-x-1">
+     <span>
+      View activity
+     </span>
+     <i class="fas fa-chevron-right text-xs">
+     </i>
+    </button>
+   </div>
+   <!-- Comment -->
+   <article class="flex items-start space-x-3 px-6 py-4 border-b border-gray-200">
+    <img alt="Profile image of a person with orange background" class="w-8 h-8 rounded-full object-cover" height="32" src="https://storage.googleapis.com/a1aa/image/eb85c9fd-04bf-4e0e-7847-229add3c694b.jpg" width="32"/>
+    <div class="flex-1">
+     <div class="flex items-center space-x-2 mb-1">
+      <span class="font-semibold text-sm leading-5">
+       coolestllamafan
+      </span>
+      <span class="text-gray-500 text-xs leading-4">
+       2h
+      </span>
+     </div>
+     <p class="text-sm leading-6">
+      Freedom
+     </p>
+     <div class="flex items-center space-x-6 text-gray-600 text-sm mt-2">
+      <button aria-label="Like" class="hover:text-black">
+       <i class="far fa-heart">
+       </i>
+      </button>
+      <button aria-label="Comment" class="hover:text-black">
+       <i class="far fa-comment">
+       </i>
+      </button>
+      <button aria-label="Repost" class="hover:text-black">
+       <i class="fas fa-retweet">
+       </i>
+      </button>
+      <button aria-label="Share" class="hover:text-black">
+       <i class="far fa-paper-plane">
+       </i>
+      </button>
+     </div>
+    </div>
+   </article>
+   <!-- Reply input -->
+   <form class="flex items-center space-x-3 px-6 py-3 bg-gray-100 rounded-full mx-4 mb-6">
+    <img alt="Profile image of a person with orange background" class="w-8 h-8 rounded-full object-cover" height="32" src="https://storage.googleapis.com/a1aa/image/eb85c9fd-04bf-4e0e-7847-229add3c694b.jpg" width="32"/>
+    <input class="flex-1 bg-transparent text-gray-500 placeholder-gray-400 text-sm focus:outline-none" placeholder="Reply to matthgray..." type="text"/>
+   </form>
+  </div>
+ </body>
+</html>

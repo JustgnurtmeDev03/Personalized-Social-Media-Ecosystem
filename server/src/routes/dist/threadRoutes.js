@@ -1,0 +1,18 @@
+"use strict";
+exports.__esModule = true;
+var express_1 = require("express");
+var uploadMiddleware_1 = require("~/middlewares/uploadMiddleware");
+var threadController_1 = require("~/controllers/threadController");
+var auth_1 = require("~/middlewares/auth");
+var commentController_1 = require("~/controllers/commentController");
+var router = express_1["default"].Router();
+router.post("/upload", uploadMiddleware_1["default"].array("media", 10), auth_1["default"], threadController_1.createThread);
+router.get("/posts", auth_1["default"], threadController_1.getThread);
+router.post("/like", auth_1["default"], threadController_1.toggleLike);
+router.post("/comments", auth_1["default"], commentController_1.createComment);
+router.get("/:id/comments", auth_1["default"], commentController_1.getComments);
+router.get("/posts/liked", auth_1["default"], threadController_1.getLikedThreads);
+router.get("/posts/:id", auth_1["default"], threadController_1.getPostById);
+router.get("/total-posts", auth_1["default"], threadController_1.getTotalPosts);
+router.get("/:_id/posts", auth_1["default"], threadController_1.getUserPosts);
+exports["default"] = router;

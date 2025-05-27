@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Verification Failed - Gens</title>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .container {
+        text-align: center;
+        background-color: #ffffff;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 500px;
+        width: 90%;
+      }
+      .header {
+        background-color: #e74c3c;
+        color: #ffffff;
+        padding: 20px;
+        border-radius: 10px 10px 0 0;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      .error-icon {
+        font-size: 50px;
+        color: #e74c3c;
+        margin: 20px 0;
+      }
+      .message {
+        font-size: 18px;
+        color: #333;
+        margin-bottom: 20px;
+      }
+      .button {
+        display: inline-block;
+        padding: 12px 25px;
+        background-color: #1da1f2;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 16px;
+      }
+      .button:hover {
+        background-color: #1a91da;
+      }
+      @media (max-width: 600px) {
+        .container {
+          padding: 20px;
+        }
+        .message {
+          font-size: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Gens</h1>
+      </div>
+      <div class="error-icon">✖</div>
+      <div class="message">
+        <%= message %><br />
+        Vui lòng
+        <a href="https://gens.com/resend" style="color: #1da1f2"
+          >yêu cầu lại email xác minh</a
+        >.
+      </div>
+      <a href="https://gens.com/resend" class="button">Yêu cầu Lại</a>
+    </div>
+  </body>
+</html>

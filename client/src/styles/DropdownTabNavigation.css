@@ -1,0 +1,92 @@
+/* src/components/DropdownTabNavigation.css */
+.dropdown-tab-navigation {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-header {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 10px;
+}
+
+.arrow-icon {
+  border: 1px solid rgb(0 0 0 / 15%);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.arrow svg {
+  width: 15px;
+  height: 15px;
+}
+
+.tab-label {
+  color: #000;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-right: 10px;
+}
+
+.dropdown-content {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 240px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 15px;
+  z-index: 1;
+  padding: 0px 20px;
+}
+
+.dropdown-item {
+  display: block;
+  padding: 10px 0px;
+  background-color: #fff;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.tab-dropdown {
+  width: 210px;
+  height: 52px;
+  padding: 10px 10px;
+  border-radius: 15px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  color: #000;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-right: 10px;
+}
+
+.tab-dropdown:hover {
+  background-color: #ddd;
+  transition: ease-in-out 0.2s;
+}
+
+.tick {
+  display: flex;
+  align-items: center;
+}
+
+.tick svg {
+  width: 20px;
+  height: 20px;
+  color: rgba(0, 0, 0, 1);
+}

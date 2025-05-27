@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "jsx": "react",
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "baseUrl": "./src",
+    "paths": {
+      "*": ["*"]
+    }
+  },
+  "include": [
+    "src/**/*.tsx",
+    "src/**/*.ts",
+    "src/pages/Login/Login.jsx",
+    "src/assets/loadImage.jsx",
+    "src/components/Post/PostBar.jsx",
+    "src/routes/AppRoutes.jsx",
+    "src/App.jsx",
+    "src/layouts/LoginLayout.jsx",
+    "src/components/Footer/Footer.jsx",
+    "src/pages/Register/Register.jsx",
+    "src/pages/Home/Following.jsx",
+    "src/pages/Profile/Profile.jsx"
+  ],
+  "exclude": ["node_modules"]
+}
