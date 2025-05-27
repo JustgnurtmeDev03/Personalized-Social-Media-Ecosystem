@@ -6765,3 +6765,13 @@ Use mongoose.model(name, schema)
 2025-05-26T11:06:19.089Z [INFO]: Fetching comments for post ID: 68319085ff888836007ecd14
 2025-05-26T11:06:19.102Z [INFO]: Post found: 68319085ff888836007ecd14, views: 238/0
 2025-05-26T11:06:19.135Z [INFO]: Post views updated: 239/0
+2025-05-27T02:27:42.398Z [INFO]: Fetching post with ID: 68344956b439e715badbc25f, userId: 66dfbd050bdfe18c723f1066
+2025-05-27T02:27:42.449Z [INFO]: Post found: 68344956b439e715badbc25f, views: 4/0
+2025-05-27T02:27:42.479Z [INFO]: Post views updated: 5/0
+2025-05-27T02:27:42.505Z [INFO]: Fetching post with ID: 68344956b439e715badbc25f, userId: 66dfbd050bdfe18c723f1066
+2025-05-27T02:27:42.557Z [INFO]: Post found: 68344956b439e715badbc25f, views: 5/0
+2025-05-27T02:27:42.588Z [INFO]: Post views updated: 6/0
+2025-05-27T02:27:42.596Z [INFO]: Fetching comments for post ID: 68344956b439e715badbc25f
+2025-05-27T02:27:42.597Z [INFO]: Fetching comments for post ID: 68344956b439e715badbc25f
+2025-05-27T02:27:42.663Z [INFO]: Fetching comments for post ID: 68344956b439e715badbc25f
+2025-05-27T02:27:42.664Z [INFO]: Fetching comments for post ID: 68344956b439e715badbc25f
