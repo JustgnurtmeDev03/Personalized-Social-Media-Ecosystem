@@ -1,10 +1,48 @@
 import HTTP_STATUS from "~/constants/httpStatus";
 import { USERS_MESSAGES } from "~/constants/message";
+import Thread from "~/models/Thread";
 import User, { IUser } from "~/models/User";
 import { HttpError } from "~/utils/httpError";
 import logger from "~/utils/logger";
 
 export class UserService {
+  static async getAllUsers(): Promise<any[]> {
+    try {
+      const users = await User.find({}).select(
+        "_id avatar bio date_of_birth createdAt name username email roles status followers following link"
+      );
+      console.log("Raw users from MongoDB:", users); // Debug dữ liệu thô
+
+      const usersWithStats = await Promise.all(
+        users.map(async (user) => {
+          return {
+            _id: user._id,
+            date_of_birth: user.date_of_birth
+              ? user.date_of_birth.toISOString()
+              : null, // Chuyển Date thành ISO string
+            avatar: user.avatar || "",
+            bio: user.bio || "",
+            link: user.link || "",
+            createdAt: user.created_at,
+            name: user.name || "",
+            username: user.username || "",
+            email: user.email || "",
+            roles: user.roles || ["user"],
+            status: user.status || "active",
+          };
+        })
+      );
+
+      console.log("Processed users:", usersWithStats); // Debug dữ liệu sau xử lý
+      return usersWithStats;
+    } catch (error: any) {
+      logger.error(`Get all users service error: ${error.message}`, { error });
+      throw new HttpError(
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Không thể lấy danh sách người dùng"
+      );
+    }
+  }
   static async getUserProfilebyID(
     _id: string
   ): Promise<{ user: Partial<IUser> }> {

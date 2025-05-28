@@ -57,7 +57,8 @@ var threadSchema = new mongoose_1.Schema({
         type: Number,
         "default": 0
     },
-    cloudinaryPublicIds: [{ type: String }]
+    cloudinaryPublicIds: [{ type: String }],
+    isPinned: { type: Boolean, "default": false }
 });
 var shareSchema = new mongoose_1.Schema({
     threadId: { type: mongoose_1.Schema.Types.ObjectId, ref: "Thread", required: true },

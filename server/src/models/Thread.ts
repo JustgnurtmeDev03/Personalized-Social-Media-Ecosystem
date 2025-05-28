@@ -42,6 +42,7 @@ interface IThread extends Document {
   sharesCount: number;
   repostsCount: number;
   cloudinaryPublicIds: string[]; // Lưu nhiều public_id
+  isPinned: boolean;
 }
 
 const threadSchema = new Schema<IThread>({
@@ -101,6 +102,7 @@ const threadSchema = new Schema<IThread>({
     default: 0,
   },
   cloudinaryPublicIds: [{ type: String }],
+  isPinned: { type: Boolean, default: false },
 });
 
 const shareSchema = new Schema<IShare>({

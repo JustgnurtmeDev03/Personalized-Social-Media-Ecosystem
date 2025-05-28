@@ -6,6 +6,7 @@ var threadController_1 = require("~/controllers/threadController");
 var auth_1 = require("~/middlewares/auth");
 var commentController_1 = require("~/controllers/commentController");
 var router = express_1["default"].Router();
+// User
 router.post("/upload", uploadMiddleware_1["default"].array("media", 10), auth_1["default"], threadController_1.createThread);
 router.get("/posts", auth_1["default"], threadController_1.getThread);
 router.post("/like", auth_1["default"], threadController_1.toggleLike);
@@ -18,4 +19,7 @@ router.post("/unlike-comment", auth_1["default"], commentController_1.unlikeComm
 router.post("/reply", auth_1["default"], commentController_1.addReply);
 router.get("/:id/comments", auth_1["default"], commentController_1.getComments);
 router.get("/:_id/posts", auth_1["default"], threadController_1.getUserPosts);
+// Admin
+router["delete"]("/delete/:id", auth_1["default"], threadController_1.deletePostAdmin);
+router.post("/pin/:id", auth_1["default"], threadController_1.togglePinPost);
 exports["default"] = router;

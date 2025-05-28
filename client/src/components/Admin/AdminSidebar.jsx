@@ -175,7 +175,7 @@ const AdminSidebar = () => {
                   className={navLinkStyles}
                 >
                   <i className="far fa-lightbulb text-lg"></i>
-                  Inspirations
+                  Sáng tạo
                 </NavLink>
               </li>
               <li>
@@ -184,7 +184,7 @@ const AdminSidebar = () => {
                   className={navLinkStyles}
                 >
                   <i className="far fa-bookmark text-lg"></i>
-                  Creator Academy
+                  Nhà sáng tạo nội dung
                 </NavLink>
               </li>
               <li>
@@ -193,7 +193,7 @@ const AdminSidebar = () => {
                   className={navLinkStyles}
                 >
                   <i className="fas fa-music text-lg"></i>
-                  Unlimited Sounds
+                  Âm thanh xu hướng
                 </NavLink>
               </li>
             </ul>

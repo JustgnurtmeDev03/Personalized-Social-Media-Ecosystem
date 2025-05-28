@@ -18,6 +18,22 @@ export const fetchUserProfile = async (userId, options) => {
   }
 };
 
+export const fetchAllUsers = async (options) => {
+  try {
+    const res = await axios.get(`${API_URL}/get-users`, options);
+
+    // Kiểm tra dữ liệu trả về
+    if (res.data && Array.isArray(res.data.users)) {
+      return res.data.users;
+    } else {
+      throw new Error("Invalid response format: Expected 'users' array");
+    }
+  } catch (error) {
+    console.error("Error fetching all users:", error.message);
+    throw error; // Để xử lý lỗi ở nơi gọi hàm
+  }
+};
+
 export const updateUserProfile = async (accessToken, newBio, fileInput) => {
   try {
     const formData = new FormData();

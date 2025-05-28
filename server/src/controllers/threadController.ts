@@ -121,25 +121,26 @@ const getThread = asyncHandler(
       if (!user) {
         return next(new AppError("User not found", 404));
       }
+
       const posts = await Thread.find()
         .populate("author", "username _id avatar")
-        .sort({ createdAt: -1 });
-      // Lấy danh sách bài viết người dùng đã like
+        .sort({ isPinned: -1, createdAt: -1 }); // Ưu tiên bài ghim, sau đó mới theo createdAt
+
       const likedPosts = await Like.find({ user: req.user.id }).distinct(
         "threadId"
       );
       const likedPostIds = likedPosts.map((id) => id.toString());
-      // Thêm trạng thái 'isLiked' cho mỗi bài viết
+
       const formattedPosts = posts.map((post) => ({
         ...post.toObject(),
         isLiked:
           likedPostIds.length > 0
             ? likedPostIds.includes(post._id.toString())
-            : false, // Gắn trạng thái like cho bài viết
+            : false,
       }));
 
       res.json({ posts: formattedPosts });
-    } catch {
+    } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Error fetching posts" });
     }
@@ -309,4 +310,83 @@ function generateRandomUsername(): string {
   return `@${randomWord}${randomNum}`;
 }
 
-export { getThread, createThread, toggleLike, getLikedThreads, getPostById };
+// ADMIN FUNCTION
+
+const deletePostAdmin = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const postId = req.params.id;
+      const post = await Thread.findById(postId);
+
+      if (!post) {
+        return next(new AppError("Post not found", 404));
+      }
+
+      if (
+        post.author.toString() !== req.user.id &&
+        (!Array.isArray(req.user?.roles) || !req.user?.roles.includes("admin"))
+      ) {
+        return next(new AppError("Not authorized to delete this post", 403));
+      }
+
+      await Thread.deleteOne({ _id: postId });
+      res.json({ message: "Post deleted successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Error deleting post" });
+    }
+  }
+);
+
+const togglePinPost = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const postId = req.params.id;
+      const post = await Thread.findById(postId);
+
+      if (!post) {
+        return next(new AppError("Post not found", 404));
+      }
+
+      if (post.author.toString() !== req.user?.id) {
+        if (
+          !Array.isArray(req.user?.roles) ||
+          !req.user?.roles.includes("admin")
+        ) {
+          return next(new AppError("Not authorized to pin this post", 403));
+        }
+      }
+
+      post.isPinned = !post.isPinned;
+      await post.save();
+
+      res.json({
+        message: post.isPinned
+          ? "Post pinned successfully"
+          : "Post unpinned successfully",
+        isPinned: post.isPinned,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Error toggling pin status" });
+    }
+  }
+);
+
+export {
+  getThread,
+  createThread,
+  toggleLike,
+  getLikedThreads,
+  getPostById,
+  deletePostAdmin,
+  togglePinPost,
+};

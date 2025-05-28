@@ -47,12 +47,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.createThread = exports.getThread = exports.getUserPosts = exports.getTotalPosts = void 0;
+exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.createThread = exports.getThread = exports.getUserPosts = exports.getTotalPosts = void 0;
 var Thread_1 = require("~/models/Thread");
 var User_1 = require("~/models/User");
 var Hashtag_1 = require("~/models/Hashtag");
 var asyncHandler_1 = require("~/middlewares/asyncHandler");
-var console_1 = require("console");
 var AppError_1 = require("~/utils/AppError");
 var uuid_1 = require("uuid");
 var Like_1 = require("~/models/Like");
@@ -173,25 +172,25 @@ var createThread = asyncHandler_1["default"](function (req, res) { return __awai
 }); });
 exports.createThread = createThread;
 var getThread = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var user, posts, likedPosts, likedPostIds_1, formattedPosts, _a;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
+    var user, posts, likedPosts, likedPostIds_1, formattedPosts, error_1;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
             case 0:
-                _b.trys.push([0, 4, , 5]);
+                _a.trys.push([0, 4, , 5]);
                 return [4 /*yield*/, User_1["default"].findById(req.user.id)];
             case 1:
-                user = _b.sent();
+                user = _a.sent();
                 if (!user) {
                     return [2 /*return*/, next(new AppError_1.AppError("User not found", 404))];
                 }
                 return [4 /*yield*/, Thread_1["default"].find()
                         .populate("author", "username _id avatar")
-                        .sort({ createdAt: -1 })];
+                        .sort({ isPinned: -1, createdAt: -1 })];
             case 2:
-                posts = _b.sent();
+                posts = _a.sent();
                 return [4 /*yield*/, Like_1["default"].find({ user: req.user.id }).distinct("threadId")];
             case 3:
-                likedPosts = _b.sent();
+                likedPosts = _a.sent();
                 likedPostIds_1 = likedPosts.map(function (id) { return id.toString(); });
                 formattedPosts = posts.map(function (post) { return (__assign(__assign({}, post.toObject()), { isLiked: likedPostIds_1.length > 0
                         ? likedPostIds_1.includes(post._id.toString())
@@ -199,8 +198,8 @@ var getThread = asyncHandler_1["default"](function (req, res, next) { return __a
                 res.json({ posts: formattedPosts });
                 return [3 /*break*/, 5];
             case 4:
-                _a = _b.sent();
-                console.error(console_1.error);
+                error_1 = _a.sent();
+                console.error(error_1);
                 res.status(500).json({ message: "Error fetching posts" });
                 return [3 /*break*/, 5];
             case 5: return [2 /*return*/];
@@ -209,7 +208,7 @@ var getThread = asyncHandler_1["default"](function (req, res, next) { return __a
 }); });
 exports.getThread = getThread;
 var getPostById = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var postId, userId, post, error_1;
+    var postId, userId, post, error_2;
     var _a;
     return __generator(this, function (_b) {
         switch (_b.label) {
@@ -226,8 +225,8 @@ var getPostById = asyncHandler_1["default"](function (req, res, next) { return _
                 res.status(httpStatus_1["default"].OK).json(post);
                 return [3 /*break*/, 3];
             case 2:
-                error_1 = _b.sent();
-                next(error_1);
+                error_2 = _b.sent();
+                next(error_2);
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
         }
@@ -235,7 +234,7 @@ var getPostById = asyncHandler_1["default"](function (req, res, next) { return _
 }); });
 exports.getPostById = getPostById;
 var toggleLike = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var threadId, userId, thread, user, username, existingLike, newLike, error_2;
+    var threadId, userId, thread, user, username, existingLike, newLike, error_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -304,8 +303,8 @@ var toggleLike = asyncHandler_1["default"](function (req, res, next) { return __
                 _a.label = 9;
             case 9: return [3 /*break*/, 11];
             case 10:
-                error_2 = _a.sent();
-                next(error_2);
+                error_3 = _a.sent();
+                next(error_3);
                 return [3 /*break*/, 11];
             case 11: return [2 /*return*/];
         }
@@ -329,7 +328,7 @@ var getLikedThreads = asyncHandler_1["default"](function (req, res, next) { retu
 }); });
 exports.getLikedThreads = getLikedThreads;
 exports.getTotalPosts = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var totalPosts, error_3;
+    var totalPosts, error_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -342,7 +341,7 @@ exports.getTotalPosts = asyncHandler_1["default"](function (req, res, next) { re
                 });
                 return [3 /*break*/, 3];
             case 2:
-                error_3 = _a.sent();
+                error_4 = _a.sent();
                 res
                     .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
                     .send({ error: "Failed to fetch totals" });
@@ -352,7 +351,7 @@ exports.getTotalPosts = asyncHandler_1["default"](function (req, res, next) { re
     });
 }); });
 exports.getUserPosts = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var _id, posts, error_4;
+    var _id, posts, error_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -366,7 +365,7 @@ exports.getUserPosts = asyncHandler_1["default"](function (req, res, next) { ret
                 });
                 return [3 /*break*/, 3];
             case 2:
-                error_4 = _a.sent();
+                error_5 = _a.sent();
                 res
                     .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
                     .send({ error: "Failed to fetch user posts" });
@@ -400,3 +399,78 @@ function generateRandomUsername() {
     // Tạo username có dạng: "cool123" với độ dài khoảng 15 ký tự
     return "@" + randomWord + randomNum;
 }
+// ADMIN FUNCTION
+var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var postId, post, error_6;
+    var _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                _c.trys.push([0, 3, , 4]);
+                postId = req.params.id;
+                return [4 /*yield*/, Thread_1["default"].findById(postId)];
+            case 1:
+                post = _c.sent();
+                if (!post) {
+                    return [2 /*return*/, next(new AppError_1.AppError("Post not found", 404))];
+                }
+                if (post.author.toString() !== req.user.id &&
+                    (!Array.isArray((_a = req.user) === null || _a === void 0 ? void 0 : _a.roles) || !((_b = req.user) === null || _b === void 0 ? void 0 : _b.roles.includes("admin")))) {
+                    return [2 /*return*/, next(new AppError_1.AppError("Not authorized to delete this post", 403))];
+                }
+                return [4 /*yield*/, Thread_1["default"].deleteOne({ _id: postId })];
+            case 2:
+                _c.sent();
+                res.json({ message: "Post deleted successfully" });
+                return [3 /*break*/, 4];
+            case 3:
+                error_6 = _c.sent();
+                console.error(error_6);
+                res.status(500).json({ message: "Error deleting post" });
+                return [3 /*break*/, 4];
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
+exports.deletePostAdmin = deletePostAdmin;
+var togglePinPost = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var postId, post, error_7;
+    var _a, _b, _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
+            case 0:
+                _d.trys.push([0, 3, , 4]);
+                postId = req.params.id;
+                return [4 /*yield*/, Thread_1["default"].findById(postId)];
+            case 1:
+                post = _d.sent();
+                if (!post) {
+                    return [2 /*return*/, next(new AppError_1.AppError("Post not found", 404))];
+                }
+                if (post.author.toString() !== ((_a = req.user) === null || _a === void 0 ? void 0 : _a.id)) {
+                    if (!Array.isArray((_b = req.user) === null || _b === void 0 ? void 0 : _b.roles) ||
+                        !((_c = req.user) === null || _c === void 0 ? void 0 : _c.roles.includes("admin"))) {
+                        return [2 /*return*/, next(new AppError_1.AppError("Not authorized to pin this post", 403))];
+                    }
+                }
+                post.isPinned = !post.isPinned;
+                return [4 /*yield*/, post.save()];
+            case 2:
+                _d.sent();
+                res.json({
+                    message: post.isPinned
+                        ? "Post pinned successfully"
+                        : "Post unpinned successfully",
+                    isPinned: post.isPinned
+                });
+                return [3 /*break*/, 4];
+            case 3:
+                error_7 = _d.sent();
+                console.error(error_7);
+                res.status(500).json({ message: "Error toggling pin status" });
+                return [3 /*break*/, 4];
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
+exports.togglePinPost = togglePinPost;

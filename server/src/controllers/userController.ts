@@ -15,6 +15,21 @@ interface AuthenticatedRequest extends Request {
   user?: any;
 }
 
+export const getAllUsers = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const users = await UserService.getAllUsers();
+      res.status(HTTP_STATUS.OK).json({
+        users,
+      });
+    } catch (error: any) {
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .send({ error: "Không thể lấy danh sách người dùng" });
+    }
+  }
+);
+
 export const getProfile = asyncHandler(
   async (
     req: AuthenticatedRequest,

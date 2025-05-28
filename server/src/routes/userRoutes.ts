@@ -7,6 +7,7 @@ import {
   unfollowUser,
 } from "~/controllers/followController";
 import {
+  getAllUsers,
   getProfile,
   getProfileByID,
   getTotalUsers,
@@ -18,7 +19,7 @@ import { validateObjectId } from "~/middlewares/validation";
 
 const router = express.Router();
 
-// Route lấy thông tin người dùng hiện tại
+// USER
 router.get("/profile", authMiddleware, getProfile);
 router.get(
   "/profile/:_id",
@@ -65,5 +66,8 @@ router.get(
   validateObjectId("_id"),
   getFollowing
 );
+
+// ADMIN
+router.get("/get-users", authMiddleware, getAllUsers);
 
 export default router;

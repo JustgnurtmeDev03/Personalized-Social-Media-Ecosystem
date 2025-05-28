@@ -56,9 +56,53 @@ var logger_1 = require("~/utils/logger");
 var UserService = /** @class */ (function () {
     function UserService() {
     }
+    UserService.getAllUsers = function () {
+        return __awaiter(this, void 0, Promise, function () {
+            var users, usersWithStats, error_1;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, User_1["default"].find({}).select("_id avatar bio date_of_birth createdAt name username email roles status followers following link")];
+                    case 1:
+                        users = _a.sent();
+                        console.log("Raw users from MongoDB:", users); // Debug dữ liệu thô
+                        return [4 /*yield*/, Promise.all(users.map(function (user) { return __awaiter(_this, void 0, void 0, function () {
+                                return __generator(this, function (_a) {
+                                    return [2 /*return*/, {
+                                            _id: user._id,
+                                            date_of_birth: user.date_of_birth
+                                                ? user.date_of_birth.toISOString()
+                                                : null,
+                                            avatar: user.avatar || "",
+                                            bio: user.bio || "",
+                                            link: user.link || "",
+                                            createdAt: user.created_at,
+                                            name: user.name || "",
+                                            username: user.username || "",
+                                            email: user.email || "",
+                                            roles: user.roles || ["user"],
+                                            status: user.status || "active"
+                                        }];
+                                });
+                            }); }))];
+                    case 2:
+                        usersWithStats = _a.sent();
+                        console.log("Processed users:", usersWithStats); // Debug dữ liệu sau xử lý
+                        return [2 /*return*/, usersWithStats];
+                    case 3:
+                        error_1 = _a.sent();
+                        logger_1["default"].error("Get all users service error: " + error_1.message, { error: error_1 });
+                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Không thể lấy danh sách người dùng");
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
     UserService.getUserProfilebyID = function (_id) {
         return __awaiter(this, void 0, Promise, function () {
-            var user, password, emailVerificationToken, emailVerificationTokenExpires, roles, status, tokenVersion, cloudinaryPublicId, userWithoutSensitiveFields, error_1;
+            var user, password, emailVerificationToken, emailVerificationTokenExpires, roles, status, tokenVersion, cloudinaryPublicId, userWithoutSensitiveFields, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -74,12 +118,12 @@ var UserService = /** @class */ (function () {
                         password = user.password, emailVerificationToken = user.emailVerificationToken, emailVerificationTokenExpires = user.emailVerificationTokenExpires, roles = user.roles, status = user.status, tokenVersion = user.tokenVersion, cloudinaryPublicId = user.cloudinaryPublicId, userWithoutSensitiveFields = __rest(user, ["password", "emailVerificationToken", "emailVerificationTokenExpires", "roles", "status", "tokenVersion", "cloudinaryPublicId"]);
                         return [2 /*return*/, { user: userWithoutSensitiveFields }];
                     case 2:
-                        error_1 = _a.sent();
-                        logger_1["default"].error("Get user profile service error: " + error_1.message, {
-                            error: error_1
+                        error_2 = _a.sent();
+                        logger_1["default"].error("Get user profile service error: " + error_2.message, {
+                            error: error_2
                         });
-                        throw error_1 instanceof httpError_1.HttpError
-                            ? error_1
+                        throw error_2 instanceof httpError_1.HttpError
+                            ? error_2
                             : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
                     case 3: return [2 /*return*/];
                 }
@@ -88,7 +132,7 @@ var UserService = /** @class */ (function () {
     };
     UserService.getTotalUsers = function () {
         return __awaiter(this, void 0, Promise, function () {
-            var currentDate, sevenDaysAgo, currentUsers, previousUsers, error_2;
+            var currentDate, sevenDaysAgo, currentUsers, previousUsers, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -106,9 +150,9 @@ var UserService = /** @class */ (function () {
                         previousUsers = _a.sent();
                         return [2 /*return*/, { current: currentUsers, previous: previousUsers }];
                     case 3:
-                        error_2 = _a.sent();
-                        logger_1["default"].error("Get total users service error: " + error_2.message, {
-                            error: error_2
+                        error_3 = _a.sent();
+                        logger_1["default"].error("Get total users service error: " + error_3.message, {
+                            error: error_3
                         });
                         throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
                     case 4: return [2 /*return*/];
