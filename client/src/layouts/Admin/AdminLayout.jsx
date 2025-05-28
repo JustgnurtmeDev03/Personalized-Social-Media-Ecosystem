@@ -1,14 +1,23 @@
 import React from "react";
+import { Routes, Route } from "react-router-dom";
 import AdminSidebar from "../../components/Admin/AdminSidebar";
 import "../../styles/Admin/AdminLayout.css";
 import AdminDashBoard from "../../pages/Admin/Dashboard";
+import ManagePosts from "../../components/Admin/ManagePost";
+import ManageUsers from "../../components/Admin/ManageUser";
 
 const AdminLayout = () => {
   return (
     <div className="admin-container">
       <AdminSidebar />
       <div className="admin-content">
-        <AdminDashBoard />
+        <Routes>
+          <Route index element={<AdminDashBoard />} />
+          <Route path="/Manage-posts" element={<ManagePosts />} />
+          <Route path="/Manage-users" element={<ManageUsers />} />
+          <Route path="/Manage-comments" />
+          {/* Thêm các route con khác nếu cần */}
+        </Routes>
       </div>
     </div>
   );

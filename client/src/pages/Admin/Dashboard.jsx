@@ -15,6 +15,7 @@ import { fetchUserProfile, fetchTotalUsers } from "../../services/userService";
 import { fetchTotalPosts } from "../../services/threadService";
 import Avatar from "../../assets/Avatar";
 import { jwtDecode } from "jwt-decode";
+import Authentication from "../../components/Admin/Authentication";
 
 // Đăng ký các thành phần cần thiết của Chart.js
 ChartJS.register(
@@ -174,9 +175,7 @@ const AdminDashBoard = () => {
 
   return (
     <div className="bg-[#fafafa] min-h-screen w-full h-full">
-      <div className="header w-full bg-[#fafafa] border-b border-gray-200 flex justify-end items-center pr-5">
-        <Avatar _id={adminData?._id} avatarUrl={adminData?.avatar} size={50} />
-      </div>
+      <Authentication />
 
       <div className="px-2 py-6 max-w-[1340px] mx-auto">
         <section className="bg-white w-full rounded-lg border border-gray-200 p-4 flex items-center gap-4 max-w-[1210px]">

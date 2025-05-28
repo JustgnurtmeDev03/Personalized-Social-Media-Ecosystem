@@ -13,3 +13,8 @@
 .admin-content {
   flex: 1;
 }
+.fixed-table-container {
+  max-height: 530px;
+  overflow-y: auto;
+  display: block;
+}

@@ -1,8 +1,11 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 const AdminSidebar = () => {
-  const navigate = useNavigate();
+  const navLinkStyles = ({ isActive }) =>
+    isActive
+      ? "flex items-center gap-3 rounded-md bg-gray-200 px-3 py-2 font-semibold text-black"
+      : "flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-md";
 
   return (
     <div className="bg-white">
@@ -25,20 +28,8 @@ const AdminSidebar = () => {
                 x2="100%"
                 y2="100%"
               >
-                <stop offset="0%" style={{ stopColor: "#ffdde1" }} />{" "}
-                {/* Hồng nhạt */}
-                <stop offset="100%" style={{ stopColor: "#1da1f2" }} />{" "}
-                {/* Xanh Twitter */}
-              </linearGradient>
-              <linearGradient
-                id="gensGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="100%"
-              >
                 <stop offset="0%" style={{ stopColor: "#ffdde1" }} />
-                <stop offset="100%" style={{ stopColor: "#6b48ff" }} />
+                <stop offset="100%" style={{ stopColor: "#1da1f2" }} />
               </linearGradient>
             </defs>
             <path
@@ -80,10 +71,7 @@ const AdminSidebar = () => {
             </h3>
             <ul className="space-y-2 text-gray-700 text-base font-normal">
               <li>
-                <a
-                  className="flex items-center gap-3 rounded-md bg-gray-200 px-3 py-2 font-semibold text-black"
-                  href="#"
-                >
+                <NavLink to="/admin/dashboard" end className={navLinkStyles}>
                   <svg
                     viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
@@ -94,8 +82,6 @@ const AdminSidebar = () => {
                     data-icon="house"
                     aria-hidden="true"
                     fill="var(--ui-text-1)"
-                    will-change="auto"
-                    transform="rotate(0)"
                   >
                     <path
                       fill-rule="evenodd"
@@ -104,12 +90,12 @@ const AdminSidebar = () => {
                     ></path>
                   </svg>
                   Trang chủ
-                </a>
+                </NavLink>
               </li>
               <li>
-                <a
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-md"
-                  href="#"
+                <NavLink
+                  to="/admin/dashboard/Manage-posts"
+                  className={navLinkStyles}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -121,24 +107,22 @@ const AdminSidebar = () => {
                     data-icon="folder"
                     aria-hidden="true"
                     fill="var(--ui-text-2)"
-                    will-change="auto"
-                    transform="rotate(0)"
                   >
-                    <path d="M5.998 3a3 3 0 0 0-3 3v11a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V8a1 1 0 0 0-1-1h-5c-.755 0-.998-.245-1.594-1.438C12.501 3.755 11.744 3 9.998 3zm0 2h4c.755 0 .998.245 1.594 1.438.13.261.184.344.312.562H7.967a1 1 0 0 0 0 2h11.031v8a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V6a1 1 0 0 1 1-1m4 8a1 1 0 0 0 0 2h4a1 1 0 0 0 0-2z"></path>
+                    <path d="M5.998 3a3 3 0 0 0-3 3v11a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V8a1 1 0 0 0-1-1h-5c-.755 0-.998-.245-1.594-1.438C12.501 3.755 11.744 3 9.998 3zm0 2h4c-.755 0 .998.245 1.594 1.438.13.261.184.344.312.562H7.967a1 1 0 0 0 0 2h11.031v8a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V6a1 1 0 0 1 1-1m4 8a1 1 0 0 0 0 2h4a1 1 0 0 0 0-2z"></path>
                   </svg>
                   Bài đăng
-                </a>
+                </NavLink>
               </li>
               <li>
-                <a
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-md"
-                  href="#"
+                <NavLink
+                  to="/admin/dashboard/Manage-users"
+                  className={navLinkStyles}
                 >
                   <svg
                     aria-label="Profile"
                     role="img"
                     viewBox="0 0 26 26"
-                    className="fill-white "
+                    className="fill-white"
                   >
                     <title>Profile</title>
                     <circle
@@ -155,12 +139,12 @@ const AdminSidebar = () => {
                     ></path>
                   </svg>
                   Người dùng
-                </a>
+                </NavLink>
               </li>
               <li>
-                <a
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-md"
-                  href="#"
+                <NavLink
+                  to="/admin/dashboard/comments"
+                  className={navLinkStyles}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -172,65 +156,61 @@ const AdminSidebar = () => {
                     data-icon="comments"
                     aria-hidden="true"
                     fill="var(--ui-text-2)"
-                    will-change="auto"
-                    transform="rotate(0)"
                   >
                     <path d="M4 11c0-3.427 3.403-6.5 8-6.5s8 3.073 8 6.5c0 2.148-1.072 4.037-2.595 5.619-1.049 1.089-2.275 1.992-3.405 2.683V17.5h-2c-4.597 0-8-3.073-8-6.5m8-8.5C6.655 2.5 2 6.143 2 11s4.655 8.5 10 8.5V21a1 1 0 0 0 1.447.894c1.565-.782 3.67-2.093 5.398-3.888C20.572 16.213 22 13.852 22 11c0-4.857-4.656-8.5-10-8.5m-3 8.75a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0m4.25 0a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0m3 1.25a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5"></path>
                   </svg>
                   Bình luận
-                </a>
+                </NavLink>
               </li>
             </ul>
           </div>
-
           <div className="mb-6">
             <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3 select-none">
               Tools
             </h3>
             <ul className="space-y-2 text-gray-700 text-base font-normal">
               <li>
-                <a
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-md"
-                  href="#"
+                <NavLink
+                  to="/admin/dashboard/inspirations"
+                  className={navLinkStyles}
                 >
                   <i className="far fa-lightbulb text-lg"></i>
                   Inspirations
-                </a>
+                </NavLink>
               </li>
               <li>
-                <a
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-md"
-                  href="#"
+                <NavLink
+                  to="/admin/dashboard/creator-academy"
+                  className={navLinkStyles}
                 >
                   <i className="far fa-bookmark text-lg"></i>
                   Creator Academy
-                </a>
+                </NavLink>
               </li>
               <li>
-                <a
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-md"
-                  href="#"
+                <NavLink
+                  to="/admin/dashboard/unlimited-sounds"
+                  className={navLinkStyles}
                 >
                   <i className="fas fa-music text-lg"></i>
                   Unlimited Sounds
-                </a>
+                </NavLink>
               </li>
             </ul>
           </div>
-
           <div>
             <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3 select-none">
               Others
             </h3>
             <ul className="space-y-2 text-gray-700 text-base font-normal">
               <li>
-                <a
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 rounded-md"
-                  href="#"
+                <NavLink
+                  to="/admin/dashboard/feedback"
+                  className={navLinkStyles}
                 >
                   <i className="far fa-envelope text-lg"></i>
                   Phản hồi
-                </a>
+                </NavLink>
               </li>
             </ul>
           </div>
@@ -240,4 +220,4 @@ const AdminSidebar = () => {
   );
 };
 
-export default AdminSidebar;
+export default React.memo(AdminSidebar);
