@@ -54,12 +54,13 @@ var Follow_1 = require("~/models/Follow");
 var User_1 = require("~/models/User");
 var AppError_1 = require("~/utils/AppError");
 var logger_1 = require("~/utils/logger");
+var notificationService_1 = require("./notificationService");
 var FollowService = /** @class */ (function () {
     function FollowService() {
     }
     FollowService.followUser = function (followerId, followeeId) {
         return __awaiter(this, void 0, Promise, function () {
-            var existingFollow;
+            var existingFollow, follower;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, Follow_1["default"].findOne({ followerId: followerId, followeeId: followeeId })];
@@ -71,6 +72,15 @@ var FollowService = /** @class */ (function () {
                         return [4 /*yield*/, Follow_1["default"].create({ followerId: followerId, followeeId: followeeId })];
                     case 2:
                         _a.sent();
+                        return [4 /*yield*/, User_1["default"].findById(followerId).select("username")];
+                    case 3:
+                        follower = _a.sent();
+                        if (!follower) return [3 /*break*/, 5];
+                        return [4 /*yield*/, notificationService_1.NotificationService.createNotification(followeeId, "follow", follower.username + " \u0111\u00E3 theo d\u00F5i b\u1EA1n", followerId)];
+                    case 4:
+                        _a.sent();
+                        _a.label = 5;
+                    case 5:
                         logger_1["default"].info("User " + followerId + " followed user " + followeeId);
                         return [2 /*return*/];
                 }

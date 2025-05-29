@@ -9,6 +9,7 @@ var cookie_parser_1 = require("cookie-parser");
 var authRoutes_1 = require("./routes/authRoutes");
 var userRoutes_1 = require("./routes/userRoutes");
 var threadRoutes_1 = require("./routes/threadRoutes");
+var notificationRoutes_1 = require("./routes/notificationRoutes");
 var errorMiddleware_1 = require("./middlewares/errorMiddleware");
 var AppError_1 = require("./utils/AppError");
 var cloudinary_1 = require("./config/cloudinary");
@@ -37,6 +38,7 @@ app.use("/api/auth", authRoutes_1["default"]);
 // app.use("/api/post", postRoutes);
 app.use("/api/users", userRoutes_1["default"]);
 app.use("/api/threads", threadRoutes_1["default"]);
+app.use("/api/notifications", notificationRoutes_1["default"]);
 // Xử lý route không tìm thấy
 app.all("*", function (req, res, next) {
     next(new AppError_1.AppError("Cannot find " + req.originalUrl + " on this server", 404));

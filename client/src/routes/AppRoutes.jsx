@@ -140,7 +140,15 @@ const AppRoutes = () => {
           }
         />
         <Route path="/search" element={<Search />} />
-        <Route path="/activity" element={<Activity />} />
+        <Route
+          path="/activity"
+          element={
+            <ProtectedRoute
+              element={Activity}
+              isAuthenticated={!!isAuthenticated}
+            />
+          }
+        />
         <Route
           path="/login"
           element={

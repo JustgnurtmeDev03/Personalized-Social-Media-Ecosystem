@@ -1,10 +1,15 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import * as jwt from "jsonwebtoken";
+import { SignOptions } from "jsonwebtoken";
+import ms from "ms";
+import * as dotenv from "dotenv";
 import validator from "validator";
 import { config } from "dotenv";
 import { RefreshToken } from "./RefreshToken";
-config();
+import { StringValue } from "ms";
+
+dotenv.config();
 
 // Định nghĩa giao diện cho token
 
@@ -224,31 +229,50 @@ userSchema.methods.generateAuthTokens = async function (): Promise<{
   refreshToken: string;
 }> {
   const user = this;
-  // Tạo Access Token
-  const accessToken = jwt.sign(
-    { id: user._id.toString(), roles: user.roles },
-    process.env.JWT_ACCESS_SECRET as string,
-    { expiresIn: process.env.JWT_ACCESS_EXPIRATION }
-  );
 
-  // Tạo Refresh Token
-  const refreshToken = jwt.sign(
-    {
-      id: user._id.toString(),
-      tokenVersion: user.tokenVersion,
-    },
-    process.env.JWT_REFRESH_SECRET as string,
-    {
-      expiresIn: process.env.JWT_REFRESH_EXPIRATION,
-    }
-  );
+  // Lấy biến môi trường
+  const accessSecret = process.env.JWT_ACCESS_SECRET;
+  const refreshSecret = process.env.JWT_REFRESH_SECRET;
+  const accessExpiration = process.env.JWT_ACCESS_EXPIRATION as StringValue;
+  const refreshExpiration = process.env.JWT_REFRESH_EXPIRATION as StringValue;
 
-  //Lưu Refresh Token vào collection riêng biệt
+  // Kiểm tra biến môi trường
+  if (
+    !accessSecret ||
+    !refreshSecret ||
+    !accessExpiration ||
+    !refreshExpiration
+  ) {
+    throw new Error("Missing JWT environment variables");
+  }
+
+  // Khai báo payload và options
+  const accessPayload: { id: string; roles: string[] } = {
+    id: user._id.toString(),
+    roles: user.roles,
+  };
+  const accessOptions: SignOptions = {
+    expiresIn: accessExpiration,
+  };
+
+  const refreshPayload: { id: string; tokenVersion: number } = {
+    id: user._id.toString(),
+    tokenVersion: user.tokenVersion,
+  };
+  const refreshOptions: SignOptions = {
+    expiresIn: refreshExpiration,
+  };
+
+  // Tạo token
+  const accessToken = jwt.sign(accessPayload, accessSecret, accessOptions);
+  const refreshToken = jwt.sign(refreshPayload, refreshSecret, refreshOptions);
+
+  // Lưu refresh token
   const tokenDoc = new RefreshToken({
-    userId: user.id,
+    userId: user._id,
     refreshToken,
     createdAt: new Date(),
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 ngày
+    expiresAt: new Date(Date.now() + ms("7d")),
     tokenVersion: user.tokenVersion,
   });
 
@@ -256,7 +280,6 @@ userSchema.methods.generateAuthTokens = async function (): Promise<{
 
   return { accessToken, refreshToken };
 };
-
 // Tăng phiên bản tokenVersion
 
 userSchema.methods.invalidateTokens = async function (): Promise<void> {

@@ -4,6 +4,7 @@ import Follow from "~/models/Follow";
 import User, { IUser } from "~/models/User";
 import { AppError } from "~/utils/AppError";
 import logger from "~/utils/logger";
+import { NotificationService } from "./notificationService";
 
 export class FollowService {
   static async followUser(
@@ -16,6 +17,18 @@ export class FollowService {
     }
 
     await Follow.create({ followerId, followeeId });
+
+    // Tạo thông báo cho người được theo dõi
+    const follower = await User.findById(followerId).select("username");
+    if (follower) {
+      await NotificationService.createNotification(
+        followeeId,
+        "follow",
+        `${follower.username} đã theo dõi bạn`,
+        followerId
+      );
+    }
+
     logger.info(`User ${followerId} followed user ${followeeId}`);
   }
   static async unfollowUser(

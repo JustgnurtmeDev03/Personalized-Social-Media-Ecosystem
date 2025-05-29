@@ -533,7 +533,6 @@ const PostBar = ({ onClick }) => {
             Đăng
           </button>
         </div>
-
         {/* Bài viết công khai */}
         {postsError ? (
           <p className="text-center text-red-500">{postsError}</p>
@@ -697,9 +696,9 @@ const PostBar = ({ onClick }) => {
             Không có bài viết nào để hiển thị.
           </p>
         )}
-
         {/* Bài viết đề xuất */}
-        <div className="mt-6">
+
+        <div className="mt-6 hidden">
           <h2 className="text-lg font-bold mb-4">Đề xuất cho bạn</h2>
           {recommendedError ? (
             <p className="text-center text-red-500">{recommendedError}</p>

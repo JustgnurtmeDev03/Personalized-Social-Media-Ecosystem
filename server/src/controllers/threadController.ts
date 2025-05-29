@@ -13,6 +13,8 @@ import { CloudinaryUploadResponse } from "~/models/cloudinary";
 import { PostService, processPostContent } from "~/services/threadService";
 import HTTP_STATUS from "~/constants/httpStatus";
 import mongoose from "mongoose";
+import { NotificationService } from "~/services/notificationService";
+import Follow from "~/models/Follow";
 
 const createThread = asyncHandler(
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -81,11 +83,26 @@ const createThread = asyncHandler(
       mediaType: uploadedMedia[0]?.type,
       author: req.user,
       createdAt: new Date(),
-      cloudinaryPublicIds: uploadedMedia.map((m) => m.publicId), // Lưu public_id để quản lý file
+      cloudinaryPublicIds: uploadedMedia.map((m) => m.publicId),
     };
 
     // Lưu thread vào database
     const post = await Thread.create(newThread);
+
+    // Tạo thông báo cho những người theo dõi
+    const followers = await Follow.find({ followeeId: req.user._id });
+    const user = await User.findById(req.user._id).select("username");
+    if (user) {
+      for (const follower of followers) {
+        await NotificationService.createNotification(
+          follower.followerId.toString(),
+          "new_post",
+          `${user.username} đã đăng một bài viết mới`,
+          req.user._id.toString(),
+          post._id.toString()
+        );
+      }
+    }
 
     // Cập nhật hashtags
     for (const hashtag of hashtags) {
@@ -216,6 +233,18 @@ const toggleLike = asyncHandler(
         });
         await newLike.save();
         thread.likesCount++;
+
+        // Tạo thông báo cho tác giả bài viết
+        if (thread.author.toString() !== userId) {
+          await NotificationService.createNotification(
+            thread.author.toString(),
+            "like",
+            `${username} đã thích bài viết của bạn`,
+            userId,
+            threadId
+          );
+        }
+
         await thread.save();
         res.status(200).json({
           isLiked: true,

@@ -6,6 +6,7 @@ import Comment from "~/models/comment";
 import Thread from "~/models/Thread";
 import CommentLike from "~/models/commentLike";
 import User from "~/models/User";
+import { NotificationService } from "./notificationService";
 
 export class CommentService {
   static async getCommentsBythreadId(threadId: string, userId?: string) {
@@ -81,6 +82,19 @@ export class CommentService {
         throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Thread not found");
       }
 
+      // Tạo thông báo cho tác giả bài viết
+      const user = await User.findById(userId).select("username");
+      if (user && thread.author.toString() !== userId) {
+        await NotificationService.createNotification(
+          thread.author.toString(),
+          "comment",
+          `${user.username} đã bình luận bài viết của bạn`,
+          userId,
+          threadId,
+          comment._id.toString()
+        );
+      }
+
       // Populate user
       const populatedComment = await comment.populate(
         "user",
@@ -131,12 +145,30 @@ export class CommentService {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, "User not found");
       }
 
+      const comment = await Comment.findById(commentId);
+      if (!comment) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "Comment not found");
+      }
+
       const newLike = new CommentLike({
         user: userId,
         commentId,
         username: user.username,
       });
       await newLike.save();
+
+      // Tạo thông báo cho tác giả bình luận
+      if (comment.user.toString() !== userId) {
+        await NotificationService.createNotification(
+          comment.user.toString(),
+          "like",
+          `${user.username} đã thích bình luận của bạn`,
+          userId,
+          comment.threadId.toString(),
+          commentId
+        );
+      }
+
       return { message: "Comment liked successfully" };
     } catch (error: any) {
       logger.error(`Like comment error: ${error.message}`, { error });
@@ -212,6 +244,19 @@ export class CommentService {
       });
       await newComment.save();
       await Thread.findByIdAndUpdate(threadId, { $inc: { commentsCount: 1 } });
+
+      // Tạo thông báo cho tác giả bình luận gốc
+      if (parentComment.user.toString() !== userId) {
+        await NotificationService.createNotification(
+          parentComment.user.toString(),
+          "reply",
+          `${user.username} đã phản hồi bình luận của bạn`,
+          userId,
+          threadId,
+          newComment._id.toString()
+        );
+      }
+
       return {
         ...newComment.toObject(),
         user: { _id: userId, username: user.username, avatar: user.avatar },

@@ -38,10 +38,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 var mongoose_1 = require("mongoose");
 var bcryptjs_1 = require("bcryptjs");
-var jsonwebtoken_1 = require("jsonwebtoken");
-var dotenv_1 = require("dotenv");
+var jwt = require("jsonwebtoken");
+var ms_1 = require("ms");
+var dotenv = require("dotenv");
 var RefreshToken_1 = require("./RefreshToken");
-dotenv_1.config();
+dotenv.config();
 // Định nghĩa các giá trị hợp lệ cho vai trò và trạng thái tài khoản
 var ROLES = {
     TOPADMIN: "Top admin",
@@ -210,23 +211,43 @@ userSchema.pre("save", function (next) {
 // Tạo Access Token và Refresh Token xác thực cho người dùng
 userSchema.methods.generateAuthTokens = function () {
     return __awaiter(this, void 0, Promise, function () {
-        var user, accessToken, refreshToken, tokenDoc;
+        var user, accessSecret, refreshSecret, accessExpiration, refreshExpiration, accessPayload, accessOptions, refreshPayload, refreshOptions, accessToken, refreshToken, tokenDoc;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     user = this;
-                    accessToken = jsonwebtoken_1["default"].sign({ id: user._id.toString(), roles: user.roles }, process.env.JWT_ACCESS_SECRET, { expiresIn: process.env.JWT_ACCESS_EXPIRATION });
-                    refreshToken = jsonwebtoken_1["default"].sign({
+                    accessSecret = process.env.JWT_ACCESS_SECRET;
+                    refreshSecret = process.env.JWT_REFRESH_SECRET;
+                    accessExpiration = process.env.JWT_ACCESS_EXPIRATION;
+                    refreshExpiration = process.env.JWT_REFRESH_EXPIRATION;
+                    // Kiểm tra biến môi trường
+                    if (!accessSecret ||
+                        !refreshSecret ||
+                        !accessExpiration ||
+                        !refreshExpiration) {
+                        throw new Error("Missing JWT environment variables");
+                    }
+                    accessPayload = {
+                        id: user._id.toString(),
+                        roles: user.roles
+                    };
+                    accessOptions = {
+                        expiresIn: accessExpiration
+                    };
+                    refreshPayload = {
                         id: user._id.toString(),
                         tokenVersion: user.tokenVersion
-                    }, process.env.JWT_REFRESH_SECRET, {
-                        expiresIn: process.env.JWT_REFRESH_EXPIRATION
-                    });
+                    };
+                    refreshOptions = {
+                        expiresIn: refreshExpiration
+                    };
+                    accessToken = jwt.sign(accessPayload, accessSecret, accessOptions);
+                    refreshToken = jwt.sign(refreshPayload, refreshSecret, refreshOptions);
                     tokenDoc = new RefreshToken_1.RefreshToken({
-                        userId: user.id,
+                        userId: user._id,
                         refreshToken: refreshToken,
                         createdAt: new Date(),
-                        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                        expiresAt: new Date(Date.now() + ms_1["default"]("7d")),
                         tokenVersion: user.tokenVersion
                     });
                     return [4 /*yield*/, tokenDoc.save()];

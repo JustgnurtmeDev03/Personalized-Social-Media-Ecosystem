@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import threadRoutes from "./routes/threadRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
 import { errorHandler } from "./middlewares/errorMiddleware";
 import { AppError } from "./utils/AppError";
 import { checkCloudinaryConnection } from "./config/cloudinary";
@@ -45,6 +46,7 @@ app.use("/api/auth", authRoutes);
 // app.use("/api/post", postRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/threads", threadRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Xử lý route không tìm thấy
 app.all("*", (req, res, next) => {

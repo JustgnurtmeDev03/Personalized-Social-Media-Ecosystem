@@ -283,6 +283,7 @@ export const refreshToken = asyncHandler(
         throw new Error("User not found");
       }
 
+      // @ts-ignore
       const newAccessToken = jwt.sign(
         { id: user.id.toString() },
         process.env.JWT_ACCESS_SECRET as string,

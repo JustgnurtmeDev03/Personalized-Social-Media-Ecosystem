@@ -3,21 +3,20 @@ import "../../styles/Sidebar.css";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../providers/AuthContext";
 
-const Sidebar = () => {
-  const { auth, logout } = useAuth(); // Lấy auth và logout từ AuthContext
+const Sidebar = ({ unreadCount }) => {
+  // Nhận unreadCount làm prop
+  const { auth, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef(null); // Tham chiếu đến menu
+  const menuRef = useRef(null);
 
   const isActive = (path) => location.pathname === path;
 
-  // Hàm bật/tắt menu
   const handleMenuToggle = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // Đóng menu khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -35,12 +34,11 @@ const Sidebar = () => {
     };
   }, [isMenuOpen]);
 
-  // Hàm xử lý đăng xuất
   const handleLogout = async () => {
     try {
-      await logout(); // Đảm bảo logout hoàn tất
-      setIsMenuOpen(false); // Đóng menu
-      navigate("/login", { replace: true }); // Chuyển hướng với replace
+      await logout();
+      setIsMenuOpen(false);
+      navigate("/login", { replace: true });
     } catch (error) {
       console.error("Lỗi khi đăng xuất:", error);
     }
@@ -128,7 +126,7 @@ const Sidebar = () => {
             </svg>
           </Link>
         </div>
-        <div className="mmn-notification mmn-item">
+        <div className="mmn-notification mmn-item relative">
           <Link to="/activity">
             <svg
               aria-label="Thông báo"
@@ -143,6 +141,9 @@ const Sidebar = () => {
                 stroke-width="2.5"
               ></path>
             </svg>
+            {unreadCount > 0 && (
+              <span className="absolute top-5 right-6 inline-flex items-center justify-center w-3 h-3 bg-red-500 rounded-full"></span>
+            )}
           </Link>
         </div>
         <div className="mmn-profile mmn-item">
@@ -198,21 +199,21 @@ const Sidebar = () => {
         </div>
         {isMenuOpen && (
           <div className="menu-options" ref={menuRef}>
-            <div class="bg-white flex items-center justify-center  ">
-              <div class="w-64 rounded-2xl border border-gray-200 overflow-hidden font-sans">
-                <ul class="divide-y divide-gray-200">
+            <div className="bg-white flex items-center justify-center">
+              <div className="w-64 rounded-2xl border border-gray-200 overflow-hidden font-sans">
+                <ul className="divide-y divide-gray-200">
                   <li>
                     <button
-                      class="w-full flex justify-between items-center px-5 py-4 text-black font-semibold text-sm"
+                      className="w-full flex justify-between items-center px-5 py-4 text-black font-semibold text-sm"
                       type="button"
                     >
                       Hiển thị
-                      <i class="fas fa-chevron-right text-gray-400"></i>
+                      <i className="fas fa-chevron-right text-gray-400"></i>
                     </button>
                   </li>
                   <li>
                     <button
-                      class="w-full text-left px-5 py-4 text-black font-semibold text-sm"
+                      className="w-full text-left px-5 py-4 text-black font-semibold text-sm"
                       type="button"
                     >
                       Thông tin chi tiết
@@ -220,17 +221,17 @@ const Sidebar = () => {
                   </li>
                   <li>
                     <button
-                      class="w-full text-left px-5 py-4 text-black font-semibold text-sm"
+                      className="w-full text-left px-5 py-4 text-black font-semibold text-sm"
                       type="button"
                     >
                       Cài đặt
                     </button>
                   </li>
                 </ul>
-                <ul class="divide-y divide-gray-200">
+                <ul className="divide-y divide-gray-200">
                   <li>
                     <button
-                      class="w-full text-left px-5 py-4 text-black font-semibold text-sm"
+                      className="w-full text-left px-5 py-4 text-black font-semibold text-sm"
                       type="button"
                     >
                       Báo cáo vấn đề
@@ -238,7 +239,7 @@ const Sidebar = () => {
                   </li>
                   <li>
                     <button
-                      class="w-full text-left px-5 py-4 text-red-500 font-semibold text-sm"
+                      className="w-full text-left px-5 py-4 text-red-500 font-semibold text-sm"
                       onClick={handleLogout}
                     >
                       Đăng xuất

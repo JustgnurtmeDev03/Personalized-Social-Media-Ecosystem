@@ -59,11 +59,13 @@ var cloudinary_1 = require("~/config/cloudinary");
 var threadService_1 = require("~/services/threadService");
 var httpStatus_1 = require("~/constants/httpStatus");
 var mongoose_1 = require("mongoose");
+var notificationService_1 = require("~/services/notificationService");
+var Follow_1 = require("~/models/Follow");
 var createThread = asyncHandler_1["default"](function (req, res) { return __awaiter(void 0, void 0, Promise, function () {
-    var content, _a, textContent, hashtags, files, uploadedMedia, _loop_1, _i, files_1, file, images, videos, newThread, post, _b, hashtags_1, hashtag, existingHashtag;
-    var _c, _d;
-    return __generator(this, function (_e) {
-        switch (_e.label) {
+    var content, _a, textContent, hashtags, files, uploadedMedia, _loop_1, _i, files_1, file, images, videos, newThread, post, followers, user, _b, followers_1, follower, _c, hashtags_1, hashtag, existingHashtag;
+    var _d, _e;
+    return __generator(this, function (_f) {
+        switch (_f.label) {
             case 0:
                 content = req.body.content;
                 _a = threadService_1.processPostContent(content), textContent = _a.textContent, hashtags = _a.hashtags;
@@ -103,14 +105,14 @@ var createThread = asyncHandler_1["default"](function (req, res) { return __awai
                     });
                 };
                 _i = 0, files_1 = files;
-                _e.label = 1;
+                _f.label = 1;
             case 1:
                 if (!(_i < files_1.length)) return [3 /*break*/, 4];
                 file = files_1[_i];
                 return [5 /*yield**/, _loop_1(file)];
             case 2:
-                _e.sent();
-                _e.label = 3;
+                _f.sent();
+                _f.label = 3;
             case 3:
                 _i++;
                 return [3 /*break*/, 1];
@@ -130,23 +132,43 @@ var createThread = asyncHandler_1["default"](function (req, res) { return __awai
                     hashtags: hashtags,
                     images: images,
                     videos: videos,
-                    mediaUrl: (_c = uploadedMedia[0]) === null || _c === void 0 ? void 0 : _c.url,
-                    mediaType: (_d = uploadedMedia[0]) === null || _d === void 0 ? void 0 : _d.type,
+                    mediaUrl: (_d = uploadedMedia[0]) === null || _d === void 0 ? void 0 : _d.url,
+                    mediaType: (_e = uploadedMedia[0]) === null || _e === void 0 ? void 0 : _e.type,
                     author: req.user,
                     createdAt: new Date(),
                     cloudinaryPublicIds: uploadedMedia.map(function (m) { return m.publicId; })
                 };
                 return [4 /*yield*/, Thread_1["default"].create(newThread)];
             case 5:
-                post = _e.sent();
-                _b = 0, hashtags_1 = hashtags;
-                _e.label = 6;
+                post = _f.sent();
+                return [4 /*yield*/, Follow_1["default"].find({ followeeId: req.user._id })];
             case 6:
-                if (!(_b < hashtags_1.length)) return [3 /*break*/, 10];
-                hashtag = hashtags_1[_b];
-                return [4 /*yield*/, Hashtag_1["default"].findOne({ name: hashtag })];
+                followers = _f.sent();
+                return [4 /*yield*/, User_1["default"].findById(req.user._id).select("username")];
             case 7:
-                existingHashtag = _e.sent();
+                user = _f.sent();
+                if (!user) return [3 /*break*/, 11];
+                _b = 0, followers_1 = followers;
+                _f.label = 8;
+            case 8:
+                if (!(_b < followers_1.length)) return [3 /*break*/, 11];
+                follower = followers_1[_b];
+                return [4 /*yield*/, notificationService_1.NotificationService.createNotification(follower.followerId.toString(), "new_post", user.username + " \u0111\u00E3 \u0111\u0103ng m\u1ED9t b\u00E0i vi\u1EBFt m\u1EDBi", req.user._id.toString(), post._id.toString())];
+            case 9:
+                _f.sent();
+                _f.label = 10;
+            case 10:
+                _b++;
+                return [3 /*break*/, 8];
+            case 11:
+                _c = 0, hashtags_1 = hashtags;
+                _f.label = 12;
+            case 12:
+                if (!(_c < hashtags_1.length)) return [3 /*break*/, 16];
+                hashtag = hashtags_1[_c];
+                return [4 /*yield*/, Hashtag_1["default"].findOne({ name: hashtag })];
+            case 13:
+                existingHashtag = _f.sent();
                 if (!existingHashtag) {
                     existingHashtag = new Hashtag_1["default"]({ name: hashtag });
                 }
@@ -155,13 +177,13 @@ var createThread = asyncHandler_1["default"](function (req, res) { return __awai
                     existingHashtag.threadsId.push(post.id);
                 }
                 return [4 /*yield*/, existingHashtag.save()];
-            case 8:
-                _e.sent();
-                _e.label = 9;
-            case 9:
-                _b++;
-                return [3 /*break*/, 6];
-            case 10:
+            case 14:
+                _f.sent();
+                _f.label = 15;
+            case 15:
+                _c++;
+                return [3 /*break*/, 12];
+            case 16:
                 res.status(201).json({
                     message: "Thread created successfully",
                     post: post
@@ -238,7 +260,7 @@ var toggleLike = asyncHandler_1["default"](function (req, res, next) { return __
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                _a.trys.push([0, 10, , 11]);
+                _a.trys.push([0, 12, , 13]);
                 threadId = req.body.threadId;
                 userId = req.user.id;
                 return [4 /*yield*/, Thread_1["default"].findById(threadId)];
@@ -281,7 +303,7 @@ var toggleLike = asyncHandler_1["default"](function (req, res, next) { return __
                     isLiked: false,
                     likesCount: thread.likesCount
                 });
-                return [3 /*break*/, 9];
+                return [3 /*break*/, 11];
             case 6:
                 newLike = new Like_1["default"]({
                     threadId: threadId,
@@ -293,20 +315,25 @@ var toggleLike = asyncHandler_1["default"](function (req, res, next) { return __
             case 7:
                 _a.sent();
                 thread.likesCount++;
-                return [4 /*yield*/, thread.save()];
+                if (!(thread.author.toString() !== userId)) return [3 /*break*/, 9];
+                return [4 /*yield*/, notificationService_1.NotificationService.createNotification(thread.author.toString(), "like", username + " \u0111\u00E3 th\u00EDch b\u00E0i vi\u1EBFt c\u1EE7a b\u1EA1n", userId, threadId)];
             case 8:
+                _a.sent();
+                _a.label = 9;
+            case 9: return [4 /*yield*/, thread.save()];
+            case 10:
                 _a.sent();
                 res.status(200).json({
                     isLiked: true,
                     likesCount: thread.likesCount
                 });
-                _a.label = 9;
-            case 9: return [3 /*break*/, 11];
-            case 10:
+                _a.label = 11;
+            case 11: return [3 /*break*/, 13];
+            case 12:
                 error_3 = _a.sent();
                 next(error_3);
-                return [3 /*break*/, 11];
-            case 11: return [2 /*return*/];
+                return [3 /*break*/, 13];
+            case 13: return [2 /*return*/];
         }
     });
 }); });

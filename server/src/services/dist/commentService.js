@@ -56,6 +56,7 @@ var comment_1 = require("~/models/comment");
 var Thread_1 = require("~/models/Thread");
 var commentLike_1 = require("~/models/commentLike");
 var User_1 = require("~/models/User");
+var notificationService_1 = require("./notificationService");
 var CommentService = /** @class */ (function () {
     function CommentService() {
     }
@@ -105,11 +106,11 @@ var CommentService = /** @class */ (function () {
     };
     CommentService.createComment = function (threadId, userId, content) {
         return __awaiter(this, void 0, void 0, function () {
-            var comment, thread, populatedComment, error_2;
+            var comment, thread, user, populatedComment, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 4, , 5]);
+                        _a.trys.push([0, 7, , 8]);
                         if (!mongoose_1["default"].Types.ObjectId.isValid(threadId) ||
                             !mongoose_1["default"].Types.ObjectId.isValid(userId)) {
                             throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid post or user ID");
@@ -124,8 +125,16 @@ var CommentService = /** @class */ (function () {
                         if (!thread) {
                             throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Thread not found");
                         }
-                        return [4 /*yield*/, comment.populate("user", "username _id avatar")];
+                        return [4 /*yield*/, User_1["default"].findById(userId).select("username")];
                     case 3:
+                        user = _a.sent();
+                        if (!(user && thread.author.toString() !== userId)) return [3 /*break*/, 5];
+                        return [4 /*yield*/, notificationService_1.NotificationService.createNotification(thread.author.toString(), "comment", user.username + " \u0111\u00E3 b\u00ECnh lu\u1EADn b\u00E0i vi\u1EBFt c\u1EE7a b\u1EA1n", userId, threadId, comment._id.toString())];
+                    case 4:
+                        _a.sent();
+                        _a.label = 5;
+                    case 5: return [4 /*yield*/, comment.populate("user", "username _id avatar")];
+                    case 6:
                         populatedComment = _a.sent();
                         return [2 /*return*/, {
                                 _id: populatedComment._id,
@@ -135,24 +144,24 @@ var CommentService = /** @class */ (function () {
                                 createdAt: populatedComment.createdAt,
                                 commentsCount: thread.commentsCount
                             }];
-                    case 4:
+                    case 7:
                         error_2 = _a.sent();
                         logger_1["default"].error("Create comment error: " + error_2.message, { error: error_2 });
                         throw error_2 instanceof httpError_1.HttpError
                             ? error_2
                             : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
-                    case 5: return [2 /*return*/];
+                    case 8: return [2 /*return*/];
                 }
             });
         });
     };
     CommentService.likeComment = function (userId, commentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var existingLike, user, newLike, error_3;
+            var existingLike, user, comment, newLike, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 4, , 5]);
+                        _a.trys.push([0, 7, , 8]);
                         if (!mongoose_1["default"].Types.ObjectId.isValid(commentId)) {
                             throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid comment ID");
                         }
@@ -174,22 +183,33 @@ var CommentService = /** @class */ (function () {
                         if (!user) {
                             throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "User not found");
                         }
+                        return [4 /*yield*/, comment_1["default"].findById(commentId)];
+                    case 3:
+                        comment = _a.sent();
+                        if (!comment) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "Comment not found");
+                        }
                         newLike = new commentLike_1["default"]({
                             user: userId,
                             commentId: commentId,
                             username: user.username
                         });
                         return [4 /*yield*/, newLike.save()];
-                    case 3:
-                        _a.sent();
-                        return [2 /*return*/, { message: "Comment liked successfully" }];
                     case 4:
+                        _a.sent();
+                        if (!(comment.user.toString() !== userId)) return [3 /*break*/, 6];
+                        return [4 /*yield*/, notificationService_1.NotificationService.createNotification(comment.user.toString(), "like", user.username + " \u0111\u00E3 th\u00EDch b\u00ECnh lu\u1EADn c\u1EE7a b\u1EA1n", userId, comment.threadId.toString(), commentId)];
+                    case 5:
+                        _a.sent();
+                        _a.label = 6;
+                    case 6: return [2 /*return*/, { message: "Comment liked successfully" }];
+                    case 7:
                         error_3 = _a.sent();
                         logger_1["default"].error("Like comment error: " + error_3.message, { error: error_3 });
                         throw error_3 instanceof httpError_1.HttpError
                             ? error_3
                             : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
-                    case 5: return [2 /*return*/];
+                    case 8: return [2 /*return*/];
                 }
             });
         });
@@ -234,7 +254,7 @@ var CommentService = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 5, , 6]);
+                        _a.trys.push([0, 7, , 8]);
                         if (!mongoose_1["default"].Types.ObjectId.isValid(threadId) ||
                             !mongoose_1["default"].Types.ObjectId.isValid(parentCommentId)) {
                             throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid thread or comment ID");
@@ -263,14 +283,19 @@ var CommentService = /** @class */ (function () {
                         return [4 /*yield*/, Thread_1["default"].findByIdAndUpdate(threadId, { $inc: { commentsCount: 1 } })];
                     case 4:
                         _a.sent();
-                        return [2 /*return*/, __assign(__assign({}, newComment.toObject()), { user: { _id: userId, username: user.username, avatar: user.avatar }, isLiked: false, likesCount: 0 })];
+                        if (!(parentComment.user.toString() !== userId)) return [3 /*break*/, 6];
+                        return [4 /*yield*/, notificationService_1.NotificationService.createNotification(parentComment.user.toString(), "reply", user.username + " \u0111\u00E3 ph\u1EA3n h\u1ED3i b\u00ECnh lu\u1EADn c\u1EE7a b\u1EA1n", userId, threadId, newComment._id.toString())];
                     case 5:
+                        _a.sent();
+                        _a.label = 6;
+                    case 6: return [2 /*return*/, __assign(__assign({}, newComment.toObject()), { user: { _id: userId, username: user.username, avatar: user.avatar }, isLiked: false, likesCount: 0 })];
+                    case 7:
                         error_5 = _a.sent();
                         logger_1["default"].error("Add reply error: " + error_5.message, { error: error_5 });
                         throw error_5 instanceof httpError_1.HttpError
                             ? error_5
                             : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
-                    case 6: return [2 /*return*/];
+                    case 8: return [2 /*return*/];
                 }
             });
         });
