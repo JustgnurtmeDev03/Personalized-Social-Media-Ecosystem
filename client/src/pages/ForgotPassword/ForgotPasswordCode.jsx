@@ -11,7 +11,7 @@ const ForgotPasswordCode = ({ onClose, email, onNext }) => {
     setError("");
 
     try {
-      await axios.post(
+      const response = await axios.post(
         "http://localhost:5000/api/auth/verify-reset-code",
         {
           email,
@@ -23,8 +23,10 @@ const ForgotPasswordCode = ({ onClose, email, onNext }) => {
           },
         }
       );
-      onNext(resetCode);
+      console.log("API Response:", response.data);
+      onNext(resetCode); // Truyền resetCode
     } catch (err) {
+      console.error("Error in verify-reset-code:", err);
       setError("Mã xác nhận không hợp lệ. Vui lòng kiểm tra và thử lại.");
     }
   };

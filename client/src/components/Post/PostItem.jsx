@@ -59,7 +59,7 @@ const PostItem = ({ post, userData, handleToggleLike }) => {
   };
 
   return (
-    <div className="posts-content max-w-l bg-white p-4 rounded-lg shadow-md">
+    <div className="posts-content max-w-l bg-white p-4 rounded-lg shadow-md mb-2">
       <div className="flex items-center mb-4">
         <Avatar
           _id={post.author?._id || userData?._id}

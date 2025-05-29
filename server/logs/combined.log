@@ -8437,3 +8437,7 @@ Use mongoose.model(name, schema)
 2025-05-29T04:25:50.510Z [INFO]: Fetching comments for post ID: 68318d33ff888836007ecadb
 2025-05-29T04:25:50.542Z [INFO]: Post found: 68318d33ff888836007ecadb, views: 63/0
 2025-05-29T04:25:50.569Z [INFO]: Post views updated: 64/0
+2025-05-29T14:05:44.928Z [ERROR]: Cannot find /api/auth/verify-reset-code on this server
+2025-05-29T14:05:46.001Z [ERROR]: Cannot find /favicon.ico on this server
+2025-05-29T14:31:01.352Z [ERROR]: ID is invalid
+2025-05-29T14:31:01.384Z [ERROR]: ID is invalid

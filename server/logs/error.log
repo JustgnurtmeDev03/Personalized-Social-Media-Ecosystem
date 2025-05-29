@@ -5147,3 +5147,7 @@ Use mongoose.model(name, schema)
 2025-05-29T04:02:35.813Z [ERROR]: ID is invalid
 2025-05-29T04:15:26.417Z [ERROR]: ID is invalid
 2025-05-29T04:20:50.894Z [ERROR]: ID is invalid
+2025-05-29T14:05:44.928Z [ERROR]: Cannot find /api/auth/verify-reset-code on this server
+2025-05-29T14:05:46.001Z [ERROR]: Cannot find /favicon.ico on this server
+2025-05-29T14:31:01.352Z [ERROR]: ID is invalid
+2025-05-29T14:31:01.384Z [ERROR]: ID is invalid

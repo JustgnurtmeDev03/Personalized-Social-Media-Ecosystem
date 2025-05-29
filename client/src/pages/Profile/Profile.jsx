@@ -36,6 +36,7 @@ export default function Profile() {
   const [isUnfollowModalOpen, setIsUnfollowModalOpen] = useState(false);
   const [posts, setPosts] = useState([]);
 
+  // Kiểm tra access token
   useEffect(() => {
     if (!auth.accessToken) {
       console.warn("No access token found. Redirecting to login...");
@@ -73,10 +74,9 @@ export default function Profile() {
     queryFn: async () => {
       if (!auth.accessToken || !userId)
         throw new Error("No access token or userId");
-      const followers = await fetchFollowers(userId, {
+      return await fetchFollowers(userId, {
         headers: { Authorization: `Bearer ${auth.accessToken}` },
       });
-      return followers;
     },
     enabled: !!auth.accessToken && !!userId,
   });
@@ -91,10 +91,9 @@ export default function Profile() {
     queryFn: async () => {
       if (!auth.accessToken || !userId)
         throw new Error("No access token or userId");
-      const following = await fetchFollowing(userId, {
+      return await fetchFollowing(userId, {
         headers: { Authorization: `Bearer ${auth.accessToken}` },
       });
-      return following;
     },
     enabled: !!auth.accessToken && !!userId,
   });
@@ -109,10 +108,9 @@ export default function Profile() {
     queryFn: async () => {
       if (!auth.accessToken || !auth.userId)
         throw new Error("No access token or userId");
-      const following = await fetchFollowing(auth.userId, {
+      return await fetchFollowing(auth.userId, {
         headers: { Authorization: `Bearer ${auth.accessToken}` },
       });
-      return following;
     },
     enabled: !!auth.accessToken && !!auth.userId,
   });
@@ -127,49 +125,6 @@ export default function Profile() {
     }
   }, [currentUserFollowingData, userData, isOwnProfile]);
 
-  const handleToggleFollow = async () => {
-    if (isFollowing) {
-      setIsUnfollowModalOpen(true);
-    } else {
-      try {
-        await followUser(auth.userId, userData._id, {
-          headers: { Authorization: `Bearer ${auth.accessToken}` },
-        });
-        setIsFollowing(true);
-        // Làm mới danh sách following của người dùng hiện tại
-        queryClient.invalidateQueries([
-          "currentUserFollowing",
-          auth.accessToken,
-          auth.userId,
-        ]);
-        // Làm mới danh sách followers của profile
-        queryClient.invalidateQueries(["followers", auth.accessToken, userId]);
-      } catch (error) {
-        console.error("Error following user:", error);
-      }
-    }
-  };
-
-  const handleConfirmUnfollow = async () => {
-    try {
-      await unfollowUser(auth.userId, userData._id, {
-        headers: { Authorization: `Bearer ${auth.accessToken}` },
-      });
-      setIsFollowing(false);
-      setIsUnfollowModalOpen(false);
-      // Làm mới danh sách following của người dùng hiện tại
-      queryClient.invalidateQueries([
-        "currentUserFollowing",
-        auth.accessToken,
-        auth.userId,
-      ]);
-      // Làm mới danh sách followers của profile
-      queryClient.invalidateQueries(["followers", auth.accessToken, userId]);
-    } catch (error) {
-      console.error("Error unfollowing user:", error);
-    }
-  };
-
   // FETCH POSTS OF USER
   const {
     data: postsData,
@@ -182,6 +137,7 @@ export default function Profile() {
       if (!auth.accessToken || !userId)
         throw new Error("No access token or userId");
       const posts = await fetchUserPosts(userId, auth.accessToken);
+      console.log("Raw posts data:", posts); // Debug dữ liệu từ API
       return posts;
     },
     enabled: !!auth.accessToken && !!userId,
@@ -205,13 +161,41 @@ export default function Profile() {
     enabled: !!auth.accessToken,
   });
 
-  // SYNC WITH ISLIKED
   useEffect(() => {
     if (postsData && likedPosts) {
-      const enrichedPosts = postsData.map((post) => ({
+      // In dữ liệu gốc để kiểm tra
+      console.log("Original postsData:", postsData);
+
+      // Sắp xếp bài đăng từ mới nhất đến cũ nhất
+      const sortedPosts = [...postsData].sort((a, b) => {
+        try {
+          const dateA = new Date(a.createdAt);
+          const dateB = new Date(b.createdAt);
+
+          // Kiểm tra xem ngày có hợp lệ không
+          if (isNaN(dateA) || isNaN(dateB)) {
+            console.warn("Invalid createdAt format:", { a, b });
+            return 0; // Giữ nguyên thứ tự nếu có lỗi
+          }
+
+          // Sắp xếp giảm dần: mới nhất lên đầu
+          return dateB - dateA;
+        } catch (error) {
+          console.warn("Error sorting posts:", error);
+          return 0; // Giữ nguyên thứ tự nếu có lỗi
+        }
+      });
+
+      // In dữ liệu đã sắp xếp để kiểm tra
+      console.log("Sorted posts:", sortedPosts);
+
+      // Kết hợp dữ liệu với thông tin likedPosts
+      const enrichedPosts = sortedPosts.map((post) => ({
         ...post,
         isLiked: likedPosts.some((likedPost) => likedPost._id === post._id),
       }));
+
+      // Cập nhật state
       setPosts(enrichedPosts);
     }
   }, [postsData, likedPosts]);
@@ -219,11 +203,10 @@ export default function Profile() {
   // FUNC TOGGLE LIKE & UNLIKE
   const handleToggleLike = async (postId) => {
     try {
-      const authToken = auth.accessToken;
       const response = await fetch(`${API_URL}/like`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${auth.accessToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ threadId: postId }),
@@ -233,9 +216,7 @@ export default function Profile() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      const { isLiked, likesCount } = data;
-
+      const { isLiked, likesCount } = await response.json();
       setPosts((prevPosts) =>
         prevPosts.map((post) =>
           post._id === postId ? { ...post, isLiked, likesCount } : post
@@ -243,6 +224,45 @@ export default function Profile() {
       );
     } catch (err) {
       console.error("Error toggling like:", err.message);
+    }
+  };
+
+  const handleToggleFollow = async () => {
+    if (isFollowing) {
+      setIsUnfollowModalOpen(true);
+    } else {
+      try {
+        await followUser(auth.userId, userData._id, {
+          headers: { Authorization: `Bearer ${auth.accessToken}` },
+        });
+        setIsFollowing(true);
+        queryClient.invalidateQueries([
+          "currentUserFollowing",
+          auth.accessToken,
+          auth.userId,
+        ]);
+        queryClient.invalidateQueries(["followers", auth.accessToken, userId]);
+      } catch (error) {
+        console.error("Error following user:", error);
+      }
+    }
+  };
+
+  const handleConfirmUnfollow = async () => {
+    try {
+      await unfollowUser(auth.userId, userData._id, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      });
+      setIsFollowing(false);
+      setIsUnfollowModalOpen(false);
+      queryClient.invalidateQueries([
+        "currentUserFollowing",
+        auth.accessToken,
+        auth.userId,
+      ]);
+      queryClient.invalidateQueries(["followers", auth.accessToken, userId]);
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
     }
   };
 
@@ -336,8 +356,8 @@ export default function Profile() {
     if (!isOpen) return null;
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
-        <div class="bg-white rounded-2xl w-full max-w-xs shadow-md">
-          <div class="pt-6 pb-4 flex justify-center">
+        <div className="bg-white rounded-2xl w-full max-w-xs shadow-md">
+          <div className="pt-6 pb-4 flex justify-center">
             <div className="profile-user-avatar">
               <Avatar
                 _id={userData._id}
@@ -346,19 +366,19 @@ export default function Profile() {
               />
             </div>
           </div>
-          <div class="text-center px-6 pb-6 font-sans text-base font-semibold text-black">
+          <div className="text-center px-6 pb-6 font-sans text-base font-semibold text-black">
             Bạn có chắc muốn hủy theo dõi {userData.name}?
           </div>
-          <div class="border-t border-gray-300 flex">
+          <div className="border-t border-gray-300 flex">
             <button
-              class="flex-1 py-3 text-center text-black font-normal text-base font-sans hover:bg-gray-100 rounded-bl-2xl"
+              className="flex-1 py-3 text-center text-black font-normal text-base font-sans hover:bg-gray-100 rounded-bl-2xl"
               type="button"
               onClick={onClose}
             >
               Hủy bỏ
             </button>
             <button
-              class="flex-1 py-3 text-center text-red-600 font-semibold text-base font-sans rounded-br-2xl hover:bg-red-50"
+              className="flex-1 py-3 text-center text-red-600 font-semibold text-base font-sans rounded-br-2xl hover:bg-red-50"
               type="button"
               onClick={onConfirm}
             >

@@ -6,14 +6,18 @@ import ResetPassword from "./ResetPassword";
 const ForgotPassword = () => {
   const [step, setStep] = useState("email");
   const [email, setEmail] = useState("");
+  const [resetCode, setResetCode] = useState(""); // Thêm state cho resetCode
+
+  console.log("Current step:", step); // Kiểm tra trạng thái
 
   const handleNextStep = (enteredEmail) => {
     setEmail(enteredEmail);
     setStep("code");
   };
 
-  const handleNextStepReset = (enteredEmail) => {
-    setEmail(enteredEmail);
+  const handleNextStepReset = (code) => {
+    setResetCode(code); // Lưu resetCode
+    console.log("handleNextStepReset called, setting step to password");
     setStep("password");
   };
 
@@ -29,11 +33,18 @@ const ForgotPassword = () => {
         <ForgotPasswordCode
           email={email}
           isOpen={true}
-          onNext={(enteredEmail) => handleNextStepReset(enteredEmail)}
+          onNext={handleNextStepReset}
           onClose={() => setStep("email")}
         />
       )}
-      {step === "password" && <ResetPassword email={email} isOpen={true} />}
+      {step === "password" && (
+        <ResetPassword
+          email={email}
+          resetCode={resetCode} // Truyền resetCode
+          isOpen={true}
+          onClose={() => setStep("email")} // Thêm onClose để quay về bước đầu
+        />
+      )}
     </div>
   );
 };
