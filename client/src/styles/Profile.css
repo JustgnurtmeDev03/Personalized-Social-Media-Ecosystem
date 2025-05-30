@@ -13,6 +13,7 @@
   overflow: hidden;
   z-index: 5;
   overflow-y: auto;
+  scrollbar-width: none;
   max-height: 100vh;
 }
 

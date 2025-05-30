@@ -18,14 +18,13 @@ import Follow from "~/models/Follow";
 
 const createThread = asyncHandler(
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    const { content } = req.body;
+    const { content, visibility = "public" } = req.body;
     const { textContent, hashtags } = processPostContent(content);
     const files = req.files as Express.Multer.File[];
 
     // Upload file lên Cloudinary
     const uploadedMedia = [];
     for (const file of files) {
-      // Xác định loại file
       const isVideo = file.mimetype.startsWith("video/");
       const resourceType = isVideo ? "video" : "image";
       const folder = `Gens/Media/${resourceType}s`;
@@ -65,7 +64,6 @@ const createThread = asyncHandler(
       .filter((m) => m.type === "video")
       .map((m) => m.url);
 
-    // Kiểm tra ít nhất một trong ba trường có giá trị
     if (!textContent && images.length === 0 && videos.length === 0) {
       throw new AppError(
         "At least one of content, images, or videos must be provided",
@@ -73,7 +71,7 @@ const createThread = asyncHandler(
       );
     }
 
-    // Tạo đối tượng Thread mới
+    // Tạo đối tượng Thread mới với visibility
     const newThread = {
       content: textContent,
       hashtags,
@@ -84,23 +82,25 @@ const createThread = asyncHandler(
       author: req.user,
       createdAt: new Date(),
       cloudinaryPublicIds: uploadedMedia.map((m) => m.publicId),
+      visibility,
     };
 
-    // Lưu thread vào database
     const post = await Thread.create(newThread);
 
-    // Tạo thông báo cho những người theo dõi
-    const followers = await Follow.find({ followeeId: req.user._id });
-    const user = await User.findById(req.user._id).select("username");
-    if (user) {
-      for (const follower of followers) {
-        await NotificationService.createNotification(
-          follower.followerId.toString(),
-          "new_post",
-          `${user.username} đã đăng một bài viết mới`,
-          req.user._id.toString(),
-          post._id.toString()
-        );
+    // Tạo thông báo cho những người theo dõi (nếu visibility là "public" hoặc "friends")
+    if (visibility !== "only_me") {
+      const followers = await Follow.find({ followeeId: req.user._id });
+      const user = await User.findById(req.user._id).select("username");
+      if (user) {
+        for (const follower of followers) {
+          await NotificationService.createNotification(
+            follower.followerId.toString(),
+            "new_post",
+            `${user.username} đã đăng một bài viết mới`,
+            req.user._id.toString(),
+            post._id.toString()
+          );
+        }
       }
     }
 

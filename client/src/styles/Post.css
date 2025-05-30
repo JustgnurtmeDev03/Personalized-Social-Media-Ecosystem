@@ -366,3 +366,12 @@
   border: 2px solid white;
   scale: 1.4;
 }
+
+.overflow-y-auto {
+  scrollbar-width: none;
+}
+
+/* Ẩn thanh cuộn trên Chrome, Safari, Edge */
+.overflow-y-auto::-webkit-scrollbar {
+  display: none;
+}

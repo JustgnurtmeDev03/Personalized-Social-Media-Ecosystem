@@ -19,6 +19,8 @@ const PostModal = ({ isOpen, onClose }) => {
   const [userData, setUserData] = useState(null);
   const [userError, setUserError] = useState(null);
   const [userLoading, setUserLoading] = useState(true);
+  const [visibility, setVisibility] = useState("public");
+  const [isVisibilityMenuOpen, setIsVisibilityMenuOpen] = useState(false); // State cho menu quyền riêng tư
 
   const {
     control,
@@ -54,7 +56,16 @@ const PostModal = ({ isOpen, onClose }) => {
   const fileInputRef = useRef(null);
   const mediaType = watch("mediaType");
 
-  // ======================== LOGIC ===========================
+  // Xử lý chọn quyền riêng tư
+  const handleVisibilitySelect = (value) => {
+    setVisibility(value);
+    setIsVisibilityMenuOpen(false); // Đóng menu sau khi chọn
+  };
+
+  // Toggle menu quyền riêng tư
+  const toggleVisibilityMenu = () => {
+    setIsVisibilityMenuOpen((prev) => !prev);
+  };
 
   const autoResizeTextarea = () => {
     const textarea = textareaRef.current;
@@ -73,6 +84,7 @@ const PostModal = ({ isOpen, onClose }) => {
     try {
       const formData = new FormData();
       formData.append("content", data.content);
+      formData.append("visibility", visibility);
 
       if (data.mediaType === "file" && data.file && data.file.length > 0) {
         for (let i = 0; i < data.file.length; i++) {
@@ -85,7 +97,6 @@ const PostModal = ({ isOpen, onClose }) => {
             };
             try {
               const compressedFile = await imageCompression(file, options);
-              // Tạo File object với tên gốc nếu không thư viện imageCompression sẽ trả về dưới dạng Blob/File
               const fileWithName = new File([compressedFile], file.name, {
                 type: compressedFile.type,
                 lastModified: compressedFile.lastModified,
@@ -106,6 +117,7 @@ const PostModal = ({ isOpen, onClose }) => {
           content: data.content,
           mediaUrl: data.mediaUrl,
           mediaType: data.mediaUrl.includes("image") ? "image" : "video",
+          visibility: visibility,
         };
 
         const res = await api.post("/upload", payload, {
@@ -119,6 +131,7 @@ const PostModal = ({ isOpen, onClose }) => {
         setPreviews([]);
         setImageSizes([]);
         setUploadProgress(0);
+        onClose();
         return;
       }
 
@@ -140,6 +153,7 @@ const PostModal = ({ isOpen, onClose }) => {
       setPreviews([]);
       setImageSizes([]);
       setUploadProgress(0);
+      onClose();
     } catch (error) {
       console.error("Gặp lỗi xảy ra khi đăng bài:", error);
       if (
@@ -218,7 +232,6 @@ const PostModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Xử lý hiển thị bản xem trước ảnh/video hiển thị hướng của bức ảnh (ngang/dọc)
   const updateOrientation = (idx, width, height) => {
     setPreviews((prev) => {
       const clone = [...prev];
@@ -230,20 +243,16 @@ const PostModal = ({ isOpen, onClose }) => {
     });
   };
 
-  // Xử lý để hiển thị bản xem trước ảnh/video cùng kích thước và tỷ lệ
   const handleUpdateDimensions = (index, width, height) => {
     const newDimensions = [...mediaDimensions];
     newDimensions[index] = { width, height };
     setMediaDimensions(newDimensions);
-
-    // Gọi updateOrientation để cập nhật orientation (landscape/portrait)
     updateOrientation(index, width, height);
   };
 
   const removePreview = (index) => {
     setPreviews((prev) => {
       const newPreviews = prev.filter((_, i) => i !== index);
-      // Đồng bộ mediaDimensions
       setMediaDimensions((prevDimensions) =>
         prevDimensions.filter((_, i) => i !== index)
       );
@@ -251,12 +260,9 @@ const PostModal = ({ isOpen, onClose }) => {
     });
   };
 
-  // Ngăn chặn sự kiện mặc định trên video khi kéo
   const preventDefaultDrag = (e) => {
     e.preventDefault();
   };
-
-  // ======================== EFFECTS ===========================
 
   useEffect(() => {
     const getUserData = async () => {
@@ -309,8 +315,6 @@ const PostModal = ({ isOpen, onClose }) => {
     return <p>Không tìm thấy thông tin người dùng.</p>;
   }
 
-  // ======================== RENDER ===========================
-
   return (
     <div className={`modal-overlay ${isOpen ? "open" : ""}`} onClick={onClose}>
       <h2 className="modal-title">Chủ đề mới</h2>
@@ -342,7 +346,7 @@ const PostModal = ({ isOpen, onClose }) => {
               ></rect>
               <path
                 clip-rule="evenodd"
-                d="M15.3833 4.50007C15.0018 4.15977 14.5475 3.9045 14.05 3.75672C13.7983 3.68195 13.432 3.6357 12.7078 3.68313C11.9633 3.73189 11.0102 3.86454 9.59538 4.06338C8.18054 4.26222 7.22784 4.39741 6.4987 4.55577C5.78946 4.7098 5.45011 4.85522 5.22879 4.99646C4.51904 5.44941 3.99637 6.14302 3.7566 6.95012C3.68183 7.2018 3.63558 7.56809 3.68301 8.29232C3.73177 9.03686 3.86442 9.98992 4.06326 11.4047C4.23845 12.6513 4.36423 13.5391 4.49997 14.2313V17.5001C4.49997 17.737 4.51175 17.9713 4.53475 18.2022C4.05772 17.8249 3.64282 17.3681 3.31041 16.8473C2.66675 15.8387 2.47208 14.4535 2.08272 11.6831C1.69337 8.91269 1.49869 7.52748 1.83941 6.38057C2.21619 5.11227 3.03754 4.02231 4.15285 3.31053C5.16142 2.66688 6.54662 2.4722 9.31703 2.08284C12.0874 1.69349 13.4726 1.49881 14.6196 1.83953C15.8878 2.21631 16.9778 3.03766 17.6896 4.15297C17.7623 4.26696 17.8294 4.38577 17.8916 4.51084C17.7619 4.50369 17.6314 4.50007 17.5 4.50007H15.3833Z"
+                d="M15.3833 4.50007C15.0018 4.15977 14.5475 3.9045 14.05 3.75672C13.7983 3.68195 13.432 3.6357 12.7078 3.68313C11.9633 3.73189 11.0102 3.86436 9.59538 4.06338C8.18054 4.26222 7.22784 4.39741 6.4987 4.55577C5.78946 4.7098 5.45011 4.85522 5.22879 4.99646C4.51904 5.44941 3.99637 6.14302 3.7566 6.95012C3.68183 7.2018 3.63558 7.56809 3.68301 8.29232C3.73177 9.03686 3.86442 9.98992 4.06326 11.4047C4.23845 12.6513 4.36423 13.5391 4.49997 14.2313V17.5001C4.49997 17.737 4.51175 17.9714 4.53475 18.2022C4.05772 17.8249 3.64282 17.3681 3.31041 16.8473C2.66675 15.8387 2.47208 14.4535 2.08272 11.6831C1.69336 8.91269 1.49869 7.52748 1.83941 6.38057C2.21619 5.11227 3.03754 4.02231 4.15285 3.31053C5.16142 2.66688 6.54662 2.4722 9.31703 2.08284C12.0874 1.69349 13.4726 1.49881 14.6196 1.83953C15.8879 2.21631 16.9778 3.03766 17.6896 4.15297C17.7623 4.26696 17.8294 4.38577 17.8916 4.51084C17.7619 4.50369 17.6314 4.50007 17.5 4.50007H15.3833Z"
                 fill="currentColor"
                 fill-rule="evenodd"
               ></path>
@@ -454,11 +458,11 @@ const PostModal = ({ isOpen, onClose }) => {
                           <div
                             className="relative flex-shrink-0 w-48 md:w-56 rounded-lg overflow-hidden bg-gray-100"
                             style={{
-                              width: "auto", // Chiều rộng tự điều chỉnh theo tỷ lệ
-                              height: "100%", // Chiều cao sẽ bị giới hạn bởi maxHeight
+                              width: "auto",
+                              height: "100%",
                               aspectRatio:
                                 mediaDimensions[index]?.width /
-                                  mediaDimensions[index]?.height || "1/1", // Giữ tỷ lệ gốc
+                                  mediaDimensions[index]?.height || "1/1",
                               maxWidth: "650px",
                               maxHeight: "400px",
                             }}
@@ -476,8 +480,8 @@ const PostModal = ({ isOpen, onClose }) => {
                                     e.target.videoHeight
                                   )
                                 }
-                                onMouseDown={preventDefaultDrag} // Ngăn sự kiện kéo mặc định
-                                onTouchStart={preventDefaultDrag} // Ngăn sự kiện kéo mặc định trên cảm ứng
+                                onMouseDown={preventDefaultDrag}
+                                onTouchStart={preventDefaultDrag}
                                 style={{ pointerEvents: "auto" }}
                               >
                                 <source src={preview.url} type={preview.type} />
@@ -498,7 +502,6 @@ const PostModal = ({ isOpen, onClose }) => {
                                 }
                               />
                             )}
-                            {/* nút xóa */}
                             <button
                               type="button"
                               onClick={() => removePreview(index)}
@@ -506,7 +509,6 @@ const PostModal = ({ isOpen, onClose }) => {
                             >
                               ×
                             </button>
-                            {/* label Alt */}
                             <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
                               Alt
                             </div>
@@ -711,8 +713,66 @@ const PostModal = ({ isOpen, onClose }) => {
             <span>Thêm vào chủ đề</span>
           </div>
         </div>
-        <div className="privacy-post">
-          <span>Bất cứ ai cũng có thể trả lời và trích dẫn</span>
+        <div className="privacy-post flex items-center justify-between px-4 py-2">
+          <div className="privacy-options absolute">
+            <button
+              type="button"
+              onClick={toggleVisibilityMenu}
+              className="flex items-center text-sm font-semibold px-3 py-2 bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              {visibility === "public" &&
+                " Bất cứ ai cũng có thể xem & phản hồi"}
+              {visibility === "friends" && "Bạn bè"}
+              {visibility === "only_me" && "Chỉ mình tôi"}
+              <svg
+                className="ml-2 w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            {isVisibilityMenuOpen && (
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-xl shadow-md z-10">
+                <ul className="divide-y divide-gray-200">
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => handleVisibilitySelect("public")}
+                      className="w-full text-left font-semibold px-5 py-3 hover:bg-gray-100 rounded-t-xl"
+                    >
+                      Bất cứ ai
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => handleVisibilitySelect("friends")}
+                      className="w-full text-left font-semibold px-5 py-3 hover:bg-gray-100"
+                    >
+                      Bạn bè
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => handleVisibilitySelect("only_me")}
+                      className="w-full text-left font-semibold px-5 py-3 hover:bg-gray-100 rounded-b-xl"
+                    >
+                      Chỉ mình tôi
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
 
           <div>
             {remainingChars <= warningLimit && (

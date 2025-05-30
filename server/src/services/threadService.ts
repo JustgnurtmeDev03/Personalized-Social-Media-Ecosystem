@@ -8,7 +8,9 @@ export class PostService {
   static async getUserPosts(_id: string): Promise<any[]> {
     try {
       const posts = await Thread.find({ author: _id })
-        .select("content hashtags images videos createdAt likesCount")
+        .select(
+          "content hashtags images videos visibility createdAt likesCount"
+        )
         .lean();
 
       console.log(`Found posts for userId ${_id}:`, posts); // Debug

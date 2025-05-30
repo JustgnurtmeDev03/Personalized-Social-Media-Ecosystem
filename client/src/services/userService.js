@@ -34,29 +34,55 @@ export const fetchAllUsers = async (options) => {
   }
 };
 
-export const updateUserProfile = async (accessToken, newBio, fileInput) => {
+export const updateUserProfile = async (
+  accessToken,
+  bio,
+  file,
+  deleteAvatar
+) => {
   try {
-    const formData = new FormData();
-    formData.append("bio", newBio);
+    if (!accessToken || typeof accessToken !== "string") {
+      throw new Error("Invalid or missing access token");
+    }
 
-    const fileInput = document.querySelector('input[type="file"]');
-    const avatarFile = fileInput.files[0];
-    if (avatarFile === "") {
-      formData.append("avatar", ""); // đánh dấu xóa
-    } else if (avatarFile) {
-      formData.append("avatar", avatarFile);
+    const formData = new FormData();
+    if (bio !== undefined && bio !== null) {
+      formData.append("bio", bio);
+    }
+    if (file) {
+      console.log("File to upload:", {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      });
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Selected file is not an image");
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("Image size must not exceed 5MB");
+      }
+      formData.append("avatar", file); // Key phải là "avatar" để khớp với cấu hình multer BE
+    }
+    if (deleteAvatar === "1") {
+      formData.append("deleteAvatar", "1");
     }
 
     const res = await axios.put(`${API_URL}/update-profile`, formData, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "multipart/form-data",
       },
     });
+
     return res.data.user;
   } catch (error) {
-    console.error("Error updating profile", error);
-    throw error;
+    if (error.response) {
+      const message = error.response.data?.error || "Failed to update profile";
+      throw new Error(`${message} (Status: ${error.response.status})`);
+    } else if (error.request) {
+      throw new Error("No response from server. Please check your network.");
+    } else {
+      throw new Error(`Error updating profile: ${error.message}`);
+    }
   }
 };
 

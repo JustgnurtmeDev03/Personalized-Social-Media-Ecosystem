@@ -20,8 +20,11 @@ import { useAuth } from "../../providers/AuthContext";
 import { fetchUserPosts } from "../../services/threadService";
 import PostItem from "../../components/Post/PostItem";
 import { API_URL } from "../../services/threadService";
+import { fetchNotifications } from "../../services/notificationService";
 
 export default function Profile() {
+  const POLLING_INTERVAL = 30000;
+  const [notificationsError, setNotificationsError] = useState(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isProfileModalOpen, setIsProfileModalOpen } = useModal();
@@ -161,44 +164,62 @@ export default function Profile() {
     enabled: !!auth.accessToken,
   });
 
+  // XỬ LÝ BÀI VIẾT THEO QUYỀN RIÊNG TƯ
   useEffect(() => {
-    if (postsData && likedPosts) {
-      // In dữ liệu gốc để kiểm tra
+    if (postsData && likedPosts && followersData && currentUserFollowingData) {
       console.log("Original postsData:", postsData);
 
-      // Sắp xếp bài đăng từ mới nhất đến cũ nhất
       const sortedPosts = [...postsData].sort((a, b) => {
         try {
           const dateA = new Date(a.createdAt);
           const dateB = new Date(b.createdAt);
-
-          // Kiểm tra xem ngày có hợp lệ không
           if (isNaN(dateA) || isNaN(dateB)) {
             console.warn("Invalid createdAt format:", { a, b });
-            return 0; // Giữ nguyên thứ tự nếu có lỗi
+            return 0;
           }
-
-          // Sắp xếp giảm dần: mới nhất lên đầu
           return dateB - dateA;
         } catch (error) {
           console.warn("Error sorting posts:", error);
-          return 0; // Giữ nguyên thứ tự nếu có lỗi
+          return 0;
         }
       });
 
-      // In dữ liệu đã sắp xếp để kiểm tra
-      console.log("Sorted posts:", sortedPosts);
-
-      // Kết hợp dữ liệu với thông tin likedPosts
       const enrichedPosts = sortedPosts.map((post) => ({
         ...post,
         isLiked: likedPosts.some((likedPost) => likedPost._id === post._id),
       }));
 
-      // Cập nhật state
-      setPosts(enrichedPosts);
+      if (isOwnProfile) {
+        // Hiển thị tất cả bài viết, bao gồm "only_me"
+        setPosts(enrichedPosts);
+      } else {
+        // Lọc bài viết cho người xem khác
+        const filteredPosts = enrichedPosts.filter((post) => {
+          if (post.visibility === "public") return true;
+          if (post.visibility === "friends") {
+            // Kiểm tra nếu người xem và tác giả follow lẫn nhau
+            const isViewerFollowingAuthor = currentUserFollowingData.some(
+              (u) => u._id === userData._id
+            );
+            const isAuthorFollowingViewer = followersData.some(
+              (f) => f._id === auth.userId
+            );
+            return isViewerFollowingAuthor && isAuthorFollowingViewer;
+          }
+          return false; // Không hiển thị bài "only_me"
+        });
+        setPosts(filteredPosts);
+      }
     }
-  }, [postsData, likedPosts]);
+  }, [
+    postsData,
+    likedPosts,
+    isOwnProfile,
+    currentUserFollowingData,
+    followersData,
+    userData,
+    auth.userId,
+  ]);
 
   // FUNC TOGGLE LIKE & UNLIKE
   const handleToggleLike = async (postId) => {
@@ -265,6 +286,30 @@ export default function Profile() {
       console.error("Error unfollowing user:", error);
     }
   };
+
+  const {
+    data: notifications,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["notifications", auth.accessToken],
+    queryFn: async () => {
+      if (!auth.accessToken) {
+        throw new Error("Không có token để xác thực");
+      }
+      const data = await fetchNotifications(auth.accessToken);
+      return data || []; // Đảm bảo luôn trả về mảng, tránh null
+    },
+    enabled: !!auth.accessToken,
+    refetchInterval: POLLING_INTERVAL,
+    refetchIntervalInBackground: true,
+    onError: (err) => {
+      setNotificationsError(err.message || "Lỗi khi tải thông báo");
+      queryClient.invalidateQueries(["notifications", auth.accessToken]);
+    },
+  });
+
+  const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
 
   // Xử lý trạng thái loading và error
   if (
@@ -392,7 +437,7 @@ export default function Profile() {
 
   return (
     <div className="profile-main">
-      <Sidebar />
+      <Sidebar unreadCount={unreadCount} />
       <div className="profile-main-content">
         <h2 className="profile-title">Hồ sơ</h2>
         <div className="profile-container">

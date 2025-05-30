@@ -64,25 +64,34 @@ const EditProfileModal = ({ userData, setUserData, editSection }) => {
   // XỬ LÝ LƯU THÔNG TIN ĐÃ THÊM / CHỈNH SỬA
 
   const handleSaveProfile = async () => {
-    const isDelete = selectedFile === null && tempAvatar === "";
-    const avatarToUpdate = selectedFile || (isDelete ? "" : null);
-    
     try {
+      let file = selectedFile;
+      let deleteAvatar = "";
+
+      if (selectedFile === null && tempAvatar === "") {
+        deleteAvatar = "1"; // Gửi yêu cầu xóa ảnh
+        file = null;
+      } else if (selectedFile) {
+        deleteAvatar = ""; // Có ảnh mới, không xóa
+      } else {
+        file = null; // Không thay đổi ảnh
+        deleteAvatar = ""; // Không xóa
+      }
+
       const updatedUser = await updateUserProfile(
         accessToken,
         tempBio,
-        avatarToUpdate
+        file,
+        deleteAvatar
       );
 
       // Cập nhật UI ngay lập tức
       setBio(tempBio);
-
       setUserData((prev) => ({
         ...prev,
         bio: tempBio,
         avatar: updatedUser.avatar,
       }));
-
       setIsProfileModalOpen(false);
     } catch (error) {
       console.error("Lỗi khi cập nhật tiểu sử:", error);

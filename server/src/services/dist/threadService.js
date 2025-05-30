@@ -53,7 +53,7 @@ var PostService = /** @class */ (function () {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
                         return [4 /*yield*/, Thread_1["default"].find({ author: _id })
-                                .select("content hashtags images videos createdAt likesCount")
+                                .select("content hashtags images videos visibility createdAt likesCount")
                                 .lean()];
                     case 1:
                         posts = _a.sent();

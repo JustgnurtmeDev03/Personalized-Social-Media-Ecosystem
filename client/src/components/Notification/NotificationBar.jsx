@@ -16,10 +16,7 @@ const POLLING_INTERVAL = 30000;
 const NotificationBar = () => {
   const { auth } = useAuth();
   const queryClient = useQueryClient();
-  const [notifications, setNotifications] = useState([]);
   const [notificationsError, setNotificationsError] = useState(null);
-  const [notificationsLoading, setNotificationsLoading] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0); // Thêm state để đếm thông báo chưa đọc
 
   const formatNotificationTime = useCallback((createdAt) => {
     try {
@@ -47,45 +44,42 @@ const NotificationBar = () => {
     }
   }, []);
 
-  const { isLoading, error } = useQuery({
+  const {
+    data: notifications,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["notifications", auth.accessToken],
     queryFn: async () => {
       if (!auth.accessToken) {
         throw new Error("Không có token để xác thực");
       }
-      const notifications = await fetchNotifications(auth.accessToken);
-      setNotifications(notifications);
-      setNotificationsLoading(false);
-      // Cập nhật số lượng thông báo chưa đọc
-      const unread = notifications.filter((n) => !n.isRead).length;
-      setUnreadCount(unread);
-      return notifications;
+      const data = await fetchNotifications(auth.accessToken);
+      return data || []; // Đảm bảo luôn trả về mảng, tránh null
     },
     enabled: !!auth.accessToken,
     refetchInterval: POLLING_INTERVAL,
     refetchIntervalInBackground: true,
-    onError: () => {
+    onError: (err) => {
+      setNotificationsError(err.message || "Lỗi khi tải thông báo");
       queryClient.invalidateQueries(["notifications", auth.accessToken]);
     },
   });
+
+  const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
 
   const markAsReadMutation = useMutation({
     mutationFn: ({ notificationId }) =>
       markNotificationAsRead(notificationId, auth.accessToken),
     onSuccess: (updatedNotification) => {
-      setNotifications((prev) =>
-        prev.map((notif) =>
-          notif._id === updatedNotification._id ? updatedNotification : notif
-        )
+      queryClient.setQueryData(
+        ["notifications", auth.accessToken],
+        (old) =>
+          old?.map((notif) =>
+            notif._id === updatedNotification._id ? updatedNotification : notif
+          ) || []
       );
-      queryClient.setQueryData(["notifications", auth.accessToken], (old) =>
-        old.map((notif) =>
-          notif._id === updatedNotification._id ? updatedNotification : notif
-        )
-      );
-      // Cập nhật lại số lượng thông báo chưa đọc
-      const unread = notifications.filter((n) => !n.isRead).length - 1;
-      setUnreadCount(unread >= 0 ? unread : 0);
+      // Không cần setNotifications, dùng trực tiếp data từ useQuery
     },
     onError: (error) => {
       console.error("Error marking notification as read:", error.message);
@@ -95,8 +89,8 @@ const NotificationBar = () => {
 
   const handleNotificationClick = useCallback(
     (notification) => {
-      if (!notification._id || typeof notification._id !== "string") {
-        console.error("Invalid notification ID:", notification._id);
+      if (!notification?._id || typeof notification._id !== "string") {
+        console.error("Invalid notification ID:", notification?._id);
         return;
       }
       if (!notification.isRead) {
@@ -106,11 +100,7 @@ const NotificationBar = () => {
     [markAsReadMutation]
   );
 
-  useEffect(() => {
-    return () => {};
-  }, []);
-
-  if (notificationsLoading || isLoading) {
+  if (isLoading) {
     return <Loading />;
   }
 
@@ -132,38 +122,38 @@ const NotificationBar = () => {
 
   return (
     <div className="App">
-      <body>
-        <div className="main-content">
-          <Sidebar unreadCount={unreadCount} />{" "}
-          {/* Truyền unreadCount vào Sidebar */}
-          <div className=" flex justify-center  min-h-screen w-full">
-            <div className="bg-gray-100 p-4 w-[1000px]">
-              <div className="text-center flex flex-col mb-2">
-                <span className="font-semibold text-base leading-5">
-                  Thông báo
-                </span>
-              </div>
-              <div className="notification-container w-full px-5">
-                {notifications.map((notification) => (
+      <div className="main-content">
+        <Sidebar unreadCount={unreadCount} />
+        <div className="flex justify-center min-h-screen w-full">
+          <div className="bg-gray-100 p-4 w-[1000px]">
+            <div className="text-center flex flex-col mb-2">
+              <span className="font-semibold text-base leading-5">
+                Thông báo
+              </span>
+            </div>
+            <div className="notification-container w-full px-5">
+              {notifications.map((notification) => {
+                // Kiểm tra relatedUser và relatedPost
+                const isPostRelated = [
+                  "new_post",
+                  "like",
+                  "comment",
+                  "reply",
+                ].includes(notification.type);
+                const linkTo = isPostRelated
+                  ? notification.relatedPost?._id
+                    ? `/post/${notification.relatedPost._id}`
+                    : "#"
+                  : notification.relatedUser?._id
+                  ? `/profile/${notification.relatedUser._id}`
+                  : "#";
+
+                return (
                   <Link
                     key={notification._id}
-                    to={
-                      notification.type === "new_post" ||
-                      notification.type === "like" ||
-                      notification.type === "comment" ||
-                      notification.type === "reply"
-                        ? `/post/${
-                            typeof notification.relatedPost === "object"
-                              ? notification.relatedPost._id
-                              : notification.relatedPost
-                          }`
-                        : `/profile/${
-                            typeof notification.relatedUser === "object"
-                              ? notification.relatedUser._id
-                              : notification.relatedUser
-                          }`
-                    }
+                    to={linkTo}
                     onClick={() => handleNotificationClick(notification)}
+                    className={linkTo === "#" ? "pointer-events-none" : ""}
                   >
                     <div
                       className={`posts-content bg-white p-4 rounded-lg shadow mb-4 ${
@@ -180,10 +170,16 @@ const NotificationBar = () => {
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
                             <Link
-                              to={`/profile/${
-                                notification.relatedUser?._id || ""
+                              to={
+                                notification.relatedUser?._id
+                                  ? `/profile/${notification.relatedUser._id}`
+                                  : "#"
+                              }
+                              className={`font-bold text-sm ${
+                                notification.relatedUser?._id
+                                  ? "hover:underline"
+                                  : "pointer-events-none"
                               }`}
-                              className="font-bold text-sm hover:underline"
                             >
                               {notification.relatedUser?.username ||
                                 "Không xác định"}
@@ -221,12 +217,12 @@ const NotificationBar = () => {
                       </div>
                     </div>
                   </Link>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>
-      </body>
+      </div>
     </div>
   );
 };

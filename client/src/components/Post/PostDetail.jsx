@@ -15,6 +15,11 @@ import {
   followUser,
 } from "../../services/userService";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Sidebar from "../Sidebar/sidebar";
+import {
+  fetchNotifications,
+  markNotificationAsRead,
+} from "../../services/notificationService";
 
 // Component cho form bình luận chính
 const CommentForm = ({ userData, placeholder, value, onChange, onSubmit }) => {
@@ -100,6 +105,7 @@ const ReplyForm = ({ userData, commentId, value, onChange, onSubmit }) => {
 };
 
 const PostDetail = () => {
+  const POLLING_INTERVAL = 30000;
   const { auth } = useAuth();
   const { id: postId } = useParams();
   const queryClient = useQueryClient();
@@ -118,6 +124,7 @@ const PostDetail = () => {
   const [mediaDimensions, setMediaDimensions] = useState({});
   const [showMoreReplies, setShowMoreReplies] = useState({});
   const [hideReplies, setHideReplies] = useState({});
+  const [notificationsError, setNotificationsError] = useState(null);
 
   const socket = React.useRef(null);
 
@@ -161,6 +168,19 @@ const PostDetail = () => {
       ]);
       const postData = postResponse.data || {};
       const likedPostsData = likedPostsResponse.data || [];
+
+      // Kiểm tra quyền truy cập
+      const canView =
+        postData.visibility === "public" ||
+        (postData.visibility === "only_me" &&
+          postData.author._id === auth.userId) ||
+        (postData.visibility === "friends" &&
+          currentUserFollowing.includes(postData.author._id));
+
+      if (!canView) {
+        throw new Error("Bạn không có quyền xem bài viết này.");
+      }
+
       setPost({
         ...postData,
         isLiked: likedPostsData.some(
@@ -177,11 +197,13 @@ const PostDetail = () => {
         hashtags: Array.isArray(postData.hashtags) ? postData.hashtags : [],
       });
     } catch (error) {
-      setPostError("Không thể tải bài viết. Vui lòng thử lại.");
+      setPostError(
+        error.message || "Không thể tải bài viết. Vui lòng thử lại."
+      );
     } finally {
       setPostLoading(false);
     }
-  }, [postId]);
+  }, [postId, auth.userId, currentUserFollowing]);
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -240,6 +262,28 @@ const PostDetail = () => {
       setCommentsLoading(false);
     }
   }, [postId]);
+
+  const {
+    data: notifications,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["notifications", auth.accessToken],
+    queryFn: async () => {
+      if (!auth.accessToken) {
+        throw new Error("Không có token để xác thực");
+      }
+      const data = await fetchNotifications(auth.accessToken);
+      return data || []; // Đảm bảo luôn trả về mảng, tránh null
+    },
+    enabled: !!auth.accessToken,
+    refetchInterval: POLLING_INTERVAL,
+    refetchIntervalInBackground: true,
+    onError: (err) => {
+      setNotificationsError(err.message || "Lỗi khi tải thông báo");
+      queryClient.invalidateQueries(["notifications", auth.accessToken]);
+    },
+  });
 
   const handleAddComment = useCallback(
     async (e) => {
@@ -514,6 +558,8 @@ const PostDetail = () => {
     }));
   };
 
+  const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
+
   useEffect(() => {
     socket.current = io("http://localhost:8000", { path: "/socket.io" });
     socket.current.on("connect", () => console.log("Socket.IO connected"));
@@ -753,191 +799,257 @@ const PostDetail = () => {
   };
 
   return (
-    <div className="bg-gray-100 p-4 min-h-screen">
-      <div className="text-center flex flex-col mb-2">
-        <span className="font-semibold text-base leading-5">Bài viết</span>
-        <span className="text-gray-400 text-xs leading-4 mt-0.5">
-          {post?.userViews || 0} lượt xem
-        </span>
-      </div>
+    <div className="bg-gray-100 p-4 min-h-screen flex ">
+      <Sidebar unreadCount={unreadCount} />
       <div className="post-container max-w-2xl mx-auto">
-        <div className="posts-content bg-white p-4 rounded-tl-3xl rounded-tr-3xl shadow">
-          <div className="flex items-center mb-4 relative">
-            <Avatar
-              _id={post?.author?._id}
-              avatarUrl={post?.author?.avatar}
-              size={40}
-              className="w-10 h-10 rounded-full object-cover"
-            />
-            {auth.userId !== post?.author?._id &&
-              !currentUserFollowing.includes(post?.author?._id) && (
-                <button
-                  className="follow-btn border-white absolute left-6 top-6 bg-black text-white text-center rounded-full w-4 h-4 flex items-center justify-center text-sm z-10"
-                  onClick={() => handleFollow(post.author._id)}
+        <div className="text-center flex flex-col mb-2">
+          <span className="font-semibold text-base leading-5">Bài viết</span>
+          <span className="text-gray-400 text-xs leading-4 mt-0.5">
+            {post?.userViews || 0} lượt xem
+          </span>
+        </div>
+        <div className="overflow-y-auto max-h-screen">
+          <div className="posts-content bg-white p-4 rounded-tl-3xl rounded-tr-3xl shadow">
+            <div className="flex items-center mb-4 relative">
+              <Avatar
+                _id={post?.author?._id}
+                avatarUrl={post?.author?.avatar}
+                size={40}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+              {auth.userId !== post?.author?._id &&
+                !currentUserFollowing.includes(post?.author?._id) && (
+                  <button
+                    className="follow-btn border-white absolute left-6 top-6 bg-black text-white text-center rounded-full w-4 h-4 flex items-center justify-center text-sm z-10"
+                    onClick={() => handleFollow(post.author._id)}
+                  >
+                    <svg aria-label="Follow" role="img" viewBox="0 0 10 9">
+                      <title>Follow</title>
+                      <path d="M4.99512 8.66895C4.64355 8.66895 4.35059 8.36621 4.35059 8.03418V5.12891H1.50391C1.17188 5.12891 0.864258 4.83594 0.864258 4.47949C0.864258 4.12793 1.17188 3.83008 1.50391 3.83008H4.35059V0.924805C4.35059 0.583008 4.64355 0.290039 4.99512 0.290039C5.35156 0.290039 5.64453 0.583008 5.64453 0.924805V3.83008H8.49121C8.83301 3.83008 9.13086 4.12793 9.13086 4.47949C9.13086 4.83594 8.83301 5.12891 8.49121 5.12891H5.64453V8.03418C5.64453 8.36621 5.35156 8.66895 4.99512 8.66895Z"></path>
+                    </svg>
+                  </button>
+                )}
+              <div className="ml-3">
+                <Link
+                  to={`/profile/${post?.author?._id}`}
+                  className="font-bold hover:underline"
                 >
-                  <svg aria-label="Follow" role="img" viewBox="0 0 10 9">
-                    <title>Follow</title>
-                    <path d="M4.99512 8.66895C4.64355 8.66895 4.35059 8.36621 4.35059 8.03418V5.12891H1.50391C1.17188 5.12891 0.864258 4.83594 0.864258 4.47949C0.864258 4.12793 1.17188 3.83008 1.50391 3.83008H4.35059V0.924805C4.35059 0.583008 4.64355 0.290039 4.99512 0.290039C5.35156 0.290039 5.64453 0.583008 5.64453 0.924805V3.83008H8.49121C8.83301 3.83008 9.13086 4.12793 9.13086 4.47949C9.13086 4.83594 8.83301 5.12891 8.49121 5.12891H5.64453V8.03418C5.64453 8.36621 5.35156 8.66895 4.99512 8.66895Z"></path>
-                  </svg>
-                </button>
-              )}
-            <div className="ml-3">
-              <Link
-                to={`/profile/${post?.author?._id}`}
-                className="font-bold hover:underline"
+                  {post?.author?.username}
+                </Link>
+                <div className="text-gray-500 text-sm flex items-center">
+                  {formatPostTime(post.createdAt)}{" "}
+                  <div className="text-gray-500 text-sm ml-2">
+                    <div className="relative group">
+                      {post.visibility === "public" && (
+                        <svg
+                          className="w-4 h-4"
+                          viewBox="0 0 16 16"
+                          width="12"
+                          height="12"
+                          fill="currentColor"
+                          title="Đã chia sẻ với Công khai"
+                        >
+                          <title>Đã chia sẻ với Công khai</title>
+                          <g
+                            fill-rule="evenodd"
+                            transform="translate(-448 -544)"
+                          >
+                            <g>
+                              <path
+                                d="M109.5 408.5c0 3.23-2.04 5.983-4.903 7.036l.07-.036c1.167-1 1.814-2.967 2-3.834.214-1 .303-1.3-.5-1.96-.31-.253-.677-.196-1.04-.476-.246-.19-.356-.59-.606-.73-.594-.337-1.107.11-1.954.223a2.666 2.666 0 0 1-1.15-.123c-.007 0-.007 0-.013-.004l-.083-.03c-.164-.082-.077-.206.006-.36h-.006c.086-.17.086-.376-.05-.529-.19-.214-.54-.214-.804-.224-.106-.003-.21 0-.313.004l-.003-.004c-.04 0-.084.004-.124.004h-.037c-.323.007-.666-.034-.893-.314-.263-.353-.29-.733.097-1.09.28-.26.863-.8 1.807-.22.603.37 1.166.667 1.666.5.33-.11.48-.303.094-.87a1.128 1.128 0 0 1-.214-.73c.067-.776.687-.84 1.164-1.2.466-.356.68-.943.546-1.457-.106-.413-.51-.873-1.28-1.01a7.49 7.49 0 0 1 6.524 7.434"
+                                transform="translate(354 143.5)"
+                              ></path>
+                              <path
+                                d="M104.107 415.696A7.498 7.498 0 0 1 94.5 408.5a7.48 7.48 0 0 1 3.407-6.283 5.474 5.474 0 0 0-1.653 2.334c-.753 2.217-.217 4.075 2.29 4.075.833 0 1.4.561 1.333 2.375-.013.403.52 1.78 2.45 1.89.7.04 1.184 1.053 1.33 1.74.06.29.127.65.257.97a.174.174 0 0 0 .193.096"
+                                transform="translate(354 143.5)"
+                              ></path>
+                              <path
+                                fill-rule="nonzero"
+                                d="M110 408.5a8 8 0 1 1-16 0 8 8 0 0 1 16 0zm-1 0a7 7 0 1 0-14 0 7 7 0 0 0 14 0z"
+                                transform="translate(354 143.5)"
+                              ></path>
+                            </g>
+                          </g>
+                        </svg>
+                      )}
+                      {post.visibility === "friends" && (
+                        <img
+                          class="x1b0d499 x1d69dk1"
+                          alt="Bạn bè"
+                          height="14"
+                          width="14"
+                          src="https://static.xx.fbcdn.net/rsrc.php/v4/yJ/r/zPcex_q0TM1.png"
+                        />
+                      )}
+                      {post.visibility === "only_me" && (
+                        <img
+                          class="x1b0d499 x1d69dk1"
+                          alt="Chỉ mình tôi"
+                          height="14"
+                          width="14"
+                          src="https://static.xx.fbcdn.net/rsrc.php/v4/yc/r/57iQDgPFByS.png"
+                        />
+                      )}
+                      {/* Tooltip hiển thị khi hover */}
+                      <div className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-5 bottom-full mb-1 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                        {post.visibility === "public" && "Bất cứ ai"}
+                        {post.visibility === "friends" && "Bạn bè"}
+                        {post.visibility === "only_me" && "Chỉ mình tôi"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mb-4">
+              <p className="post-content">
+                {post?.content || "Không có nội dung"}
+              </p>
+              <p className="post-hashtags">
+                {post?.hashtags?.length > 0
+                  ? post.hashtags.map((hashtag, index) => (
+                      <span key={index} className="hashtag text-blue-500">
+                        {hashtag}{" "}
+                      </span>
+                    ))
+                  : ""}
+              </p>
+
+              <span className="text-gray-500 text-sm">Dịch</span>
+            </div>
+            {(post?.images?.length > 0 || post?.videos?.length > 0) && (
+              <Swiper
+                spaceBetween={8}
+                slidesPerView="auto"
+                freeMode={true}
+                className="mb-4"
               >
-                {post?.author?.username}
-              </Link>
-              <div className="text-gray-500 text-sm">
-                {formatPostTime(post?.createdAt)}
+                {post.images.map((image, index) => (
+                  <SwiperSlide
+                    key={`image-${post._id}-${index}`}
+                    className="!w-auto !h-auto"
+                  >
+                    <div
+                      className="relative flex-shrink-0 rounded-lg overflow-hidden bg-gray-100"
+                      style={{
+                        width: "auto",
+                        height: "100%",
+                        aspectRatio:
+                          mediaDimensions[`${post._id}-${index}`]?.width /
+                            mediaDimensions[`${post._id}-${index}`]?.height ||
+                          "1/1",
+                        maxWidth: "580px",
+                        maxHeight: "400px",
+                      }}
+                    >
+                      <img
+                        src={image}
+                        alt={`Hình ảnh ${index + 1}`}
+                        className="object-cover w-full h-full"
+                        loading="lazy"
+                        onLoad={(e) =>
+                          handleUpdateDimensions(
+                            post._id,
+                            index,
+                            e.target.naturalWidth,
+                            e.target.naturalHeight
+                          )
+                        }
+                      />
+                    </div>
+                  </SwiperSlide>
+                ))}
+                {post.videos.map((video, index) => (
+                  <SwiperSlide
+                    key={`video-${post._id}-${index}`}
+                    className="!w-auto !h-auto"
+                  >
+                    <div
+                      className="relative flex-shrink-0 rounded-lg overflow-hidden bg-gray-100"
+                      style={{
+                        width: "auto",
+                        height: "100%",
+                        aspectRatio:
+                          mediaDimensions[`${post._id}-${index}`]?.width /
+                            mediaDimensions[`${post._id}-${index}`]?.height ||
+                          "1/1",
+                        maxWidth: "580px",
+                        maxHeight: "400px",
+                      }}
+                    >
+                      <video
+                        className="object-cover w-full h-full"
+                        controls
+                        autoPlay={false}
+                        loop
+                        onLoadedMetadata={(e) =>
+                          handleUpdateDimensions(
+                            post._id,
+                            index,
+                            e.target.videoWidth,
+                            e.target.videoHeight
+                          )
+                        }
+                        onMouseDown={preventDefaultDrag}
+                        onTouchStart={preventDefaultDrag}
+                      >
+                        <source src={video} type="video/mp4" />
+                        Trình duyệt không hỗ trợ video.
+                      </video>
+                    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            )}
+            <div className="flex items-center mt-4 text-gray-500">
+              <button
+                className={`like-button ${post?.isLiked ? "liked" : ""}`}
+                onClick={handleToggleLike}
+              >
+                <i
+                  className={`fa fa-heart ${
+                    post?.isLiked ? "fas" : "far"
+                  } heart-icon`}
+                ></i>
+                <span className="ml-1">{post?.likesCount || 0}</span>
+              </button>
+              <div className="flex items-center ml-4">
+                <i className="fas fa-comment"></i>
+                <span className="ml-1">{post?.commentsCount || 0}</span>
+              </div>
+              <div className="flex items-center ml-4">
+                <i className="fas fa-share"></i>
+                <span className="ml-1">0</span>
               </div>
             </div>
           </div>
-          <div className="mb-4">
-            <p className="post-content">
-              {post?.content || "Không có nội dung"}
-            </p>
-            <p className="post-hashtags">
-              {post?.hashtags?.length > 0
-                ? post.hashtags.map((hashtag, index) => (
-                    <span key={index} className="hashtag text-blue-500">
-                      {hashtag}{" "}
-                    </span>
-                  ))
-                : ""}
-            </p>
-            <span className="text-gray-500 text-sm">Dịch</span>
+          <div className="comments bg-white p-4 shadow rounded-b-lg">
+            <h2 className="text-lg font-bold mb-4">Bình luận</h2>
+            {commentsError ? (
+              <p className="text-center text-red-500">{commentsError}</p>
+            ) : commentsLoading ? (
+              <p className="text-center">Đang tải bình luận...</p>
+            ) : comments.length > 0 ? (
+              comments.map((comment) => (
+                <CommentComponent key={comment._id} comment={comment} />
+              ))
+            ) : (
+              <p className="text-center text-gray-500">
+                Chưa có bình luận nào.
+              </p>
+            )}
           </div>
-          {(post?.images?.length > 0 || post?.videos?.length > 0) && (
-            <Swiper
-              spaceBetween={8}
-              slidesPerView="auto"
-              freeMode={true}
-              className="mb-4"
-            >
-              {post.images.map((image, index) => (
-                <SwiperSlide
-                  key={`image-${post._id}-${index}`}
-                  className="!w-auto !h-auto"
-                >
-                  <div
-                    className="relative flex-shrink-0 rounded-lg overflow-hidden bg-gray-100"
-                    style={{
-                      width: "auto",
-                      height: "100%",
-                      aspectRatio:
-                        mediaDimensions[`${post._id}-${index}`]?.width /
-                          mediaDimensions[`${post._id}-${index}`]?.height ||
-                        "1/1",
-                      maxWidth: "580px",
-                      maxHeight: "400px",
-                    }}
-                  >
-                    <img
-                      src={image}
-                      alt={`Hình ảnh ${index + 1}`}
-                      className="object-cover w-full h-full"
-                      loading="lazy"
-                      onLoad={(e) =>
-                        handleUpdateDimensions(
-                          post._id,
-                          index,
-                          e.target.naturalWidth,
-                          e.target.naturalHeight
-                        )
-                      }
-                    />
-                  </div>
-                </SwiperSlide>
-              ))}
-              {post.videos.map((video, index) => (
-                <SwiperSlide
-                  key={`video-${post._id}-${index}`}
-                  className="!w-auto !h-auto"
-                >
-                  <div
-                    className="relative flex-shrink-0 rounded-lg overflow-hidden bg-gray-100"
-                    style={{
-                      width: "auto",
-                      height: "100%",
-                      aspectRatio:
-                        mediaDimensions[`${post._id}-${index}`]?.width /
-                          mediaDimensions[`${post._id}-${index}`]?.height ||
-                        "1/1",
-                      maxWidth: "580px",
-                      maxHeight: "400px",
-                    }}
-                  >
-                    <video
-                      className="object-cover w-full h-full"
-                      controls
-                      autoPlay={false}
-                      loop
-                      onLoadedMetadata={(e) =>
-                        handleUpdateDimensions(
-                          post._id,
-                          index,
-                          e.target.videoWidth,
-                          e.target.videoHeight
-                        )
-                      }
-                      onMouseDown={preventDefaultDrag}
-                      onTouchStart={preventDefaultDrag}
-                    >
-                      <source src={video} type="video/mp4" />
-                      Trình duyệt không hỗ trợ video.
-                    </video>
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          )}
-          <div className="flex items-center mt-4 text-gray-500">
-            <button
-              className={`like-button ${post?.isLiked ? "liked" : ""}`}
-              onClick={handleToggleLike}
-            >
-              <i
-                className={`fa fa-heart ${
-                  post?.isLiked ? "fas" : "far"
-                } heart-icon`}
-              ></i>
-              <span className="ml-1">{post?.likesCount || 0}</span>
-            </button>
-            <div className="flex items-center ml-4">
-              <i className="fas fa-comment"></i>
-              <span className="ml-1">{post?.commentsCount || 0}</span>
-            </div>
-            <div className="flex items-center ml-4">
-              <i className="fas fa-share"></i>
-              <span className="ml-1">0</span>
-            </div>
+          <div className="bg-white p-4 rounded-lg shadow mt-4">
+            <CommentForm
+              userData={userData}
+              placeholder={`Bình luận đến ${
+                post?.author?.username || "Không xác định"
+              }`}
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              onSubmit={handleAddComment}
+            />
           </div>
-        </div>
-        <div className="comments bg-white p-4 shadow rounded-b-lg">
-          <h2 className="text-lg font-bold mb-4">Bình luận</h2>
-          {commentsError ? (
-            <p className="text-center text-red-500">{commentsError}</p>
-          ) : commentsLoading ? (
-            <p className="text-center">Đang tải bình luận...</p>
-          ) : comments.length > 0 ? (
-            comments.map((comment) => (
-              <CommentComponent key={comment._id} comment={comment} />
-            ))
-          ) : (
-            <p className="text-center text-gray-500">Chưa có bình luận nào.</p>
-          )}
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow mt-4">
-          <CommentForm
-            userData={userData}
-            placeholder={`Bình luận đến ${
-              post?.author?.username || "Không xác định"
-            }`}
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            onSubmit={handleAddComment}
-          />
         </div>
       </div>
     </div>
