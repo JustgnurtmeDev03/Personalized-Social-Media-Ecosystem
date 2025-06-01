@@ -104,6 +104,43 @@ const ReplyForm = ({ userData, commentId, value, onChange, onSubmit }) => {
   );
 };
 
+// Component Modal để hiển thị ảnh/video toàn màn hình
+const MediaModal = ({ isOpen, onClose, mediaUrl }) => {
+  if (!isOpen) return null;
+
+  const isVideo = mediaUrl.endsWith(".mp4");
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-w-full max-h-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {isVideo ? (
+          <video
+            className="max-w-full max-h-screen object-contain"
+            controls
+            autoPlay
+            loop
+          >
+            <source src={mediaUrl} type="video/mp4" />
+            Trình duyệt không hỗ trợ video.
+          </video>
+        ) : (
+          <img
+            src={mediaUrl}
+            alt="Media"
+            className="max-w-full max-h-screen object-contain"
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
 const PostDetail = () => {
   const POLLING_INTERVAL = 30000;
   const { auth } = useAuth();
@@ -125,6 +162,8 @@ const PostDetail = () => {
   const [showMoreReplies, setShowMoreReplies] = useState({});
   const [hideReplies, setHideReplies] = useState({});
   const [notificationsError, setNotificationsError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState(null);
 
   const socket = React.useRef(null);
 
@@ -169,7 +208,6 @@ const PostDetail = () => {
       const postData = postResponse.data || {};
       const likedPostsData = likedPostsResponse.data || [];
 
-      // Kiểm tra quyền truy cập
       const canView =
         postData.visibility === "public" ||
         (postData.visibility === "only_me" &&
@@ -274,7 +312,7 @@ const PostDetail = () => {
         throw new Error("Không có token để xác thực");
       }
       const data = await fetchNotifications(auth.accessToken);
-      return data || []; // Đảm bảo luôn trả về mảng, tránh null
+      return data || [];
     },
     enabled: !!auth.accessToken,
     refetchInterval: POLLING_INTERVAL,
@@ -856,7 +894,7 @@ const PostDetail = () => {
                           >
                             <g>
                               <path
-                                d="M109.5 408.5c0 3.23-2.04 5.983-4.903 7.036l.07-.036c1.167-1 1.814-2.967 2-3.834.214-1 .303-1.3-.5-1.96-.31-.253-.677-.196-1.04-.476-.246-.19-.356-.59-.606-.73-.594-.337-1.107.11-1.954.223a2.666 2.666 0 0 1-1.15-.123c-.007 0-.007 0-.013-.004l-.083-.03c-.164-.082-.077-.206.006-.36h-.006c.086-.17.086-.376-.05-.529-.19-.214-.54-.214-.804-.224-.106-.003-.21 0-.313.004l-.003-.004c-.04 0-.084.004-.124.004h-.037c-.323.007-.666-.034-.893-.314-.263-.353-.29-.733.097-1.09.28-.26.863-.8 1.807-.22.603.37 1.166.667 1.666.5.33-.11.48-.303.094-.87a1.128 1.128 0 0 1-.214-.73c.067-.776.687-.84 1.164-1.2.466-.356.68-.943.546-1.457-.106-.413-.51-.873-1.28-1.01a7.49 7.49 0 0 1 6.524 7.434"
+                                d="M109.5 408.5c0 3.23-2.04 5.983-4.903 7.036l.07-.036c1.167-1 1.814-2.967 2-3.834.214-1 .303-1.3-.5-1.96-.31-.253-.677-.196-1.04-.476-.246-.19-.356-.59-.606-.73-.594-.337-1.107.11-1.954.223a2.666 2.666 0 0 1-1.15-.123c-.007 0-.007 0-.013-.004l-.083-.030c-.164-.082-.077-.206.006-.36h-.006c.086-.17.086-.376-.05-.529-.19-.214-.54-.214-.804-.224-.106-.003-.21 0-.313.004l-.003-.004c-.04 0-.084.004-.124.004h-.037c-.323.007-.666-.034-.893-.314-.263-.353-.29-.733.097-1.09.28-.26.863-.8 1.807-.22.603.37 1.166.667 1.666.5.33-.11.48-.303.094-.87a1.128 1.128 0 0 1-.214-.73c.067-.776.687-.84 1.164-1.2.466-.356.68-.943.546-1.457-.106-.413-.51-.873-1.28-1.01a7.49 7.49 0 0 1 6.524 7.434"
                                 transform="translate(354 143.5)"
                               ></path>
                               <path
@@ -890,7 +928,6 @@ const PostDetail = () => {
                           src="https://static.xx.fbcdn.net/rsrc.php/v4/yc/r/57iQDgPFByS.png"
                         />
                       )}
-                      {/* Tooltip hiển thị khi hover */}
                       <div className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-5 bottom-full mb-1 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
                         {post.visibility === "public" && "Bất cứ ai"}
                         {post.visibility === "friends" && "Bạn bè"}
@@ -914,7 +951,6 @@ const PostDetail = () => {
                     ))
                   : ""}
               </p>
-
               <span className="text-gray-500 text-sm">Dịch</span>
             </div>
             {(post?.images?.length > 0 || post?.videos?.length > 0) && (
@@ -930,7 +966,7 @@ const PostDetail = () => {
                     className="!w-auto !h-auto"
                   >
                     <div
-                      className="relative flex-shrink-0 rounded-lg overflow-hidden bg-gray-100"
+                      className="relative flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 cursor-pointer"
                       style={{
                         width: "auto",
                         height: "100%",
@@ -940,6 +976,10 @@ const PostDetail = () => {
                           "1/1",
                         maxWidth: "580px",
                         maxHeight: "400px",
+                      }}
+                      onClick={() => {
+                        setSelectedMedia(image);
+                        setIsModalOpen(true);
                       }}
                     >
                       <img
@@ -965,7 +1005,7 @@ const PostDetail = () => {
                     className="!w-auto !h-auto"
                   >
                     <div
-                      className="relative flex-shrink-0 rounded-lg overflow-hidden bg-gray-100"
+                      className="relative flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 cursor-pointer"
                       style={{
                         width: "auto",
                         height: "100%",
@@ -975,6 +1015,10 @@ const PostDetail = () => {
                           "1/1",
                         maxWidth: "580px",
                         maxHeight: "400px",
+                      }}
+                      onClick={() => {
+                        setSelectedMedia(video);
+                        setIsModalOpen(true);
                       }}
                     >
                       <video
@@ -1052,6 +1096,11 @@ const PostDetail = () => {
           </div>
         </div>
       </div>
+      <MediaModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        mediaUrl={selectedMedia}
+      />
     </div>
   );
 };

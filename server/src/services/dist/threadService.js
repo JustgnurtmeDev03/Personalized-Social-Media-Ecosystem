@@ -35,11 +35,21 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
 exports.__esModule = true;
-exports.processPostContent = exports.PostService = void 0;
+exports.processPostContent = exports.RecommendationService = exports.PostService = void 0;
 var mongoose_1 = require("mongoose");
 var httpStatus_1 = require("~/constants/httpStatus");
+var Follow_1 = require("~/models/Follow");
+var Like_1 = require("~/models/Like");
 var Thread_1 = require("~/models/Thread");
+var comment_1 = require("~/models/comment");
 var httpError_1 = require("~/utils/httpError");
 var logger_1 = require("~/utils/logger");
 var PostService = /** @class */ (function () {
@@ -155,6 +165,86 @@ var PostService = /** @class */ (function () {
     return PostService;
 }());
 exports.PostService = PostService;
+var RecommendationService = /** @class */ (function () {
+    function RecommendationService() {
+    }
+    RecommendationService.getRecommendedThreads = function (userId, limit) {
+        if (limit === void 0) { limit = 10; }
+        return __awaiter(this, void 0, void 0, function () {
+            var follows, followeeIds_1, likedThreads, commentedThreads, interactedThreadIds, interactedThreads_1, hashtagCounts_1, allThreads, scoredThreads, recommendedThreads, error_4;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 6, , 7]);
+                        return [4 /*yield*/, Follow_1["default"].find({ followerId: userId })];
+                    case 1:
+                        follows = _a.sent();
+                        followeeIds_1 = follows.map(function (f) { return f.followeeId; });
+                        return [4 /*yield*/, Like_1["default"].find({ user: userId }).select("threadId")];
+                    case 2:
+                        likedThreads = _a.sent();
+                        return [4 /*yield*/, comment_1["default"].find({ user: userId }).select("threadId")];
+                    case 3:
+                        commentedThreads = _a.sent();
+                        interactedThreadIds = __spreadArrays(likedThreads.map(function (l) { return l.threadId; }), commentedThreads.map(function (c) { return c.threadId; }));
+                        return [4 /*yield*/, Thread_1["default"].find({
+                                _id: { $in: interactedThreadIds }
+                            })
+                                .select("hashtags author")
+                                .populate("author", "username _id")];
+                    case 4:
+                        interactedThreads_1 = _a.sent();
+                        hashtagCounts_1 = {};
+                        interactedThreads_1.forEach(function (thread) {
+                            var _a;
+                            (_a = thread.hashtags) === null || _a === void 0 ? void 0 : _a.forEach(function (hashtag) {
+                                hashtagCounts_1[hashtag] = (hashtagCounts_1[hashtag] || 0) + 1;
+                            });
+                        });
+                        return [4 /*yield*/, Thread_1["default"].find({
+                                visibility: "public",
+                                author: { $ne: userId }
+                            }).populate("author", "username _id avatar")];
+                    case 5:
+                        allThreads = _a.sent();
+                        scoredThreads = allThreads.map(function (thread) {
+                            var _a;
+                            var score = 0;
+                            // Nếu tác giả là người mà người dùng theo dõi: +10 điểm
+                            if (followeeIds_1.some(function (id) { return id.toString() === thread.author._id.toString(); })) {
+                                score += 10;
+                            }
+                            // Mỗi hashtag trong bài viết mà người dùng thường tương tác: +5 điểm/hashtag
+                            (_a = thread.hashtags) === null || _a === void 0 ? void 0 : _a.forEach(function (hashtag) {
+                                if (hashtagCounts_1[hashtag]) {
+                                    score += 5 * hashtagCounts_1[hashtag];
+                                }
+                            });
+                            // Nếu bài viết có cùng tác giả với bài đã tương tác: +3 điểm
+                            var authorInteracted = interactedThreads_1.some(function (t) { return t.author._id.toString() === thread.author._id.toString(); });
+                            if (authorInteracted) {
+                                score += 3;
+                            }
+                            return { thread: thread, score: score };
+                        });
+                        // Sắp xếp theo điểm số giảm dần và lấy top bài viết
+                        scoredThreads.sort(function (a, b) { return b.score - a.score; });
+                        recommendedThreads = scoredThreads
+                            .slice(0, limit)
+                            .map(function (st) { return st.thread; });
+                        return [2 /*return*/, recommendedThreads];
+                    case 6:
+                        error_4 = _a.sent();
+                        console.error("Error in getRecommendedThreads:", error_4);
+                        throw error_4;
+                    case 7: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return RecommendationService;
+}());
+exports.RecommendationService = RecommendationService;
 exports.processPostContent = function (content) {
     var words = content.split(" ");
     var hashtags = [];

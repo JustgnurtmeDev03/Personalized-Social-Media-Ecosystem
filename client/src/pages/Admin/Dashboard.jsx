@@ -217,7 +217,7 @@ const AdminDashBoard = () => {
             aria-label="Select time range"
             className="text-xs text-black bg-white border border-gray-300 rounded px-3 py-1 flex items-center gap-1"
           >
-            Last 7 days
+            7 ngày trước
             <svg
               aria-hidden="true"
               className="w-3 h-3"

@@ -10,7 +10,11 @@ import { v4 as uuidv4 } from "uuid";
 import Like from "~/models/Like";
 import cloudinary from "~/config/cloudinary";
 import { CloudinaryUploadResponse } from "~/models/cloudinary";
-import { PostService, processPostContent } from "~/services/threadService";
+import {
+  PostService,
+  RecommendationService,
+  processPostContent,
+} from "~/services/threadService";
 import HTTP_STATUS from "~/constants/httpStatus";
 import mongoose from "mongoose";
 import { NotificationService } from "~/services/notificationService";
@@ -176,6 +180,38 @@ const getPostById = asyncHandler(
       res.status(HTTP_STATUS.OK).json(post);
     } catch (error: any) {
       next(error);
+    }
+  }
+);
+
+const getRecommendedThreads = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const userId = req.user._id; // Lấy userId từ authMiddleware
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
+
+      // Gọi service để lấy danh sách bài viết đề xuất
+      const recommendedThreads =
+        await RecommendationService.getRecommendedThreads(userId.toString());
+
+      // Trả về phản hồi thành công
+      res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data: recommendedThreads,
+        message: "Recommended threads retrieved successfully",
+      });
+    } catch (error: any) {
+      console.error("Error in getRecommendedThreads controller:", error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: error.message || "Failed to fetch recommended threads",
+      });
     }
   }
 );
@@ -413,6 +449,7 @@ const togglePinPost = asyncHandler(
 export {
   getThread,
   createThread,
+  getRecommendedThreads,
   toggleLike,
   getLikedThreads,
   getPostById,

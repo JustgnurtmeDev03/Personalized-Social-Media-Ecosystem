@@ -169,6 +169,7 @@ export default function Profile() {
     if (postsData && likedPosts && followersData && currentUserFollowingData) {
       console.log("Original postsData:", postsData);
 
+      // Sắp xếp bài viết theo ngày tạo (mới nhất trước)
       const sortedPosts = [...postsData].sort((a, b) => {
         try {
           const dateA = new Date(a.createdAt);
@@ -184,20 +185,27 @@ export default function Profile() {
         }
       });
 
+      // Lọc bỏ các giá trị null hoặc undefined từ likedPosts
+      const validLikedPosts = likedPosts.filter(
+        (post) => post && post._id !== undefined && post._id !== null
+      );
+
+      // Gắn thêm thuộc tính isLiked cho từng bài viết
       const enrichedPosts = sortedPosts.map((post) => ({
         ...post,
-        isLiked: likedPosts.some((likedPost) => likedPost._id === post._id),
+        isLiked: validLikedPosts.some(
+          (likedPost) => likedPost._id === post._id
+        ),
       }));
 
       if (isOwnProfile) {
-        // Hiển thị tất cả bài viết, bao gồm "only_me"
+        // Khi ở hồ sơ của người dùng đang đăng nhập: hiển thị tất cả bài viết của họ
         setPosts(enrichedPosts);
       } else {
-        // Lọc bài viết cho người xem khác
+        // Khi xem hồ sơ của người khác: lọc bài viết theo quyền riêng tư
         const filteredPosts = enrichedPosts.filter((post) => {
           if (post.visibility === "public") return true;
           if (post.visibility === "friends") {
-            // Kiểm tra nếu người xem và tác giả follow lẫn nhau
             const isViewerFollowingAuthor = currentUserFollowingData.some(
               (u) => u._id === userData._id
             );

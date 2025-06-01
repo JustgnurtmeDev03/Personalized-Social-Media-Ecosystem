@@ -70,11 +70,47 @@ export const Loading = () => {
       <div className="absolute bottom-10 flex flex-col items-center z-10 animate-fade-in">
         <p className="text-gray-600 text-lg font-medium">from</p>
         <div className="flex items-center">
-          <img
-            src="https://placehold.co/50x50"
-            alt="Meta logo"
-            className="w-8 h-8 transition-transform hover:scale-110"
-          />
+          <svg
+            className="w-10 h-10"
+            aria-label="Gens"
+            fill="none"
+            height="100%"
+            role="img"
+            viewBox="0 0 192 192"
+            width="100%"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <linearGradient
+                id="gensGradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
+              >
+                <stop offset="0%" style={{ stopColor: "#ffdde1" }} />
+                <stop offset="100%" style={{ stopColor: "#1da1f2" }} />
+              </linearGradient>
+            </defs>
+            <path
+              d="M50 70 Q 70 50 90 70 Q 110 90 90 110 Q 70 130 50 110 Q 30 90 50 70 M80 60 Q 100 40 120 60 Q 140 80 120 100 Q 100 120 80 100 Q 60 80 80 60"
+              fill="url(#gensGradient)"
+              stroke="#ffffff"
+              strokeWidth="2"
+              opacity="0.9"
+              transform="translate(-40,-60) scale(1.5)"
+            />
+            <text
+              x="60"
+              y="150"
+              fontFamily="Arial, sans-serif"
+              fontSize="50"
+              fontWeight="bold"
+              fill="#1da1f2"
+            >
+              Gens
+            </text>
+          </svg>
           <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 ml-3">
             Gens
           </span>

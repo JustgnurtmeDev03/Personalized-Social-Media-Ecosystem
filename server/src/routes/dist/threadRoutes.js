@@ -8,6 +8,7 @@ var commentController_1 = require("~/controllers/commentController");
 var router = express_1["default"].Router();
 // User
 router.post("/upload", uploadMiddleware_1["default"].array("media", 10), auth_1["default"], threadController_1.createThread);
+router.get("/recommended", auth_1["default"], threadController_1.getRecommendedThreads);
 router.get("/posts", auth_1["default"], threadController_1.getThread);
 router.post("/like", auth_1["default"], threadController_1.toggleLike);
 router.get("/posts/liked", auth_1["default"], threadController_1.getLikedThreads);

@@ -230,10 +230,10 @@ const EditProfileModal = ({ userData, setUserData, editSection }) => {
         <hr />
         <div className="toggle-switch">
           <div>
-            <p>Private profile</p>
+            <p>Tài khoản riêng tư</p>
             <small>
-              If you switch to private, you won't be able to reply to others
-              unless they follow you.
+              Nếu bạn đổi sang riêng tư, bạn sẽ khó có thể tương tác với người
+              dùng khác.
             </small>
           </div>
           <label className="switch">

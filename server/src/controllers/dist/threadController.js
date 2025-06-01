@@ -47,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.createThread = exports.getThread = exports.getUserPosts = exports.getTotalPosts = void 0;
+exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.getRecommendedThreads = exports.createThread = exports.getThread = exports.getUserPosts = exports.getTotalPosts = void 0;
 var Thread_1 = require("~/models/Thread");
 var User_1 = require("~/models/User");
 var Hashtag_1 = require("~/models/Hashtag");
@@ -256,8 +256,41 @@ var getPostById = asyncHandler_1["default"](function (req, res, next) { return _
     });
 }); });
 exports.getPostById = getPostById;
+var getRecommendedThreads = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var userId, recommendedThreads, error_3;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                userId = req.user._id;
+                if (!userId) {
+                    throw new Error("User not authenticated");
+                }
+                return [4 /*yield*/, threadService_1.RecommendationService.getRecommendedThreads(userId.toString())];
+            case 1:
+                recommendedThreads = _a.sent();
+                // Trả về phản hồi thành công
+                res.status(httpStatus_1["default"].OK).json({
+                    success: true,
+                    data: recommendedThreads,
+                    message: "Recommended threads retrieved successfully"
+                });
+                return [3 /*break*/, 3];
+            case 2:
+                error_3 = _a.sent();
+                console.error("Error in getRecommendedThreads controller:", error_3);
+                res.status(httpStatus_1["default"].INTERNAL_SERVER_ERROR).json({
+                    success: false,
+                    error: error_3.message || "Failed to fetch recommended threads"
+                });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+exports.getRecommendedThreads = getRecommendedThreads;
 var toggleLike = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var threadId, userId, thread, user, username, existingLike, newLike, error_3;
+    var threadId, userId, thread, user, username, existingLike, newLike, error_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -331,8 +364,8 @@ var toggleLike = asyncHandler_1["default"](function (req, res, next) { return __
                 _a.label = 11;
             case 11: return [3 /*break*/, 13];
             case 12:
-                error_3 = _a.sent();
-                next(error_3);
+                error_4 = _a.sent();
+                next(error_4);
                 return [3 /*break*/, 13];
             case 13: return [2 /*return*/];
         }
@@ -356,7 +389,7 @@ var getLikedThreads = asyncHandler_1["default"](function (req, res, next) { retu
 }); });
 exports.getLikedThreads = getLikedThreads;
 exports.getTotalPosts = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var totalPosts, error_4;
+    var totalPosts, error_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -369,7 +402,7 @@ exports.getTotalPosts = asyncHandler_1["default"](function (req, res, next) { re
                 });
                 return [3 /*break*/, 3];
             case 2:
-                error_4 = _a.sent();
+                error_5 = _a.sent();
                 res
                     .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
                     .send({ error: "Failed to fetch totals" });
@@ -379,7 +412,7 @@ exports.getTotalPosts = asyncHandler_1["default"](function (req, res, next) { re
     });
 }); });
 exports.getUserPosts = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var _id, posts, error_5;
+    var _id, posts, error_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -393,7 +426,7 @@ exports.getUserPosts = asyncHandler_1["default"](function (req, res, next) { ret
                 });
                 return [3 /*break*/, 3];
             case 2:
-                error_5 = _a.sent();
+                error_6 = _a.sent();
                 res
                     .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
                     .send({ error: "Failed to fetch user posts" });
@@ -429,7 +462,7 @@ function generateRandomUsername() {
 }
 // ADMIN FUNCTION
 var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var postId, post, error_6;
+    var postId, post, error_7;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
@@ -452,8 +485,8 @@ var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { retu
                 res.json({ message: "Post deleted successfully" });
                 return [3 /*break*/, 4];
             case 3:
-                error_6 = _c.sent();
-                console.error(error_6);
+                error_7 = _c.sent();
+                console.error(error_7);
                 res.status(500).json({ message: "Error deleting post" });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];
@@ -462,7 +495,7 @@ var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { retu
 }); });
 exports.deletePostAdmin = deletePostAdmin;
 var togglePinPost = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var postId, post, error_7;
+    var postId, post, error_8;
     var _a, _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
@@ -493,8 +526,8 @@ var togglePinPost = asyncHandler_1["default"](function (req, res, next) { return
                 });
                 return [3 /*break*/, 4];
             case 3:
-                error_7 = _d.sent();
-                console.error(error_7);
+                error_8 = _d.sent();
+                console.error(error_8);
                 res.status(500).json({ message: "Error toggling pin status" });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];
