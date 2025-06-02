@@ -16,6 +16,16 @@ export const loginUser = async (email, password) => {
   }
 };
 
+// Đăng ký người dùng
+export const registerUser = async (userData) => {
+  try {
+    const res = await axios.post(`${API_URL}/register`, userData);
+    return res.data;
+  } catch (err) {
+    throw err;
+  }
+};
+
 export const verifyResetCode = async (email, resetCode) => {
   try {
     await axios.post(
@@ -36,11 +46,19 @@ export const resetPassword = async (email, resetCode, newPassword) => {
       { email, resetCode, newPassword },
       { headers: { "Content-Type": "application/json" } }
     );
-    if (res.status === 200) {
-      alert("Password changed successfully");
-    }
     return res.data;
   } catch (error) {
     throw new Error(error.response?.data?.message || "Password reset failed");
+  }
+};
+
+export const checkEmailExists = async (email) => {
+  try {
+    const res = await axios.post(`${API_URL}/check-email`, { email });
+    console.log("Check email response:", res.data);
+    return res.data.exists;
+  } catch (err) {
+    console.error("Error checking email:", err);
+    throw new Error(err.response?.data?.message || "Không thể kiểm tra email");
   }
 };

@@ -117,11 +117,9 @@ export class PostService {
 export class RecommendationService {
   static async getRecommendedThreads(userId: string, limit: number = 10) {
     try {
-      // Lấy danh sách người mà người dùng theo dõi
       const follows = await Follow.find({ followerId: userId });
       const followeeIds = follows.map((f) => f.followeeId);
 
-      // Lấy danh sách bài viết mà người dùng đã thích hoặc bình luận
       const likedThreads = await Like.find({ user: userId }).select("threadId");
       const commentedThreads = await Comment.find({ user: userId }).select(
         "threadId"
@@ -131,7 +129,6 @@ export class RecommendationService {
         ...commentedThreads.map((c) => c.threadId),
       ];
 
-      // Lấy hashtag từ các bài viết đã tương tác
       const interactedThreads = await Thread.find({
         _id: { $in: interactedThreadIds },
       })
@@ -139,12 +136,14 @@ export class RecommendationService {
         .populate<{ author: IPopulatedAuthor }>("author", "username _id");
       const hashtagCounts: { [key: string]: number } = {};
       interactedThreads.forEach((thread) => {
-        thread.hashtags?.forEach((hashtag) => {
-          hashtagCounts[hashtag] = (hashtagCounts[hashtag] || 0) + 1;
-        });
+        if (thread.author) {
+          // Kiểm tra author trước khi xử lý
+          thread.hashtags?.forEach((hashtag) => {
+            hashtagCounts[hashtag] = (hashtagCounts[hashtag] || 0) + 1;
+          });
+        }
       });
 
-      // Lấy tất cả bài viết công khai, không phải của người dùng
       const allThreads = await Thread.find({
         visibility: "public",
         author: { $ne: userId },
@@ -153,38 +152,40 @@ export class RecommendationService {
         "username _id avatar"
       );
 
-      // Tính điểm cho mỗi bài viết
-      const scoredThreads = allThreads.map((thread) => {
-        let score = 0;
+      const scoredThreads = allThreads
+        .filter((thread) => thread.author !== null) // Lọc bỏ thread không có author
+        .map((thread) => {
+          let score = 0;
 
-        // Nếu tác giả là người mà người dùng theo dõi: +10 điểm
-        if (
-          followeeIds.some(
-            (id) => id.toString() === thread.author._id.toString()
-          )
-        ) {
-          score += 10;
-        }
-
-        // Mỗi hashtag trong bài viết mà người dùng thường tương tác: +5 điểm/hashtag
-        thread.hashtags?.forEach((hashtag) => {
-          if (hashtagCounts[hashtag]) {
-            score += 5 * hashtagCounts[hashtag];
+          // Kiểm tra author trước khi truy cập _id
+          if (
+            thread.author &&
+            followeeIds.some(
+              (id) => id.toString() === thread.author._id.toString()
+            )
+          ) {
+            score += 10;
           }
+
+          thread.hashtags?.forEach((hashtag) => {
+            if (hashtagCounts[hashtag]) {
+              score += 5 * hashtagCounts[hashtag];
+            }
+          });
+
+          const authorInteracted = interactedThreads.some(
+            (t) =>
+              t.author && // Kiểm tra author của interactedThreads
+              thread.author && // Kiểm tra author của thread hiện tại
+              t.author._id.toString() === thread.author._id.toString()
+          );
+          if (authorInteracted) {
+            score += 3;
+          }
+
+          return { thread, score };
         });
 
-        // Nếu bài viết có cùng tác giả với bài đã tương tác: +3 điểm
-        const authorInteracted = interactedThreads.some(
-          (t) => t.author._id.toString() === thread.author._id.toString()
-        );
-        if (authorInteracted) {
-          score += 3;
-        }
-
-        return { thread, score };
-      });
-
-      // Sắp xếp theo điểm số giảm dần và lấy top bài viết
       scoredThreads.sort((a, b) => b.score - a.score);
       const recommendedThreads = scoredThreads
         .slice(0, limit)

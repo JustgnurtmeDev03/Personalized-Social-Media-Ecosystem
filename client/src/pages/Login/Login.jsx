@@ -2,39 +2,28 @@ import React, { useState, useEffect } from "react";
 import images from "../../assets/loadImage";
 import { useNavigate } from "react-router-dom";
 import Register from "../Register/Register.jsx";
-import ForgotPasswordModal from "../ForgotPassword/ForgotPassword";
-import ForgotPasswordCode from "../ForgotPassword/ForgotPasswordCode";
-import ResetPassword from "../ForgotPassword/ResetPassword";
+import ForgotPassword from "../ForgotPassword/ForgotPasswordMain";
 import useAuthToken from "../../services/useAuthToken";
-import {
-  codeSchema,
-  emailSchema,
-  loginSchema,
-  passwordSchema,
-} from "../../utils/validationSchema";
-import { loginUser, verifyResetCode } from "../../services/authService";
+import { loginSchema } from "../../utils/validationSchema";
+import { loginUser } from "../../services/authService";
 import { useAuth } from "../../providers/AuthContext";
 import { jwtDecode } from "jwt-decode";
 
 const Login = ({ setIsAuthenticated }) => {
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
-  const [resetCode, setResetCode] = useState("");
-  const [step, setStep] = useState("email");
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [showForgotPasswordForm, setForgotPasswordOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [loginAttempted, setLoginAttempted] = useState(false); // Added state for loginAttempted
+  const [loginAttempted, setLoginAttempted] = useState(false);
   const { setAccessToken } = useAuthToken();
-  const [redirectTo, setRedirectTo] = useState(null);
   const { updateAuth } = useAuth();
-
-  // ======================== LOGIC ===========================
+  const navigate = useNavigate();
 
   const handleLogin = async (event) => {
     event.preventDefault();
-    setLoginAttempted(true); // Update state when clicking "Login"
+    setLoginAttempted(true);
     try {
       await loginSchema.validate({ password, email });
       const data = await loginUser(email, password);
@@ -48,9 +37,9 @@ const Login = ({ setIsAuthenticated }) => {
       const adminRoles = ["admin", "Top admin", "moderator"];
 
       if (adminRoles.some((role) => roles.includes(role))) {
-        setRedirectTo("/admin/dashboard");
+        navigate("/admin/dashboard");
       } else {
-        setRedirectTo("/home");
+        navigate("/home");
       }
 
       setIsAuthenticated(true);
@@ -65,49 +54,13 @@ const Login = ({ setIsAuthenticated }) => {
 
   const handleRegisterClick = () => {
     setShowRegisterForm(true);
-    setLoginAttempted(false); // Ensure no change in state when clicking "Create Account"
+    setLoginAttempted(false);
   };
 
   const handleForgotPasswordClick = () => {
+    console.log("Opening forgot password modal");
     setForgotPasswordOpen(true);
   };
-
-  const handleForgotPasswordNext = async (enteredEmail) => {
-    setResetCode(resetCode);
-    try {
-      await emailSchema.validate({ email: enteredEmail });
-      setEmail(enteredEmail);
-      setStep("code");
-      setForgotPasswordOpen(false);
-    } catch (error) {
-      setErrorMessage(error.message);
-    }
-  };
-
-  const handleCodeVerification = async (enteredResetCode) => {
-    setResetCode(enteredResetCode);
-    try {
-      await codeSchema.validate({ code: resetCode });
-      const isValid = await verifyResetCode(email, resetCode);
-      console.log("Is valid reset code:", isValid);
-      if (isValid === true) {
-        setStep("password");
-        console.log("Code verified successfully.");
-      } else {
-        setErrorMessage("Invalid reset code. Please check and try again.");
-      }
-    } catch (err) {
-      setErrorMessage("Invalid reset code. Please check and try again.");
-    }
-  };
-
-  // ======================== EFFECTS ===========================
-
-  useEffect(() => {
-    console.log("Current step updated to:", step);
-  }, [step]);
-
-  // ======================== RENDER ===========================
 
   return (
     <div className="login-main">
@@ -149,24 +102,22 @@ const Login = ({ setIsAuthenticated }) => {
               </button>
             </div>
 
-            {loginAttempted &&
-              errorMessage && ( // Show error message if login attempted
-                <div
-                  className="flex text-center justify-center bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-3 rounded relative"
-                  role="alert"
-                >
-                  <span className="block">{errorMessage}</span>
-                </div>
-              )}
-            {loginAttempted &&
-              successMessage && ( // Show success message if login attempted
-                <div
-                  className="flex text-center justify-center bg-green-100 border border-green-400 text-green-700 px-4 py-3 mb-3 rounded relative"
-                  role="alert"
-                >
-                  <span className="block">{successMessage}</span>
-                </div>
-              )}
+            {loginAttempted && errorMessage && (
+              <div
+                className="flex text-center justify-center bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-3 rounded relative"
+                role="alert"
+              >
+                <span className="block">{errorMessage}</span>
+              </div>
+            )}
+            {loginAttempted && successMessage && (
+              <div
+                className="flex text-center justify-center bg-green-100 border border-green-400 text-green-700 px-4 py-3 mb-3 rounded relative"
+                role="alert"
+              >
+                <span className="block">{successMessage}</span>
+              </div>
+            )}
 
             <div className="txt-align">
               <span className="forgot-pw">
@@ -214,31 +165,8 @@ const Login = ({ setIsAuthenticated }) => {
         </div>
       </div>
       {showForgotPasswordForm && (
-        <ForgotPasswordModal
-          isOpen={showForgotPasswordForm}
-          onClose={() => setForgotPasswordOpen(false)}
-          onNext={(email) => handleForgotPasswordNext(email)}
-        />
+        <ForgotPassword onClose={() => setForgotPasswordOpen(false)} />
       )}
-
-      {step === "code" && (
-        <ForgotPasswordCode
-          isOpen={step === "code"}
-          email={email}
-          onClose={() => setStep("email")}
-          onNext={handleCodeVerification}
-        />
-      )}
-
-      {step === "password" && (
-        <ResetPassword
-          isOpen={step === "password"}
-          email={email}
-          resetCode={resetCode}
-          onClose={() => setStep("code")}
-        />
-      )}
-
       {showRegisterForm && (
         <Register onClose={() => setShowRegisterForm(false)} />
       )}

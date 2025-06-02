@@ -58,7 +58,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 exports.__esModule = true;
-exports.logoutUser = exports.loginUser = exports.verifyEmail = exports.registerUser = void 0;
+exports.logoutUser = exports.loginUser = exports.verifyEmail = exports.checkEmailExists = exports.registerUser = void 0;
 var emailService_1 = require("./emailService");
 var RefreshToken_1 = require("./../models/RefreshToken");
 var User_1 = require("../models/User");
@@ -100,9 +100,36 @@ exports.registerUser = function (userData) { return __awaiter(void 0, void 0, Pr
         }
     });
 }); };
+// Kiểm tra email đã tồn tại
+exports.checkEmailExists = function (email) { return __awaiter(void 0, void 0, Promise, function () {
+    var existingUser, error_2;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                if (!email) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Email is required");
+                }
+                return [4 /*yield*/, User_1["default"].findOne({ email: email })];
+            case 1:
+                existingUser = _a.sent();
+                if (existingUser) {
+                    return [2 /*return*/, { exists: true }];
+                }
+                return [2 /*return*/, { exists: false }];
+            case 2:
+                error_2 = _a.sent();
+                logger_1["default"].error("Check email service error: " + error_2.message);
+                throw error_2 instanceof httpError_1.HttpError
+                    ? error_2
+                    : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
 // Xác minh Email
 exports.verifyEmail = function (token) { return __awaiter(void 0, void 0, Promise, function () {
-    var user, error_2;
+    var user, error_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -125,10 +152,10 @@ exports.verifyEmail = function (token) { return __awaiter(void 0, void 0, Promis
                 logger_1["default"].info("Email verified for user: " + user.email);
                 return [3 /*break*/, 4];
             case 3:
-                error_2 = _a.sent();
-                logger_1["default"].error("Verify email service error: " + error_2.message);
-                throw error_2 instanceof httpError_1.HttpError
-                    ? error_2
+                error_3 = _a.sent();
+                logger_1["default"].error("Verify email service error: " + error_3.message);
+                throw error_3 instanceof httpError_1.HttpError
+                    ? error_3
                     : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
             case 4: return [2 /*return*/];
         }

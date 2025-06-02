@@ -309,6 +309,11 @@ body::-webkit-scrollbar {
   z-index: 1000;
 }
 
+/* Ẩn modal khi không cần hiển thị */
+.modal-overlay-fgp.hidden {
+  display: none;
+}
+
 .modal-content {
   background-color: white;
   padding: 60px;

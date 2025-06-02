@@ -57,6 +57,31 @@ export const registerUser = async (userData: any): Promise<{ user: any }> => {
   }
 };
 
+// Kiểm tra email đã tồn tại
+export const checkEmailExists = async (
+  email: string
+): Promise<{ exists: boolean }> => {
+  try {
+    if (!email) {
+      throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Email is required");
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return { exists: true };
+    }
+    return { exists: false };
+  } catch (error: any) {
+    logger.error(`Check email service error: ${error.message}`);
+    throw error instanceof HttpError
+      ? error
+      : new HttpError(
+          HTTP_STATUS.INTERNAL_SERVER_ERROR,
+          "Internal server error"
+        );
+  }
+};
+
 // Xác minh Email
 export const verifyEmail = async (token: string): Promise<void> => {
   try {

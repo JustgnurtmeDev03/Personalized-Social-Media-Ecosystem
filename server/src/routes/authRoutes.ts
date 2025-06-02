@@ -6,6 +6,7 @@ import {
   login,
   logout,
   refreshToken,
+  checkEmail,
 } from "../controllers/authController";
 import {
   requestPasswordReset,
@@ -28,6 +29,9 @@ router.post("/login", validateLogin, login);
 
 // Route logout
 router.post("/logout", validateRefreshToken, logout);
+
+// Route để kiểm tra sự tồn tại của email
+router.post("/check-email", checkEmail);
 
 // Route yêu cầu mã xác thực gửi qua email
 router.post("/request-password-reset", requestPasswordReset);

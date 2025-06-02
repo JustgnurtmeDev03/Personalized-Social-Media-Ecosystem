@@ -55,6 +55,28 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// Controller kiểm tra email
+export const checkEmail = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { email } = req.body;
+    const { exists } = await authService.checkEmailExists(email);
+    res.status(HTTP_STATUS.OK).send({ exists });
+  } catch (error: any) {
+    logger.error(`Check email controller error: ${error.message}`, { error });
+    const statusCode =
+      error instanceof HttpError
+        ? error.statusCode
+        : HTTP_STATUS.INTERNAL_SERVER_ERROR;
+    res.status(statusCode).send({
+      error: error.message || "Internal server error",
+      details: error.details || null,
+    });
+  }
+};
+
 // Controller đăng nhập
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {

@@ -197,9 +197,12 @@ var RecommendationService = /** @class */ (function () {
                         hashtagCounts_1 = {};
                         interactedThreads_1.forEach(function (thread) {
                             var _a;
-                            (_a = thread.hashtags) === null || _a === void 0 ? void 0 : _a.forEach(function (hashtag) {
-                                hashtagCounts_1[hashtag] = (hashtagCounts_1[hashtag] || 0) + 1;
-                            });
+                            if (thread.author) {
+                                // Kiểm tra author trước khi xử lý
+                                (_a = thread.hashtags) === null || _a === void 0 ? void 0 : _a.forEach(function (hashtag) {
+                                    hashtagCounts_1[hashtag] = (hashtagCounts_1[hashtag] || 0) + 1;
+                                });
+                            }
                         });
                         return [4 /*yield*/, Thread_1["default"].find({
                                 visibility: "public",
@@ -207,27 +210,31 @@ var RecommendationService = /** @class */ (function () {
                             }).populate("author", "username _id avatar")];
                     case 5:
                         allThreads = _a.sent();
-                        scoredThreads = allThreads.map(function (thread) {
+                        scoredThreads = allThreads
+                            .filter(function (thread) { return thread.author !== null; }) // Lọc bỏ thread không có author
+                            .map(function (thread) {
                             var _a;
                             var score = 0;
-                            // Nếu tác giả là người mà người dùng theo dõi: +10 điểm
-                            if (followeeIds_1.some(function (id) { return id.toString() === thread.author._id.toString(); })) {
+                            // Kiểm tra author trước khi truy cập _id
+                            if (thread.author &&
+                                followeeIds_1.some(function (id) { return id.toString() === thread.author._id.toString(); })) {
                                 score += 10;
                             }
-                            // Mỗi hashtag trong bài viết mà người dùng thường tương tác: +5 điểm/hashtag
                             (_a = thread.hashtags) === null || _a === void 0 ? void 0 : _a.forEach(function (hashtag) {
                                 if (hashtagCounts_1[hashtag]) {
                                     score += 5 * hashtagCounts_1[hashtag];
                                 }
                             });
-                            // Nếu bài viết có cùng tác giả với bài đã tương tác: +3 điểm
-                            var authorInteracted = interactedThreads_1.some(function (t) { return t.author._id.toString() === thread.author._id.toString(); });
+                            var authorInteracted = interactedThreads_1.some(function (t) {
+                                return t.author && // Kiểm tra author của interactedThreads
+                                    thread.author && // Kiểm tra author của thread hiện tại
+                                    t.author._id.toString() === thread.author._id.toString();
+                            });
                             if (authorInteracted) {
                                 score += 3;
                             }
                             return { thread: thread, score: score };
                         });
-                        // Sắp xếp theo điểm số giảm dần và lấy top bài viết
                         scoredThreads.sort(function (a, b) { return b.score - a.score; });
                         recommendedThreads = scoredThreads
                             .slice(0, limit)

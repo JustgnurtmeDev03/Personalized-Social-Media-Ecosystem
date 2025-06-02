@@ -12,6 +12,8 @@ router.post("/register", validation_1.validateRegister, authController_1.registe
 router.post("/login", validation_1.validateLogin, authController_1.login);
 // Route logout
 router.post("/logout", validation_1.validateRefreshToken, authController_1.logout);
+// Route để kiểm tra sự tồn tại của email
+router.post("/check-email", authController_1.checkEmail);
 // Route yêu cầu mã xác thực gửi qua email
 router.post("/request-password-reset", authController_2.requestPasswordReset);
 // Route để xác thực mã và đặt lại mật khẩu

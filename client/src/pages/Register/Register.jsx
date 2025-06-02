@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { useForm } from "react-hook-form";
-import axios from "axios";
 import { rules } from "../../utils/rules";
+import { checkEmailExists, registerUser } from "../../services/authService";
 
 export default function Register({ onClose }) {
   const [successMessage, setSuccessMessage] = useState("");
-  // Xử lý ngày sinh của người dùng
+  const [submitError, setSubmitError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+
   const [day, setDay] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
@@ -29,24 +32,18 @@ export default function Register({ onClose }) {
 
   const handleContinueLogin = () => {
     setSuccessMessage("");
-    console.log("handleContinueLogin called");
     onClose();
   };
 
-  // ======================== LOGIC ===========================
-
-  // Hàm tính số ngày tối đa trong một tháng
   const getDaysInMonth = (month, year) => {
     if (month === 2) {
-      // Kiểm tra năm nhuận
       const isLeapYear =
-        (year % 4 === 0) & (year % 100 !== 0) || year % 400 === 0;
+        (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
       return isLeapYear ? 29 : 28;
     }
     return [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
   };
 
-  // Kiểm tra ngày sinh
   const validateDate = (day, month, year) => {
     if (!day || !month || !year) {
       return "Vui lòng chọn đầy đủ ngày, tháng, năm.";
@@ -63,7 +60,6 @@ export default function Register({ onClose }) {
     const selectedDate = new Date(year, month - 1, day);
     const today = new Date();
 
-    // Kiểm tra xem ngày có thực sự tồn tại không
     if (selectedDate > today) {
       return "Ngày sinh không thể trong tương lai.";
     }
@@ -82,6 +78,8 @@ export default function Register({ onClose }) {
   };
 
   const onSubmit = async (data) => {
+    setSubmitError("");
+    setEmailError("");
     const { day, month, year } = data;
     const validationResult = validateDate(day, month, year);
     if (validationResult !== true) {
@@ -89,10 +87,24 @@ export default function Register({ onClose }) {
       return;
     }
 
+    setIsCheckingEmail(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/register", {
+      console.log("Checking email:", data.email.trim());
+      const emailExists = await checkEmailExists(data.email.trim());
+      if (emailExists) {
+        setError("email", {
+          type: "manual",
+          message: "Email này đã được đăng ký. Vui lòng sử dụng email khác.",
+        });
+        setEmailError(
+          "Email này đã được đăng ký. Vui lòng sử dụng email khác."
+        );
+        return;
+      }
+
+      const res = await registerUser({
         name: data.name,
-        email: data.email,
+        email: data.email.trim(),
         password: data.password,
         confirm_password: data.confirm_password,
         date_of_birth: `${data.year}-${data.month
@@ -100,42 +112,29 @@ export default function Register({ onClose }) {
           .padStart(2, "0")}-${data.day.toString().padStart(2, "0")}`,
       });
 
-      console.log("Registration successful:", res.data);
+      console.log("Registration successful:", res);
       setSuccessMessage(
-        " Đăng ký thành công, hãy kiểm tra đường dẫn được gửi đến Email của bạn để xác thực tài khoản!"
+        "Đăng ký thành công, hãy kiểm tra đường dẫn được gửi đến Email của bạn để xác thực tài khoản!"
       );
     } catch (err) {
-      console.log("Registration failed", err);
+      console.log("Error occurred:", err);
+      const errorMessage =
+        err.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại.";
+      if (!emailError) {
+        setSubmitError(errorMessage);
+      }
+    } finally {
+      setIsCheckingEmail(false);
     }
   };
-
-  // ======================== EFFECT ===========================
-
-  useEffect(() => {
-    if (day && month && year) {
-      const validationResult = validateDate(day, month, year);
-      if (validationResult === true) {
-        clearErrors("date_of_birth");
-      } else {
-        setError("date_of_birth", {
-          type: "manual",
-          message: validationResult,
-        });
-      }
-    } else {
-      clearErrors("date_of_birth");
-    }
-  }, [day, month, year, setError, clearErrors]);
-
-  // Đóng hộp thoại đăng ký khi successMessage xuất hiện
 
   return (
     <section className="bg-gray-50 dark:bg-gray-900">
       <div className="overlay flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0">
-        {successMessage && successMessage.trim() !== "" && (
-          <div class="success-message-container" role="alert">
+        {successMessage && (
+          <div className="success-message-container" role="alert">
             <svg
-              class="success-icon"
+              className="success-icon"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -143,13 +142,13 @@ export default function Register({ onClose }) {
               <path
                 d="M20 6L9 17L4 12"
                 stroke="#ffffff"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </svg>
-            <div class="success-message">{successMessage}</div>
-            <button onClick={handleContinueLogin} class="success-cta-btn">
+            <div className="success-message">{successMessage}</div>
+            <button onClick={handleContinueLogin} className="success-cta-btn">
               Tiếp tục đăng nhập
             </button>
           </div>
@@ -164,6 +163,16 @@ export default function Register({ onClose }) {
               <h1 className="text-xl text-center font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
                 Tạo một tài khoản
               </h1>
+              {emailError && (
+                <div className="text-red-600 text-sm text-center" role="alert">
+                  {emailError}
+                </div>
+              )}
+              {submitError && (
+                <div className="text-red-600 text-sm text-center" role="alert">
+                  {submitError}
+                </div>
+              )}
               <form
                 className="space-y-4 md:space-y-2"
                 onSubmit={handleSubmit(onSubmit)}
@@ -219,8 +228,8 @@ export default function Register({ onClose }) {
                 </div>
 
                 <h2 className="text-sm font-bold">Ngày sinh</h2>
-                <div className="space-y-4 ">
-                  <div className="flex space-x-4 ">
+                <div className="space-y-4">
+                  <div className="flex space-x-4">
                     <div className="flex-1">
                       <label
                         htmlFor="day"
@@ -285,7 +294,7 @@ export default function Register({ onClose }) {
                         value={year}
                         {...register("year", rules.year)}
                         onChange={(e) => setYear(Number(e.target.value) || "")}
-                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                        className="mt-1 block w/full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                       >
                         <option value="">Chọn năm</option>
                         {years.map((y) => (
@@ -300,7 +309,7 @@ export default function Register({ onClose }) {
                     </div>
                   </div>
                   {errors.date_of_birth && (
-                    <div className="text-red-600 text-sm ">
+                    <div className="text-red-600 text-sm">
                       {errors.date_of_birth.message}
                     </div>
                   )}
@@ -308,7 +317,10 @@ export default function Register({ onClose }) {
 
                 <button
                   type="submit"
-                  className="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+                  disabled={isCheckingEmail}
+                  className={`w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800 ${
+                    isCheckingEmail ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
                   Tạo tài khoản
                 </button>

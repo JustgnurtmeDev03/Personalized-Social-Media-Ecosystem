@@ -90,6 +90,7 @@
   border-radius: 16px;
   max-height: 80vh;
   overflow-y: auto;
+  scrollbar-width: none;
   max-width: 850px;
   width: 120%;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);

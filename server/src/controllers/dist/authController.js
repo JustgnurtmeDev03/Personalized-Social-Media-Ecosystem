@@ -58,7 +58,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 exports.__esModule = true;
-exports.refreshToken = exports.resetPassword = exports.VerifyResetCode = exports.verifyEmail = exports.requestPasswordReset = exports.logout = exports.login = exports.register = void 0;
+exports.refreshToken = exports.resetPassword = exports.VerifyResetCode = exports.verifyEmail = exports.requestPasswordReset = exports.logout = exports.login = exports.checkEmail = exports.register = void 0;
 var authService = require("../services/authService");
 var message_1 = require("../constants/message");
 var User_1 = require("~/models/User");
@@ -112,9 +112,37 @@ exports.register = function (req, res) { return __awaiter(void 0, void 0, Promis
         }
     });
 }); };
+// Controller kiểm tra email
+exports.checkEmail = function (req, res) { return __awaiter(void 0, void 0, Promise, function () {
+    var email, exists, error_2, statusCode;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                email = req.body.email;
+                return [4 /*yield*/, authService.checkEmailExists(email)];
+            case 1:
+                exists = (_a.sent()).exists;
+                res.status(httpStatus_1["default"].OK).send({ exists: exists });
+                return [3 /*break*/, 3];
+            case 2:
+                error_2 = _a.sent();
+                logger_1["default"].error("Check email controller error: " + error_2.message, { error: error_2 });
+                statusCode = error_2 instanceof httpError_1.HttpError
+                    ? error_2.statusCode
+                    : httpStatus_1["default"].INTERNAL_SERVER_ERROR;
+                res.status(statusCode).send({
+                    error: error_2.message || "Internal server error",
+                    details: error_2.details || null
+                });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); };
 // Controller đăng nhập
 exports.login = function (req, res) { return __awaiter(void 0, void 0, Promise, function () {
-    var errors, _a, email, password, tokens, error_2, statusCode;
+    var errors, _a, email, password, tokens, error_3, statusCode;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -143,14 +171,14 @@ exports.login = function (req, res) { return __awaiter(void 0, void 0, Promise, 
                 });
                 return [3 /*break*/, 3];
             case 2:
-                error_2 = _b.sent();
-                logger_1["default"].error("Login error: " + error_2.message, { error: error_2 });
-                statusCode = error_2 instanceof httpError_1.HttpError
-                    ? error_2.statusCode
+                error_3 = _b.sent();
+                logger_1["default"].error("Login error: " + error_3.message, { error: error_3 });
+                statusCode = error_3 instanceof httpError_1.HttpError
+                    ? error_3.statusCode
                     : httpStatus_1["default"].INTERNAL_SERVER_ERROR;
                 res.status(statusCode).json({
-                    error: error_2.message || "Internal server error",
-                    details: error_2.details || null
+                    error: error_3.message || "Internal server error",
+                    details: error_3.details || null
                 });
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -159,7 +187,7 @@ exports.login = function (req, res) { return __awaiter(void 0, void 0, Promise, 
 }); };
 // Controller đăng xuất
 exports.logout = function (req, res) { return __awaiter(void 0, void 0, Promise, function () {
-    var refreshToken_1, error_3;
+    var refreshToken_1, error_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -174,8 +202,8 @@ exports.logout = function (req, res) { return __awaiter(void 0, void 0, Promise,
                 res.send({ message: message_1.USERS_MESSAGES.LOGOUT_SUCCESS });
                 return [3 /*break*/, 3];
             case 2:
-                error_3 = _a.sent();
-                res.status(401).send({ error: error_3.message });
+                error_4 = _a.sent();
+                res.status(401).send({ error: error_4.message });
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
         }
@@ -183,7 +211,7 @@ exports.logout = function (req, res) { return __awaiter(void 0, void 0, Promise,
 }); };
 // Controller quên mật khẩu
 exports.requestPasswordReset = function (req, res) { return __awaiter(void 0, void 0, Promise, function () {
-    var errors, email, user, resetCode, error_4, statusCode;
+    var errors, email, user, resetCode, error_5, statusCode;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -210,14 +238,14 @@ exports.requestPasswordReset = function (req, res) { return __awaiter(void 0, vo
                         .status(httpStatus_1["default"].OK)
                         .send({ message: "Password reset code sent to your email" })];
             case 4:
-                error_4 = _a.sent();
-                logger_1["default"].error("Send reset password code error: " + error_4.message, { error: error_4 });
-                statusCode = error_4 instanceof httpError_1.HttpError
-                    ? error_4.statusCode
+                error_5 = _a.sent();
+                logger_1["default"].error("Send reset password code error: " + error_5.message, { error: error_5 });
+                statusCode = error_5 instanceof httpError_1.HttpError
+                    ? error_5.statusCode
                     : httpStatus_1["default"].INTERNAL_SERVER_ERROR;
                 return [2 /*return*/, res.status(statusCode).send({
-                        error: error_4.message || httpStatus_1["default"].INTERNAL_SERVER_ERROR,
-                        details: error_4.details || null
+                        error: error_5.message || httpStatus_1["default"].INTERNAL_SERVER_ERROR,
+                        details: error_5.details || null
                     })];
             case 5: return [2 /*return*/];
         }
@@ -225,7 +253,7 @@ exports.requestPasswordReset = function (req, res) { return __awaiter(void 0, vo
 }); };
 // Controller xác minh email
 exports.verifyEmail = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var errors, token, error_5, statusCode;
+    var errors, token, error_6, statusCode;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -241,14 +269,14 @@ exports.verifyEmail = asyncHandler_1["default"](function (req, res, next) { retu
                 res.status(httpStatus_1["default"].OK).render("emails/verify-success");
                 return [3 /*break*/, 3];
             case 2:
-                error_5 = _a.sent();
-                logger_1["default"].error("Verify email error: " + error_5.message, { error: error_5 });
-                statusCode = error_5 instanceof httpError_1.HttpError
-                    ? error_5.statusCode
+                error_6 = _a.sent();
+                logger_1["default"].error("Verify email error: " + error_6.message, { error: error_6 });
+                statusCode = error_6 instanceof httpError_1.HttpError
+                    ? error_6.statusCode
                     : httpStatus_1["default"].INTERNAL_SERVER_ERROR;
                 res.status(statusCode).send({
-                    errors: error_5.message || "Internal server error",
-                    details: error_5.details || null
+                    errors: error_6.message || "Internal server error",
+                    details: error_6.details || null
                 });
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
@@ -257,7 +285,7 @@ exports.verifyEmail = asyncHandler_1["default"](function (req, res, next) { retu
 }); });
 // Controller xác thực mã code reset
 exports.VerifyResetCode = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var _a, email, resetCode, user, isValid, error_6;
+    var _a, email, resetCode, user, isValid, error_7;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -280,8 +308,8 @@ exports.VerifyResetCode = asyncHandler_1["default"](function (req, res, next) { 
                 });
                 return [3 /*break*/, 4];
             case 3:
-                error_6 = _b.sent();
-                res.status(500).send({ error: error_6.message });
+                error_7 = _b.sent();
+                res.status(500).send({ error: error_7.message });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];
         }
@@ -289,7 +317,7 @@ exports.VerifyResetCode = asyncHandler_1["default"](function (req, res, next) { 
 }); });
 // Controller reset password
 exports.resetPassword = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var _a, email, resetCode, newPassword, user, isValid, error_7;
+    var _a, email, resetCode, newPassword, user, isValid, error_8;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -318,8 +346,8 @@ exports.resetPassword = asyncHandler_1["default"](function (req, res, next) { re
                 res.status(200).send({ message: "PASSWORD UPDATED SUCCESSFULLY" });
                 return [3 /*break*/, 5];
             case 4:
-                error_7 = _b.sent();
-                res.status(500).send({ error: error_7.message });
+                error_8 = _b.sent();
+                res.status(500).send({ error: error_8.message });
                 return [3 /*break*/, 5];
             case 5: return [2 /*return*/];
         }
@@ -327,7 +355,7 @@ exports.resetPassword = asyncHandler_1["default"](function (req, res, next) { re
 }); });
 // Controller Auto Refresh AccessToken
 exports.refreshToken = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var refreshToken, decoded, user, newAccessToken, error_8;
+    var refreshToken, decoded, user, newAccessToken, error_9;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -349,7 +377,7 @@ exports.refreshToken = asyncHandler_1["default"](function (req, res, next) { ret
                 res.status(200).json({ accessToken: newAccessToken });
                 return [3 /*break*/, 4];
             case 3:
-                error_8 = _a.sent();
+                error_9 = _a.sent();
                 res.status(403).json({ message: "Invalid refresh token" });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];
