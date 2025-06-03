@@ -76,4 +76,34 @@ export const fetchTotalPosts = async (accessToken) => {
   }
 };
 
+export const updatePost = async (postId, updatedPost, accessToken) => {
+  try {
+    const res = await api.put(`/posts/${postId}`, updatedPost, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    return res.data;
+  } catch (error) {
+    console.error(
+      "Error updating post:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+export const deletePost = async (postId, accessToken) => {
+  try {
+    const res = await api.delete(`/posts/${postId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    return res.data;
+  } catch (error) {
+    console.error(
+      "Error deleting post:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
 export default api;

@@ -20,6 +20,8 @@ router.post("/unlike-comment", auth_1["default"], commentController_1.unlikeComm
 router.post("/reply", auth_1["default"], commentController_1.addReply);
 router.get("/:id/comments", auth_1["default"], commentController_1.getComments);
 router.get("/:_id/posts", auth_1["default"], threadController_1.getUserPosts);
+router.put("/posts/:id", auth_1["default"], threadController_1.updatePost);
+router["delete"]("/posts/:id", auth_1["default"], threadController_1.deletePost);
 // Admin
 router["delete"]("/delete/:id", auth_1["default"], threadController_1.deletePostAdmin);
 router.post("/pin/:id", auth_1["default"], threadController_1.togglePinPost);

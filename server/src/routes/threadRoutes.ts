@@ -2,6 +2,7 @@ import express from "express";
 import upload from "~/middlewares/uploadMiddleware";
 import {
   createThread,
+  deletePost,
   deletePostAdmin,
   getLikedThreads,
   getPostById,
@@ -11,6 +12,7 @@ import {
   getUserPosts,
   toggleLike,
   togglePinPost,
+  updatePost,
 } from "~/controllers/threadController";
 import authMiddleware from "~/middlewares/auth";
 import {
@@ -37,6 +39,8 @@ router.post("/unlike-comment", authMiddleware, unlikeComment);
 router.post("/reply", authMiddleware, addReply);
 router.get("/:id/comments", authMiddleware, getComments);
 router.get("/:_id/posts", authMiddleware, getUserPosts);
+router.put("/posts/:id", authMiddleware, updatePost);
+router.delete("/posts/:id", authMiddleware, deletePost);
 
 // Admin
 router.delete("/delete/:id", authMiddleware, deletePostAdmin);

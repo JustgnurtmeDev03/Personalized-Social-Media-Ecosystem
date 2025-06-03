@@ -595,3 +595,17 @@ input:checked + .slider:before {
 .other-profile-content {
   padding-top: 20px;
 }
+
+.media-preview img,
+.media-preview video {
+  max-width: 100%;
+  max-height: 160px;
+}
+
+.rounded-box {
+  border-radius: 8px;
+}
+
+.divide-gray-2 {
+  border-color: #e5e7eb;
+}

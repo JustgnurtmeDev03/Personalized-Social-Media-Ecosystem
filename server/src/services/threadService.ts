@@ -12,12 +12,19 @@ interface IPopulatedAuthor {
   username: string;
 }
 
+interface UpdatePostData {
+  content?: string;
+  hashtags?: string[];
+  visibility?: string;
+  lastEditedAt?: Date;
+}
+
 export class PostService {
   static async getUserPosts(_id: string): Promise<any[]> {
     try {
       const posts = await Thread.find({ author: _id })
         .select(
-          "content hashtags images videos visibility createdAt likesCount"
+          "content hashtags images videos visibility createdAt likesCount commentsCount"
         )
         .lean();
 
@@ -112,14 +119,74 @@ export class PostService {
           );
     }
   }
-}
 
+  static async updatePost(
+    postId: string,
+    updateData: UpdatePostData
+  ): Promise<any> {
+    try {
+      const post = await Thread.findById(postId);
+      if (!post) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "Post not found");
+      }
+
+      // Kiểm tra thời gian chỉnh sửa chỉ khi visibility là "public" hoặc "friends"
+      const newVisibility = updateData.visibility || post.visibility; // Lấy visibility mới hoặc giữ nguyên
+      if (newVisibility === "public" || newVisibility === "friends") {
+        if (post.lastEditedAt) {
+          const now = new Date();
+          const diffInHours =
+            (now.getTime() - post.lastEditedAt.getTime()) / (1000 * 3600);
+          if (diffInHours < 72) {
+            const remainingHours = Math.ceil(72 - diffInHours);
+            throw new HttpError(
+              HTTP_STATUS.BAD_REQUEST,
+              `Bạn chỉ có thể chỉnh sửa lại bài đăng sau ${remainingHours} giờ.`
+            );
+          }
+        }
+        // Cập nhật lastEditedAt chỉ cho "public" hoặc "friends"
+        updateData = { ...updateData, lastEditedAt: new Date() };
+      } else if (newVisibility === "only_me") {
+        // Không cập nhật lastEditedAt cho "only_me"
+        updateData = { ...updateData, lastEditedAt: post.lastEditedAt }; // Giữ nguyên lastEditedAt
+      }
+
+      const updatedPost = await Thread.findByIdAndUpdate(postId, updateData, {
+        new: true,
+      });
+      return updatedPost;
+    } catch (error: any) {
+      throw error instanceof HttpError
+        ? error
+        : new HttpError(
+            HTTP_STATUS.INTERNAL_SERVER_ERROR,
+            "Internal server error"
+          );
+    }
+  }
+  static async deletePost(postId: string): Promise<void> {
+    try {
+      const deletedPost = await Thread.findByIdAndDelete(postId);
+      if (!deletedPost) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "Post not found");
+      }
+    } catch (error: any) {
+      throw new HttpError(
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Internal server error"
+      );
+    }
+  }
+}
 export class RecommendationService {
   static async getRecommendedThreads(userId: string, limit: number = 10) {
     try {
+      // Lấy danh sách người dùng được theo dõi
       const follows = await Follow.find({ followerId: userId });
       const followeeIds = follows.map((f) => f.followeeId);
 
+      // Lấy các bài đăng đã tương tác (thích hoặc bình luận)
       const likedThreads = await Like.find({ user: userId }).select("threadId");
       const commentedThreads = await Comment.find({ user: userId }).select(
         "threadId"
@@ -132,32 +199,45 @@ export class RecommendationService {
       const interactedThreads = await Thread.find({
         _id: { $in: interactedThreadIds },
       })
-        .select("hashtags author")
+        .select("hashtags author createdAt")
         .populate<{ author: IPopulatedAuthor }>("author", "username _id");
+
+      // Đếm số lần xuất hiện của hashtag trong các bài đã tương tác
       const hashtagCounts: { [key: string]: number } = {};
       interactedThreads.forEach((thread) => {
         if (thread.author) {
-          // Kiểm tra author trước khi xử lý
           thread.hashtags?.forEach((hashtag) => {
             hashtagCounts[hashtag] = (hashtagCounts[hashtag] || 0) + 1;
           });
         }
       });
 
+      // Lấy tất cả bài đăng công khai (giới hạn và sắp xếp theo thời gian)
       const allThreads = await Thread.find({
         visibility: "public",
         author: { $ne: userId },
-      }).populate<{ author: IPopulatedAuthor }>(
-        "author",
-        "username _id avatar"
-      );
+      })
+        .sort({ createdAt: -1 }) // Bài mới nhất trước
+        .limit(1000) // Giới hạn để tối ưu
+        .populate<{ author: IPopulatedAuthor }>("author", "username _id avatar")
+        .select(
+          "content hashtags videos images author createdAt likesCount commentsCount"
+        );
 
+      // Hàm giảm điểm theo thời gian
+      const timeDecay = (createdAt: Date) => {
+        const daysSincePost =
+          (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+        return Math.max(0, 1 - daysSincePost / 3); // Giảm trong 7 ngày
+      };
+
+      // Tính điểm cho từng bài đăng
       const scoredThreads = allThreads
-        .filter((thread) => thread.author !== null) // Lọc bỏ thread không có author
+        .filter((thread) => thread.author !== null)
         .map((thread) => {
           let score = 0;
 
-          // Kiểm tra author trước khi truy cập _id
+          // Điểm cho người dùng theo dõi
           if (
             thread.author &&
             followeeIds.some(
@@ -167,25 +247,35 @@ export class RecommendationService {
             score += 10;
           }
 
+          // Điểm cho hashtag
           thread.hashtags?.forEach((hashtag) => {
             if (hashtagCounts[hashtag]) {
               score += 5 * hashtagCounts[hashtag];
             }
           });
 
+          // Điểm cho tác giả đã tương tác
           const authorInteracted = interactedThreads.some(
             (t) =>
-              t.author && // Kiểm tra author của interactedThreads
-              thread.author && // Kiểm tra author của thread hiện tại
+              t.author &&
+              thread.author &&
               t.author._id.toString() === thread.author._id.toString()
           );
           if (authorInteracted) {
             score += 3;
           }
 
+          // Thêm điểm dựa trên số lượng tương tác
+          const interactionScore = thread.likesCount + thread.commentsCount;
+          score += interactionScore * 0.5;
+
+          // Áp dụng giảm điểm theo thời gian
+          score *= timeDecay(thread.createdAt);
+
           return { thread, score };
         });
 
+      // Sắp xếp và lấy top bài đăng
       scoredThreads.sort((a, b) => b.score - a.score);
       const recommendedThreads = scoredThreads
         .slice(0, limit)

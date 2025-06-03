@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import "../../styles/Post.css";
 import api from "../../services/threadService";
 import "font-awesome/css/font-awesome.min.css";
@@ -108,7 +108,7 @@ const ReplyForm = ({ userData, commentId, value, onChange, onSubmit }) => {
 const MediaModal = ({ isOpen, onClose, mediaUrl }) => {
   if (!isOpen) return null;
 
-  const isVideo = mediaUrl.endsWith(".mp4");
+  const isVideo = mediaUrl?.endsWith(".mp4");
 
   return (
     <div
@@ -145,6 +145,7 @@ const PostDetail = () => {
   const POLLING_INTERVAL = 30000;
   const { auth } = useAuth();
   const { id: postId } = useParams();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
@@ -167,8 +168,12 @@ const PostDetail = () => {
 
   const socket = React.useRef(null);
 
+  // Lấy commentId hoặc replyId từ query params
+  const commentId = searchParams.get("commentId");
+  const replyId = searchParams.get("replyId");
+
   const findCommentById = (comments, id) => {
-    const idStr = id.toString();
+    const idStr = id?.toString();
     for (const comment of comments) {
       if (comment._id.toString() === idStr) return comment;
       if (comment.replies) {
@@ -179,12 +184,26 @@ const PostDetail = () => {
     return null;
   };
 
+  // Tìm bình luận cha chứa phản hồi với replyId
+  const findParentCommentOfReply = (comments, replyId) => {
+    const idStr = replyId?.toString();
+    for (const comment of comments) {
+      if (comment.replies) {
+        const foundReply = findCommentById(comment.replies, idStr);
+        if (foundReply) return comment;
+        const foundInNested = findParentCommentOfReply(comment.replies, idStr);
+        if (foundInNested) return foundInNested;
+      }
+    }
+    return null;
+  };
+
   const { data: currentUserFollowing = [], isLoading: isFollowingLoading } =
     useQuery({
       queryKey: ["currentUserFollowing", auth.accessToken, auth.userId],
       queryFn: async () => {
         if (!auth.accessToken || !auth.userId)
-          throw new Error("No access token or userId");
+          throw new Error("Không có token hoặc userId");
         const following = await fetchFollowing(auth.userId, {
           headers: { Authorization: `Bearer ${auth.accessToken}` },
         });
@@ -196,7 +215,7 @@ const PostDetail = () => {
   const fetchPost = useCallback(async () => {
     try {
       const authToken = localStorage.getItem("accessToken");
-      if (!authToken) throw new Error("No authentication token");
+      if (!authToken) throw new Error("Không có token xác thực");
       const [postResponse, likedPostsResponse] = await Promise.all([
         api.get(`/posts/${postId}`, {
           headers: { Authorization: `Bearer ${authToken}` },
@@ -211,9 +230,9 @@ const PostDetail = () => {
       const canView =
         postData.visibility === "public" ||
         (postData.visibility === "only_me" &&
-          postData.author._id === auth.userId) ||
+          postData.author?._id === auth.userId) ||
         (postData.visibility === "friends" &&
-          currentUserFollowing.includes(postData.author._id));
+          currentUserFollowing.includes(postData.author?._id));
 
       if (!canView) {
         throw new Error("Bạn không có quyền xem bài viết này.");
@@ -246,7 +265,7 @@ const PostDetail = () => {
   const fetchUserData = useCallback(async () => {
     try {
       if (!auth.accessToken || !auth.userId)
-        throw new Error("No token or userId");
+        throw new Error("Không có token hoặc userId");
       const user = await fetchUserProfile(auth.userId, {
         headers: { Authorization: `Bearer ${auth.accessToken}` },
       });
@@ -265,7 +284,7 @@ const PostDetail = () => {
   const fetchComments = useCallback(async () => {
     try {
       const authToken = localStorage.getItem("accessToken");
-      if (!authToken) throw new Error("No authentication token");
+      if (!authToken) throw new Error("Không có token xác thực");
       const response = await api.get(`/${postId}/comments`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
@@ -329,7 +348,7 @@ const PostDetail = () => {
       if (!newComment.trim() || !userData) return;
       try {
         const authToken = localStorage.getItem("accessToken");
-        if (!authToken) throw new Error("No authentication token");
+        if (!authToken) throw new Error("Không có token xác thực");
         const response = await api.post(
           "/comments",
           { threadId: postId, content: newComment },
@@ -388,7 +407,7 @@ const PostDetail = () => {
       if (!replyContent || !userData) return;
       try {
         const authToken = localStorage.getItem("accessToken");
-        if (!authToken) throw new Error("No authentication token");
+        if (!authToken) throw new Error("Không có token xác thực");
         const response = await api.post(
           "/reply",
           { threadId: postId, content: replyContent, parentCommentId },
@@ -469,7 +488,7 @@ const PostDetail = () => {
     async (commentId) => {
       try {
         const authToken = localStorage.getItem("accessToken");
-        if (!authToken) throw new Error("No authentication token");
+        if (!authToken) throw new Error("Không có token xác thực");
         const findComment = (comments, id) => {
           for (const c of comments) {
             if (c._id === id) return c;
@@ -479,7 +498,7 @@ const PostDetail = () => {
           return null;
         };
         const comment = findComment(comments, commentId);
-        if (!comment) throw new Error("Comment not found");
+        if (!comment) throw new Error("Không tìm thấy bình luận");
         const isLiked = comment.isLiked;
         const endpoint = isLiked ? "/unlike-comment" : "/like-comment";
         const response = await api.post(
@@ -517,8 +536,8 @@ const PostDetail = () => {
   const handleToggleLike = useCallback(async () => {
     try {
       const authToken = localStorage.getItem("accessToken");
-      if (!authToken) throw new Error("No authentication token");
-      const isLiked = post.isLiked;
+      if (!authToken) throw new Error("Không có token xác thực");
+      const isLiked = post?.isLiked;
       const response = await api.post(
         "/like",
         { userId: auth.userId, threadId: postId, isLiked: !isLiked },
@@ -595,6 +614,40 @@ const PostDetail = () => {
       [commentId]: !prev[commentId],
     }));
   };
+
+  // Cuộn đến bình luận hoặc phản hồi khi có commentId hoặc replyId
+  useEffect(() => {
+    if (!commentsLoading && comments.length > 0 && (commentId || replyId)) {
+      const targetId = commentId || replyId;
+
+      // Nếu là replyId, tìm bình luận cha và bỏ ẩn các phản hồi
+      if (replyId) {
+        const parentComment = findParentCommentOfReply(comments, replyId);
+        if (parentComment) {
+          // Bỏ ẩn các phản hồi của bình luận cha
+          setHideReplies((prev) => ({
+            ...prev,
+            [parentComment._id]: false,
+          }));
+          // Hiển thị đầy đủ các phản hồi (bỏ giới hạn "Xem thêm")
+          setShowMoreReplies((prev) => ({
+            ...prev,
+            [parentComment._id]: true,
+          }));
+        }
+      }
+
+      // Cuộn đến phần tử
+      const element = document.getElementById(targetId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+        element.classList.add("highlight");
+        setTimeout(() => element.classList.remove("highlight"), 2000);
+      } else {
+        console.warn(`Không tìm thấy phần tử với ID: ${targetId}`);
+      }
+    }
+  }, [commentsLoading, comments, commentId, replyId]);
 
   const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
 
@@ -703,6 +756,7 @@ const PostDetail = () => {
     const renderComment = (cmt, isReply = false) => (
       <article
         key={cmt._id}
+        id={cmt._id} // Thêm id để cuộn đến
         className={`flex items-start space-x-3 px-4 py-3 ${
           isReply ? "ml-6" : ""
         } border-b border-gray-200`}
@@ -737,7 +791,7 @@ const PostDetail = () => {
             </Link>
             {cmt.parentUser && (
               <span className="text-gray-500 text-sm">
-                <i class="fa-solid fa-caret-right mr-2"></i>
+                <i className="fa-solid fa-caret-right mr-2"></i>
                 <Link
                   to={`/profile/${cmt.parentUser._id}`}
                   className="hover:underline"
@@ -837,7 +891,7 @@ const PostDetail = () => {
   };
 
   return (
-    <div className="bg-gray-100 p-4 min-h-screen flex ">
+    <div className="bg-gray-100 p-4 min-h-screen flex">
       <Sidebar unreadCount={unreadCount} />
       <div className="post-container max-w-2xl mx-auto">
         <div className="text-center flex flex-col mb-2">
@@ -912,23 +966,23 @@ const PostDetail = () => {
                       )}
                       {post.visibility === "friends" && (
                         <img
-                          class="x1b0d499 x1d69dk1"
+                          className="x1b0d499 x1d69dk1"
                           alt="Bạn bè"
                           height="14"
                           width="14"
-                          src="https://static.xx.fbcdn.net/rsrc.php/v4/yJ/r/zPcex_q0TM1.png"
+                          src="https://static.xx.fbcdn.net/rsrc.php/v3/yJ/r/zPcex_q0TM1.png"
                         />
                       )}
                       {post.visibility === "only_me" && (
                         <img
-                          class="x1b0d499 x1d69dk1"
+                          className="x1b0d499 x1d69dk1"
                           alt="Chỉ mình tôi"
                           height="14"
                           width="14"
-                          src="https://static.xx.fbcdn.net/rsrc.php/v4/yc/r/57iQDgPFByS.png"
+                          src="https://static.xx.fbcdn.net/rsrc.php/v3/yc/r/57iQDgPFByS.png"
                         />
                       )}
-                      <div className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-5 bottom-full mb-1 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                      <div className="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 bottom-full mb-1 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
                         {post.visibility === "public" && "Bất cứ ai"}
                         {post.visibility === "friends" && "Bạn bè"}
                         {post.visibility === "only_me" && "Chỉ mình tôi"}

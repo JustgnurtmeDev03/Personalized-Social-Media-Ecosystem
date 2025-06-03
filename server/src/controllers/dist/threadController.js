@@ -47,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.getRecommendedThreads = exports.createThread = exports.getThread = exports.getUserPosts = exports.getTotalPosts = void 0;
+exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.getRecommendedThreads = exports.createThread = exports.getThread = exports.deletePost = exports.updatePost = exports.getUserPosts = exports.getTotalPosts = void 0;
 var Thread_1 = require("~/models/Thread");
 var User_1 = require("~/models/User");
 var Hashtag_1 = require("~/models/Hashtag");
@@ -61,6 +61,7 @@ var httpStatus_1 = require("~/constants/httpStatus");
 var mongoose_1 = require("mongoose");
 var notificationService_1 = require("~/services/notificationService");
 var Follow_1 = require("~/models/Follow");
+var httpError_1 = require("~/utils/httpError");
 var createThread = asyncHandler_1["default"](function (req, res) { return __awaiter(void 0, void 0, Promise, function () {
     var _a, content, _b, visibility, _c, textContent, hashtags, files, uploadedMedia, _loop_1, _i, files_1, file, images, videos, newThread, post, followers, user, _d, followers_1, follower, _e, hashtags_1, hashtag, existingHashtag;
     var _f, _g;
@@ -435,6 +436,80 @@ exports.getUserPosts = asyncHandler_1["default"](function (req, res, next) { ret
         }
     });
 }); });
+exports.updatePost = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var id, _a, content, hashtags, visibility, userId, post, updatedPost, error_7;
+    var _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                _c.trys.push([0, 3, , 4]);
+                id = req.params.id;
+                _a = req.body, content = _a.content, hashtags = _a.hashtags, visibility = _a.visibility;
+                userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b._id;
+                return [4 /*yield*/, Thread_1["default"].findById(id)];
+            case 1:
+                post = _c.sent();
+                if (!post) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "Post not found");
+                }
+                if (post.author.toString() !== userId.toString()) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].FORBIDDEN, "You are not authorized to edit this post");
+                }
+                return [4 /*yield*/, threadService_1.PostService.updatePost(id, {
+                        content: content,
+                        hashtags: hashtags,
+                        visibility: visibility
+                    })];
+            case 2:
+                updatedPost = _c.sent();
+                res.status(httpStatus_1["default"].OK).json(updatedPost);
+                return [3 /*break*/, 4];
+            case 3:
+                error_7 = _c.sent();
+                console.error("Update Post Error:", error_7.message);
+                res
+                    .status(error_7.statusCode || httpStatus_1["default"].INTERNAL_SERVER_ERROR)
+                    .send({ error: error_7.message || "Failed to update post" });
+                return [3 /*break*/, 4];
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
+exports.deletePost = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var id, userId, post, error_8;
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
+            case 0:
+                _b.trys.push([0, 3, , 4]);
+                id = req.params.id;
+                userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+                return [4 /*yield*/, Thread_1["default"].findById(id)];
+            case 1:
+                post = _b.sent();
+                if (!post) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "Post not found");
+                }
+                console.log("Post Author:", post.author.toString());
+                if (post.author.toString() !== userId.toString()) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].FORBIDDEN, "You are not authorized to delete this post");
+                }
+                return [4 /*yield*/, threadService_1.PostService.deletePost(id)];
+            case 2:
+                _b.sent();
+                res.status(httpStatus_1["default"].OK).json({ message: "Post deleted successfully" });
+                return [3 /*break*/, 4];
+            case 3:
+                error_8 = _b.sent();
+                console.error("Delete Post Error:", error_8.message);
+                res
+                    .status(error_8.statusCode || httpStatus_1["default"].INTERNAL_SERVER_ERROR)
+                    .send({ error: error_8.message || "Failed to delete post" });
+                return [3 /*break*/, 4];
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
 function generateRandomUsername() {
     var words = [
         "cool",
@@ -462,7 +537,7 @@ function generateRandomUsername() {
 }
 // ADMIN FUNCTION
 var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var postId, post, error_7;
+    var postId, post, error_9;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
@@ -485,8 +560,8 @@ var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { retu
                 res.json({ message: "Post deleted successfully" });
                 return [3 /*break*/, 4];
             case 3:
-                error_7 = _c.sent();
-                console.error(error_7);
+                error_9 = _c.sent();
+                console.error(error_9);
                 res.status(500).json({ message: "Error deleting post" });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];
@@ -495,7 +570,7 @@ var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { retu
 }); });
 exports.deletePostAdmin = deletePostAdmin;
 var togglePinPost = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var postId, post, error_8;
+    var postId, post, error_10;
     var _a, _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
@@ -526,8 +601,8 @@ var togglePinPost = asyncHandler_1["default"](function (req, res, next) { return
                 });
                 return [3 /*break*/, 4];
             case 3:
-                error_8 = _d.sent();
-                console.error(error_8);
+                error_10 = _d.sent();
+                console.error(error_10);
                 res.status(500).json({ message: "Error toggling pin status" });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];

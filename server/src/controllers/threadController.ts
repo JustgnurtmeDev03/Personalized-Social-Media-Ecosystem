@@ -19,6 +19,7 @@ import HTTP_STATUS from "~/constants/httpStatus";
 import mongoose from "mongoose";
 import { NotificationService } from "~/services/notificationService";
 import Follow from "~/models/Follow";
+import { HttpError } from "~/utils/httpError";
 
 const createThread = asyncHandler(
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -343,6 +344,78 @@ export const getUserPosts = asyncHandler(
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .send({ error: "Failed to fetch user posts" });
+    }
+  }
+);
+
+export const updatePost = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { content, hashtags, visibility } = req.body;
+      const userId = req.user?._id;
+
+      const post = await Thread.findById(id);
+      if (!post) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "Post not found");
+      }
+
+      if (post.author.toString() !== userId.toString()) {
+        throw new HttpError(
+          HTTP_STATUS.FORBIDDEN,
+          "You are not authorized to edit this post"
+        );
+      }
+
+      const updatedPost = await PostService.updatePost(id, {
+        content,
+        hashtags,
+        visibility,
+      });
+      res.status(HTTP_STATUS.OK).json(updatedPost);
+    } catch (error: any) {
+      console.error("Update Post Error:", error.message);
+      res
+        .status(error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .send({ error: error.message || "Failed to update post" });
+    }
+  }
+);
+
+export const deletePost = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?._id;
+
+      const post = await Thread.findById(id);
+      if (!post) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "Post not found");
+      }
+      console.log("Post Author:", post.author.toString());
+
+      if (post.author.toString() !== userId.toString()) {
+        throw new HttpError(
+          HTTP_STATUS.FORBIDDEN,
+          "You are not authorized to delete this post"
+        );
+      }
+
+      await PostService.deletePost(id);
+      res.status(HTTP_STATUS.OK).json({ message: "Post deleted successfully" });
+    } catch (error: any) {
+      console.error("Delete Post Error:", error.message);
+      res
+        .status(error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .send({ error: error.message || "Failed to delete post" });
     }
   }
 );

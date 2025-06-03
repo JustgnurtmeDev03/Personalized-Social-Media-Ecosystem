@@ -21,6 +21,8 @@ import { fetchUserPosts } from "../../services/threadService";
 import PostItem from "../../components/Post/PostItem";
 import { API_URL } from "../../services/threadService";
 import { fetchNotifications } from "../../services/notificationService";
+import EditPostModal from "../../pages/Profile/EditPostModal";
+import api from "../../services/threadService";
 
 export default function Profile() {
   const POLLING_INTERVAL = 30000;
@@ -38,8 +40,13 @@ export default function Profile() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isUnfollowModalOpen, setIsUnfollowModalOpen] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [showMenu, setShowMenu] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // Thêm state cho modal xác nhận xóa
+  const [deletingPostId, setDeletingPostId] = useState(null); // ID bài viết cần xóa
 
-  // Kiểm tra access token
   useEffect(() => {
     if (!auth.accessToken) {
       console.warn("No access token found. Redirecting to login...");
@@ -47,7 +54,6 @@ export default function Profile() {
     }
   }, [auth.accessToken, navigate]);
 
-  // FETCH USER PROFILE
   const {
     data: user,
     isLoading: isUserLoading,
@@ -67,7 +73,6 @@ export default function Profile() {
     enabled: !!auth.accessToken && !!userId,
   });
 
-  // FETCH FOLLOWERS LIST
   const {
     data: followersData,
     isLoading: isFollowersLoading,
@@ -84,7 +89,6 @@ export default function Profile() {
     enabled: !!auth.accessToken && !!userId,
   });
 
-  // FETCH FOLLOWING LIST OF PROFILE USER
   const {
     data: profileFollowingData,
     isLoading: isProfileFollowingLoading,
@@ -101,7 +105,6 @@ export default function Profile() {
     enabled: !!auth.accessToken && !!userId,
   });
 
-  // FETCH FOLLOWING LIST OF CURRENT USER
   const {
     data: currentUserFollowingData,
     isLoading: isCurrentUserFollowingLoading,
@@ -118,7 +121,6 @@ export default function Profile() {
     enabled: !!auth.accessToken && !!auth.userId,
   });
 
-  // CHECK FOLLOW STATUS
   useEffect(() => {
     if (!isOwnProfile && currentUserFollowingData && userData) {
       const alreadyFollowed = currentUserFollowingData.some(
@@ -128,7 +130,6 @@ export default function Profile() {
     }
   }, [currentUserFollowingData, userData, isOwnProfile]);
 
-  // FETCH POSTS OF USER
   const {
     data: postsData,
     isLoading: isPostsLoading,
@@ -140,13 +141,12 @@ export default function Profile() {
       if (!auth.accessToken || !userId)
         throw new Error("No access token or userId");
       const posts = await fetchUserPosts(userId, auth.accessToken);
-      console.log("Raw posts data:", posts); // Debug dữ liệu từ API
+      console.log("Raw posts data:", posts);
       return posts;
     },
     enabled: !!auth.accessToken && !!userId,
   });
 
-  // FETCH LIKED POSTS OF USER
   const {
     data: likedPosts,
     isLoading: isLikedLoading,
@@ -164,12 +164,10 @@ export default function Profile() {
     enabled: !!auth.accessToken,
   });
 
-  // XỬ LÝ BÀI VIẾT THEO QUYỀN RIÊNG TƯ
   useEffect(() => {
     if (postsData && likedPosts && followersData && currentUserFollowingData) {
       console.log("Original postsData:", postsData);
 
-      // Sắp xếp bài viết theo ngày tạo (mới nhất trước)
       const sortedPosts = [...postsData].sort((a, b) => {
         try {
           const dateA = new Date(a.createdAt);
@@ -185,12 +183,10 @@ export default function Profile() {
         }
       });
 
-      // Lọc bỏ các giá trị null hoặc undefined từ likedPosts
       const validLikedPosts = likedPosts.filter(
         (post) => post && post._id !== undefined && post._id !== null
       );
 
-      // Gắn thêm thuộc tính isLiked cho từng bài viết
       const enrichedPosts = sortedPosts.map((post) => ({
         ...post,
         isLiked: validLikedPosts.some(
@@ -199,10 +195,8 @@ export default function Profile() {
       }));
 
       if (isOwnProfile) {
-        // Khi ở hồ sơ của người dùng đang đăng nhập: hiển thị tất cả bài viết của họ
         setPosts(enrichedPosts);
       } else {
-        // Khi xem hồ sơ của người khác: lọc bài viết theo quyền riêng tư
         const filteredPosts = enrichedPosts.filter((post) => {
           if (post.visibility === "public") return true;
           if (post.visibility === "friends") {
@@ -214,7 +208,7 @@ export default function Profile() {
             );
             return isViewerFollowingAuthor && isAuthorFollowingViewer;
           }
-          return false; // Không hiển thị bài "only_me"
+          return false;
         });
         setPosts(filteredPosts);
       }
@@ -229,7 +223,6 @@ export default function Profile() {
     auth.userId,
   ]);
 
-  // FUNC TOGGLE LIKE & UNLIKE
   const handleToggleLike = async (postId) => {
     try {
       const response = await fetch(`${API_URL}/like`, {
@@ -240,14 +233,10 @@ export default function Profile() {
         },
         body: JSON.stringify({ threadId: postId }),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
       const { isLiked, likesCount } = await response.json();
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
+      setPosts((prev) =>
+        prev.map((post) =>
           post._id === postId ? { ...post, isLiked, likesCount } : post
         )
       );
@@ -306,7 +295,7 @@ export default function Profile() {
         throw new Error("Không có token để xác thực");
       }
       const data = await fetchNotifications(auth.accessToken);
-      return data || []; // Đảm bảo luôn trả về mảng, tránh null
+      return data || [];
     },
     enabled: !!auth.accessToken,
     refetchInterval: POLLING_INTERVAL,
@@ -319,7 +308,58 @@ export default function Profile() {
 
   const unreadCount = notifications?.filter((n) => !n.isRead).length || 0;
 
-  // Xử lý trạng thái loading và error
+  const openMenu = (post) => {
+    setSelectedPost(post);
+    setShowMenu(true);
+  };
+
+  const closeMenu = () => {
+    setShowMenu(false);
+    setSelectedPost(null);
+  };
+
+  const handleEdit = (post) => {
+    setEditingPost(post);
+    setIsEditModalOpen(true);
+    closeMenu();
+  };
+
+  const handleUpdatePost = (updatedPost) => {
+    setPosts((prevPosts) =>
+      prevPosts.map((p) =>
+        p._id === updatedPost._id ? { ...p, ...updatedPost } : p
+      )
+    );
+    setIsEditModalOpen(false);
+  };
+
+  const handleDelete = (postId) => {
+    setDeletingPostId(postId);
+    setIsDeleteConfirmOpen(true); // Mở modal xác nhận
+    closeMenu();
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await api.delete(`/posts/${deletingPostId}`, {
+        headers: { Authorization: `Bearer ${auth.accessToken}` },
+      });
+      setPosts((prevPosts) =>
+        prevPosts.filter((p) => p._id !== deletingPostId)
+      );
+      setIsDeleteConfirmOpen(false);
+      setDeletingPostId(null);
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      setIsDeleteConfirmOpen(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setIsDeleteConfirmOpen(false);
+    setDeletingPostId(null);
+  };
+
   if (
     isUserLoading ||
     isUserFetching ||
@@ -575,6 +615,12 @@ export default function Profile() {
                   isOpen={isPostModalOpen}
                   onClose={handleCloseModal}
                 />
+                <EditPostModal
+                  isOpen={isEditModalOpen}
+                  onClose={() => setIsEditModalOpen(false)}
+                  post={editingPost}
+                  onUpdate={handleUpdatePost}
+                />
                 <div className="profile-info-detail">
                   {posts.length === 0 ? (
                     incompleteCount === 0 ? (
@@ -677,12 +723,39 @@ export default function Profile() {
                   ) : (
                     <div className="posts-list w-full">
                       {posts.map((post) => (
-                        <PostItem
-                          key={post._id}
-                          post={post}
-                          userData={userData}
-                          handleToggleLike={handleToggleLike}
-                        />
+                        <div key={post._id} className="post-item relative">
+                          <PostItem
+                            post={post}
+                            userData={userData}
+                            handleToggleLike={handleToggleLike}
+                          />
+                          {isOwnProfile && (
+                            <div className="absolute top-2 right-2">
+                              <button
+                                className="options-button text-black text-lg"
+                                onClick={() => openMenu(post)}
+                              >
+                                •••
+                              </button>
+                              {showMenu && selectedPost?._id === post._id && (
+                                <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg z-10">
+                                  <button
+                                    className="block w-full text-left px-4 py-2 text-sm text-black hover:bg-gray-100"
+                                    onClick={() => handleEdit(post)}
+                                  >
+                                    Chỉnh sửa
+                                  </button>
+                                  <button
+                                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                    onClick={() => handleDelete(post._id)}
+                                  >
+                                    Xóa
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}
@@ -706,6 +779,34 @@ export default function Profile() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+            {/* Modal xác nhận xóa bài viết */}
+            {isDeleteConfirmOpen && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
+                <div className="bg-white rounded-lg w-full max-w-xs p-6 shadow-lg">
+                  <h3 className="text-lg font-semibold text-center mb-4">
+                    Xác nhận xóa bài viết
+                  </h3>
+                  <p className="text-sm text-gray-600 text-center mb-6">
+                    Bạn có chắc muốn xóa bài viết này? Hành động này không thể
+                    hoàn tác.
+                  </p>
+                  <div className="flex justify-between">
+                    <button
+                      onClick={cancelDelete}
+                      className="w-1/2 mr-2 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      onClick={confirmDelete}
+                      className="w-1/2 ml-2 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>

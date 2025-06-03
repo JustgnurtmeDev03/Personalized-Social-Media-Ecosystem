@@ -5340,3 +5340,18 @@ Use mongoose.model(name, schema)
 2025-06-02T08:07:09.813Z [ERROR]: Register error: Internal server error
 2025-06-02T08:08:15.267Z [ERROR]: Register service error: E11000 duplicate key error collection: Threads.users index: email_1 dup key: { email: "trungthpthy123@gmail.com" }
 2025-06-02T08:08:15.268Z [ERROR]: Register error: Internal server error
+2025-06-03T07:27:14.046Z [ERROR]: ID is invalid
+2025-06-03T07:27:38.345Z [ERROR]: ID is invalid
+2025-06-03T07:27:41.311Z [ERROR]: ID is invalid
+2025-06-03T08:35:11.250Z [ERROR]: ID is invalid
+2025-06-03T08:35:19.743Z [ERROR]: ID is invalid
+2025-06-03T09:48:26.064Z [ERROR]: Login error: Login is Unsuccessful
+2025-06-03T10:33:39.684Z [ERROR]: ID is invalid
+2025-06-03T10:33:39.722Z [ERROR]: ID is invalid
+2025-06-03T10:34:09.035Z [ERROR]: ID is invalid
+2025-06-03T10:34:10.950Z [ERROR]: ID is invalid
+2025-06-03T10:35:55.420Z [ERROR]: ID is invalid
+2025-06-03T10:36:48.056Z [ERROR]: ID is invalid
+2025-06-03T10:36:48.102Z [ERROR]: ID is invalid
+2025-06-03T10:37:18.522Z [ERROR]: ID is invalid
+2025-06-03T10:37:18.570Z [ERROR]: ID is invalid

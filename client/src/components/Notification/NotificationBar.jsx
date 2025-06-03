@@ -55,7 +55,7 @@ const NotificationBar = () => {
         throw new Error("Không có token để xác thực");
       }
       const data = await fetchNotifications(auth.accessToken);
-      return data || []; // Đảm bảo luôn trả về mảng, tránh null
+      return data || [];
     },
     enabled: !!auth.accessToken,
     refetchInterval: POLLING_INTERVAL,
@@ -79,7 +79,6 @@ const NotificationBar = () => {
             notif._id === updatedNotification._id ? updatedNotification : notif
           ) || []
       );
-      // Không cần setNotifications, dùng trực tiếp data từ useQuery
     },
     onError: (error) => {
       console.error("Error marking notification as read:", error.message);
@@ -133,27 +132,71 @@ const NotificationBar = () => {
             </div>
             <div className="notification-container w-full px-5">
               {notifications.map((notification) => {
-                // Kiểm tra relatedUser và relatedPost
-                const isPostRelated = [
-                  "new_post",
-                  "like",
-                  "comment",
-                  "reply",
-                ].includes(notification.type);
-                const linkTo = isPostRelated
-                  ? notification.relatedPost?._id
-                    ? `/post/${notification.relatedPost._id}`
-                    : "#"
-                  : notification.relatedUser?._id
-                  ? `/profile/${notification.relatedUser._id}`
-                  : "#";
+                let linkTo = "#";
+                if (
+                  notification.type === "new_post" &&
+                  notification.relatedPost?._id
+                ) {
+                  linkTo = `/post/${notification.relatedPost._id}`;
+                } else if (
+                  notification.type === "comment" &&
+                  notification.relatedPost?._id &&
+                  notification.relatedComment
+                ) {
+                  linkTo = `/post/${notification.relatedPost._id}?commentId=${notification.relatedComment}`;
+                } else if (
+                  notification.type === "reply" &&
+                  notification.relatedPost?._id &&
+                  notification.relatedComment // Sử dụng relatedComment thay vì relatedReply
+                ) {
+                  linkTo = `/post/${notification.relatedPost._id}?replyId=${notification.relatedComment}`;
+                } else if (
+                  notification.type === "like" &&
+                  notification.relatedPost?._id
+                ) {
+                  linkTo = `/post/${notification.relatedPost._id}`;
+                } else if (
+                  notification.type === "follow" &&
+                  notification.relatedUser?._id
+                ) {
+                  linkTo = `/profile/${notification.relatedUser._id}`;
+                } else if (
+                  notification.type === "like_comment" &&
+                  notification.relatedPost?._id &&
+                  notification.relatedComment
+                ) {
+                  linkTo = `/post/${notification.relatedPost._id}?commentId=${notification.relatedComment}`;
+                } else if (
+                  notification.type === "like_reply" &&
+                  notification.relatedPost?._id &&
+                  notification.relatedComment // Sử dụng relatedComment thay vì relatedReply
+                ) {
+                  linkTo = `/post/${notification.relatedPost._id}?replyId=${notification.relatedComment}`;
+                }
+
+                // Kiểm tra dữ liệu liên quan trước khi render
+                const isValidLink =
+                  linkTo !== "#" &&
+                  ((notification.relatedPost?._id &&
+                    (notification.type === "new_post" ||
+                      notification.type === "like" ||
+                      (notification.type === "comment" &&
+                        notification.relatedComment) ||
+                      (notification.type === "reply" &&
+                        notification.relatedComment) || // Sử dụng relatedComment thay vì relatedReply
+                      (notification.type === "like_comment" &&
+                        notification.relatedComment) ||
+                      (notification.type === "like_reply" &&
+                        notification.relatedComment))) || // Sử dụng relatedComment thay vì relatedReply
+                    (notification.type === "follow" &&
+                      notification.relatedUser?._id));
 
                 return (
                   <Link
                     key={notification._id}
-                    to={linkTo}
+                    to={isValidLink ? linkTo : "#"}
                     onClick={() => handleNotificationClick(notification)}
-                    className={linkTo === "#" ? "pointer-events-none" : ""}
+                    className={!isValidLink ? "pointer-events-none" : ""}
                   >
                     <div
                       className={`posts-content bg-white p-4 rounded-lg shadow mb-4 ${
@@ -196,6 +239,11 @@ const NotificationBar = () => {
                           <p className="text-sm leading-6">
                             {notification.content}
                           </p>
+                          {!isValidLink && (
+                            <p className="text-red-500 text-xs mt-1">
+                              Dữ liệu liên quan không hợp lệ
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center space-x-4 text-gray-500 text-sm mt-2">
