@@ -47,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.getRecommendedThreads = exports.createThread = exports.getThread = exports.createNotification = exports.ignoreReport = exports.getReports = exports.reportPost = exports.markNotInterested = exports.deletePost = exports.updatePost = exports.getUserPosts = exports.getTotalPosts = void 0;
+exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.getRecommendedThreads = exports.createThread = exports.getThread = exports.deleteReportedPost = exports.createNotification = exports.ignoreReport = exports.getReports = exports.reportPost = exports.markNotInterested = exports.deletePost = exports.updatePost = exports.getUserPosts = exports.getTotalPosts = void 0;
 var Thread_1 = require("~/models/Thread");
 var User_1 = require("~/models/User");
 var Hashtag_1 = require("~/models/Hashtag");
@@ -716,11 +716,25 @@ exports.ignoreReport = asyncHandler_1["default"](function (req, res, next) { ret
     });
 }); });
 exports.createNotification = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, recipient, type, content, relatedPost, notification;
+    var _a, recipient, type, content, relatedPost, notification, error_13;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 _a = req.body, recipient = _a.recipient, type = _a.type, content = _a.content, relatedPost = _a.relatedPost;
+                // Kiểm tra các trường bắt buộc
+                if (!recipient || !type || !content) {
+                    return [2 /*return*/, next(new AppError_1.AppError("Missing required fields: recipient, type, or content", 400))];
+                }
+                // Kiểm tra recipient và relatedPost (nếu có) là ObjectId hợp lệ
+                if (!mongoose_1["default"].Types.ObjectId.isValid(recipient)) {
+                    return [2 /*return*/, next(new AppError_1.AppError("Invalid recipient ID", 400))];
+                }
+                if (relatedPost && !mongoose_1["default"].Types.ObjectId.isValid(relatedPost)) {
+                    return [2 /*return*/, next(new AppError_1.AppError("Invalid relatedPost ID", 400))];
+                }
+                _b.label = 1;
+            case 1:
+                _b.trys.push([1, 3, , 4]);
                 notification = new Notification_1.Notification({
                     recipient: recipient,
                     type: type,
@@ -728,10 +742,58 @@ exports.createNotification = asyncHandler_1["default"](function (req, res, next)
                     relatedPost: relatedPost
                 });
                 return [4 /*yield*/, notification.save()];
-            case 1:
+            case 2:
                 _b.sent();
                 res.status(httpStatus_1["default"].CREATED).json(notification);
-                return [2 /*return*/];
+                return [3 /*break*/, 4];
+            case 3:
+                error_13 = _b.sent();
+                console.error("Error creating notification:", error_13);
+                return [2 /*return*/, next(new AppError_1.AppError(error_13.message || "Failed to create notification", error_13.statusCode || 500))];
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
+exports.deleteReportedPost = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var postId, post, error_14;
+    var _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                _c.trys.push([0, 4, , 5]);
+                postId = req.params.id;
+                // Kiểm tra postId hợp lệ
+                if (!postId || !mongoose_1["default"].Types.ObjectId.isValid(postId)) {
+                    return [2 /*return*/, next(new AppError_1.AppError("Invalid post ID", 400))];
+                }
+                return [4 /*yield*/, Thread_1["default"].findById(postId)];
+            case 1:
+                post = _c.sent();
+                if (!post) {
+                    return [2 /*return*/, next(new AppError_1.AppError("Post not found", 404))];
+                }
+                // Kiểm tra quyền
+                if (post.author.toString() !== req.user.id &&
+                    (!Array.isArray((_a = req.user) === null || _a === void 0 ? void 0 : _a.roles) || !((_b = req.user) === null || _b === void 0 ? void 0 : _b.roles.includes("admin")))) {
+                    return [2 /*return*/, next(new AppError_1.AppError("Not authorized to delete this post", 403))];
+                }
+                // Xóa tất cả báo cáo liên quan đến bài viết
+                return [4 /*yield*/, Report_1.Report.deleteMany({ postId: postId })];
+            case 2:
+                // Xóa tất cả báo cáo liên quan đến bài viết
+                _c.sent();
+                // Xóa bài viết
+                return [4 /*yield*/, Thread_1["default"].deleteOne({ _id: postId })];
+            case 3:
+                // Xóa bài viết
+                _c.sent();
+                res.json({ message: "Post deleted successfully" });
+                return [3 /*break*/, 5];
+            case 4:
+                error_14 = _c.sent();
+                console.error("Error deleting post:", error_14);
+                return [2 /*return*/, next(new AppError_1.AppError(error_14.message || "Error deleting post", error_14.statusCode || 500))];
+            case 5: return [2 /*return*/];
         }
     });
 }); });

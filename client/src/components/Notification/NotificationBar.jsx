@@ -13,6 +13,45 @@ import Sidebar from "../Sidebar/sidebar";
 
 const POLLING_INTERVAL = 30000;
 
+// SVG Avatar mặc định cho Admin
+const AdminAvatar = () => (
+  <svg
+    aria-label="Gens"
+    fill="none"
+    height="100%"
+    role="img"
+    viewBox="0 0 192 192"
+    width="100%"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ width: "40px", height: "40px" }}
+  >
+    <defs>
+      <linearGradient id="gensGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style={{ stopColor: "rgb(255, 221, 225)" }} />
+        <stop offset="100%" style={{ stopColor: "rgb(29, 161, 242)" }} />
+      </linearGradient>
+    </defs>
+    <path
+      d="M50 70 Q 70 50 90 70 Q 110 90 90 110 Q 70 130 50 110 Q 30 90 50 70 M80 60 Q 100 40 120 60 Q 140 80 120 100 Q 100 120 80 100 Q 60 80 80 60"
+      fill="url(#gensGradient)"
+      stroke="#ffffff"
+      strokeWidth={2}
+      opacity={0.9}
+      transform="translate(-40,-60) scale(1.5)"
+    />
+    <text
+      x="60"
+      y="150"
+      fontFamily="Arial, sans-serif"
+      fontSize={50}
+      fontWeight="bold"
+      fill="#1da1f2"
+    >
+      Gens
+    </text>
+  </svg>
+);
+
 const NotificationBar = () => {
   const { auth } = useAuth();
   const queryClient = useQueryClient();
@@ -191,6 +230,23 @@ const NotificationBar = () => {
                     (notification.type === "follow" &&
                       notification.relatedUser?._id));
 
+                // Sử dụng avatar và username mặc định cho thông báo từ admin (post_deleted)
+                const isAdminNotification =
+                  notification.type === "post_deleted";
+                const displayUsername = isAdminNotification
+                  ? "Gens"
+                  : notification.relatedUser?.username || "Không xác định";
+                const displayAvatar = isAdminNotification ? (
+                  <AdminAvatar />
+                ) : (
+                  <Avatar
+                    _id={notification.relatedUser?._id || ""}
+                    avatarUrl={notification.relatedUser?.avatar || ""}
+                    size={40}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                );
+
                 return (
                   <Link
                     key={notification._id}
@@ -201,31 +257,29 @@ const NotificationBar = () => {
                     <div
                       className={`posts-content bg-white p-4 rounded-lg shadow mb-4 ${
                         !notification.isRead ? "bg-blue-50" : ""
+                      } ${
+                        isAdminNotification ? "border-l-4 border-red-500" : ""
                       }`}
                     >
                       <div className="flex items-start space-x-3 mb-2">
-                        <Avatar
-                          _id={notification.relatedUser?._id || ""}
-                          avatarUrl={notification.relatedUser?.avatar || ""}
-                          size={40}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
+                        {displayAvatar}
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
                             <Link
                               to={
+                                !isAdminNotification &&
                                 notification.relatedUser?._id
                                   ? `/profile/${notification.relatedUser._id}`
                                   : "#"
                               }
                               className={`font-bold text-sm ${
+                                !isAdminNotification &&
                                 notification.relatedUser?._id
                                   ? "hover:underline"
                                   : "pointer-events-none"
                               }`}
                             >
-                              {notification.relatedUser?.username ||
-                                "Không xác định"}
+                              {displayUsername}
                             </Link>
                             <span className="text-gray-500 text-xs">
                               {formatNotificationTime(notification.createdAt)}
@@ -239,7 +293,7 @@ const NotificationBar = () => {
                           <p className="text-sm leading-6">
                             {notification.content}
                           </p>
-                          {!isValidLink && (
+                          {!isValidLink && !isAdminNotification && (
                             <p className="text-red-500 text-xs mt-1">
                               Dữ liệu liên quan không hợp lệ
                             </p>

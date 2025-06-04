@@ -601,14 +601,89 @@ export const ignoreReport = asyncHandler(
 export const createNotification = asyncHandler(
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const { recipient, type, content, relatedPost } = req.body;
-    const notification = new Notification({
-      recipient,
-      type,
-      content,
-      relatedPost,
-    });
-    await notification.save();
-    res.status(HTTP_STATUS.CREATED).json(notification);
+
+    // Kiểm tra các trường bắt buộc
+    if (!recipient || !type || !content) {
+      return next(
+        new AppError(
+          "Missing required fields: recipient, type, or content",
+          400
+        )
+      );
+    }
+
+    // Kiểm tra recipient và relatedPost (nếu có) là ObjectId hợp lệ
+    if (!mongoose.Types.ObjectId.isValid(recipient)) {
+      return next(new AppError("Invalid recipient ID", 400));
+    }
+    if (relatedPost && !mongoose.Types.ObjectId.isValid(relatedPost)) {
+      return next(new AppError("Invalid relatedPost ID", 400));
+    }
+
+    try {
+      const notification = new Notification({
+        recipient,
+        type,
+        content,
+        relatedPost,
+      });
+      await notification.save();
+      res.status(HTTP_STATUS.CREATED).json(notification);
+    } catch (error: any) {
+      console.error("Error creating notification:", error);
+      return next(
+        new AppError(
+          error.message || "Failed to create notification",
+          error.statusCode || 500
+        )
+      );
+    }
+  }
+);
+
+export const deleteReportedPost = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const postId = req.params.id;
+
+      // Kiểm tra postId hợp lệ
+      if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
+        return next(new AppError("Invalid post ID", 400));
+      }
+
+      const post = await Thread.findById(postId);
+      if (!post) {
+        return next(new AppError("Post not found", 404));
+      }
+
+      // Kiểm tra quyền
+      if (
+        post.author.toString() !== req.user.id &&
+        (!Array.isArray(req.user?.roles) || !req.user?.roles.includes("admin"))
+      ) {
+        return next(new AppError("Not authorized to delete this post", 403));
+      }
+
+      // Xóa tất cả báo cáo liên quan đến bài viết
+      await Report.deleteMany({ postId: postId });
+
+      // Xóa bài viết
+      await Thread.deleteOne({ _id: postId });
+
+      res.json({ message: "Post deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting post:", error);
+      return next(
+        new AppError(
+          error.message || "Error deleting post",
+          error.statusCode || 500
+        )
+      );
+    }
   }
 );
 

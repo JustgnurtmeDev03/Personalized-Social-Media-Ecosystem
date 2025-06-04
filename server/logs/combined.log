@@ -10096,3 +10096,138 @@ Use mongoose.model(name, schema)
 2025-06-04T10:06:19.106Z [INFO]: Fetching post with ID: 68319085ff888836007ecd14, userId: 683189f4417a5ff1adf23052
 2025-06-04T10:06:19.198Z [INFO]: Post found: 68319085ff888836007ecd14, views: 538/0
 2025-06-04T10:06:19.248Z [INFO]: Post views updated: 539/0
+2025-06-04T13:25:43.441Z [ERROR]: ID is invalid
+2025-06-04T13:26:31.831Z [INFO]: Fetching post with ID: 683ed154feda37bc877b1685, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T13:26:31.854Z [INFO]: Fetching comments for post ID: 683ed154feda37bc877b1685
+2025-06-04T13:26:31.855Z [INFO]: Fetching comments for post ID: 683ed154feda37bc877b1685
+2025-06-04T13:26:31.902Z [INFO]: Post found: 683ed154feda37bc877b1685, views: 6/0
+2025-06-04T13:26:31.945Z [INFO]: Post views updated: 7/0
+2025-06-04T13:26:31.988Z [INFO]: Fetching post with ID: 683ed154feda37bc877b1685, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T13:26:32.013Z [INFO]: Fetching comments for post ID: 683ed154feda37bc877b1685
+2025-06-04T13:26:32.014Z [INFO]: Fetching comments for post ID: 683ed154feda37bc877b1685
+2025-06-04T13:26:32.059Z [INFO]: Post found: 683ed154feda37bc877b1685, views: 7/0
+2025-06-04T13:26:32.105Z [INFO]: Post views updated: 8/0
+2025-06-04T13:27:11.879Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T13:27:11.881Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T13:27:11.887Z [INFO]: Fetching post with ID: 683c5e6d1f8ddd0875dd424b, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T13:27:11.992Z [INFO]: Post found: 683c5e6d1f8ddd0875dd424b, views: 94/0
+2025-06-04T13:27:12.036Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T13:27:12.038Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T13:27:12.049Z [INFO]: Post views updated: 95/0
+2025-06-04T13:27:12.103Z [INFO]: Fetching post with ID: 683c5e6d1f8ddd0875dd424b, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T13:27:12.176Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T13:27:12.177Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T13:27:12.197Z [INFO]: Post found: 683c5e6d1f8ddd0875dd424b, views: 95/0
+2025-06-04T13:27:12.246Z [INFO]: Post views updated: 96/0
+2025-06-04T13:27:12.294Z [INFO]: Fetching post with ID: 683c5e6d1f8ddd0875dd424b, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T13:27:12.386Z [INFO]: Post found: 683c5e6d1f8ddd0875dd424b, views: 96/0
+2025-06-04T13:27:12.435Z [INFO]: Post views updated: 97/0
+2025-06-04T13:28:11.297Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 683189f4417a5ff1adf23052
+2025-06-04T13:28:14.463Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 683189f4417a5ff1adf23052
+2025-06-04T13:28:15.477Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 683189f4417a5ff1adf23052
+2025-06-04T13:28:25.424Z [INFO]: User 66dfbd050bdfe18c723f1066 unfollowed user 683189f4417a5ff1adf23052
+2025-06-04T13:28:28.408Z [INFO]: User 66dfbd050bdfe18c723f1066 followed user 683189f4417a5ff1adf23052
+2025-06-04T13:28:42.351Z [INFO]: Fetching post with ID: 6801d7854ed027f695924586, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T13:28:42.370Z [INFO]: Fetching comments for post ID: 6801d7854ed027f695924586
+2025-06-04T13:28:42.373Z [INFO]: Fetching comments for post ID: 6801d7854ed027f695924586
+2025-06-04T13:28:42.418Z [INFO]: Post found: 6801d7854ed027f695924586, views: 2/0
+2025-06-04T13:28:42.465Z [INFO]: Post views updated: 3/0
+2025-06-04T13:28:42.510Z [INFO]: Fetching post with ID: 6801d7854ed027f695924586, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T13:28:42.517Z [INFO]: Fetching comments for post ID: 6801d7854ed027f695924586
+2025-06-04T13:28:42.518Z [INFO]: Fetching comments for post ID: 6801d7854ed027f695924586
+2025-06-04T13:28:42.585Z [INFO]: Post found: 6801d7854ed027f695924586, views: 3/0
+2025-06-04T13:28:42.617Z [INFO]: Fetching comments for post ID: 6801d7854ed027f695924586
+2025-06-04T13:28:42.618Z [INFO]: Fetching comments for post ID: 6801d7854ed027f695924586
+2025-06-04T13:28:42.623Z [INFO]: Post views updated: 4/0
+2025-06-04T13:28:42.662Z [INFO]: Fetching post with ID: 6801d7854ed027f695924586, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T13:28:42.732Z [INFO]: Post found: 6801d7854ed027f695924586, views: 4/0
+2025-06-04T13:28:42.771Z [INFO]: Post views updated: 5/0
+2025-06-04T13:37:59.327Z [INFO]: Fetching comments for post ID: 68404c26c61c976ea605d709
+2025-06-04T13:37:59.327Z [INFO]: Fetching comments for post ID: 68404c26c61c976ea605d709
+2025-06-04T13:37:59.331Z [INFO]: Fetching post with ID: 68404c26c61c976ea605d709, userId: 683189f4417a5ff1adf23052
+2025-06-04T13:37:59.407Z [INFO]: Post found: 68404c26c61c976ea605d709, views: 0/0
+2025-06-04T13:37:59.434Z [INFO]: Fetching comments for post ID: 68404c26c61c976ea605d709
+2025-06-04T13:37:59.435Z [INFO]: Fetching comments for post ID: 68404c26c61c976ea605d709
+2025-06-04T13:37:59.450Z [INFO]: Post views updated: 1/0
+2025-06-04T13:37:59.499Z [INFO]: Fetching post with ID: 68404c26c61c976ea605d709, userId: 683189f4417a5ff1adf23052
+2025-06-04T13:37:59.577Z [INFO]: Post found: 68404c26c61c976ea605d709, views: 1/0
+2025-06-04T13:37:59.616Z [INFO]: Post views updated: 2/0
+2025-06-04T13:38:41.855Z [INFO]: Fetching post with ID: 68404c26c61c976ea605d709, userId: 682f26de2adf3305e72d6465
+2025-06-04T13:38:41.933Z [INFO]: Post found: 68404c26c61c976ea605d709, views: 2/0
+2025-06-04T13:38:41.973Z [INFO]: Post views updated: 3/0
+2025-06-04T13:38:48.931Z [INFO]: Fetching post with ID: 68404c26c61c976ea605d709, userId: 682f26de2adf3305e72d6465
+2025-06-04T13:38:49.006Z [INFO]: Post found: 68404c26c61c976ea605d709, views: 3/0
+2025-06-04T13:38:49.045Z [INFO]: Post views updated: 4/0
+2025-06-04T13:39:04.895Z [INFO]: Fetching post with ID: 68404c26c61c976ea605d709, userId: 682f26de2adf3305e72d6465
+2025-06-04T13:39:04.968Z [INFO]: Post found: 68404c26c61c976ea605d709, views: 4/0
+2025-06-04T13:39:05.008Z [INFO]: Post views updated: 5/0
+2025-06-04T13:41:43.902Z [INFO]: Fetching post with ID: 68404c26c61c976ea605d709, userId: 682f26de2adf3305e72d6465
+2025-06-04T13:41:43.973Z [INFO]: Post found: 68404c26c61c976ea605d709, views: 5/0
+2025-06-04T13:41:44.017Z [INFO]: Post views updated: 6/0
+2025-06-04T13:44:06.092Z [INFO]: Fetching post with ID: 68404c26c61c976ea605d709, userId: 682f26de2adf3305e72d6465
+2025-06-04T13:44:06.164Z [INFO]: Post found: 68404c26c61c976ea605d709, views: 6/0
+2025-06-04T13:44:06.209Z [INFO]: Post views updated: 7/0
+2025-06-04T13:44:06.368Z [ERROR]: Notification validation failed: type: `post_deleted` is not a valid enum value for path `type`.
+2025-06-04T13:48:12.119Z [INFO]: Fetching post with ID: 68404c26c61c976ea605d709, userId: 682f26de2adf3305e72d6465
+2025-06-04T13:48:12.168Z [WARN]: Post not found: 68404c26c61c976ea605d709
+2025-06-04T13:48:12.170Z [ERROR]: Get post by id service error: Post not found
+2025-06-04T13:48:12.172Z [ERROR]: Post not found
+2025-06-04T13:48:25.560Z [INFO]: Fetching post with ID: 68404c26c61c976ea605d709, userId: 682f26de2adf3305e72d6465
+2025-06-04T13:48:25.612Z [WARN]: Post not found: 68404c26c61c976ea605d709
+2025-06-04T13:48:25.612Z [ERROR]: Get post by id service error: Post not found
+2025-06-04T13:48:25.613Z [ERROR]: Post not found
+2025-06-04T14:00:17.547Z [INFO]: Fetching post with ID: 6840515e48241202cbf24164, userId: 683189f4417a5ff1adf23052
+2025-06-04T14:00:17.552Z [INFO]: Fetching comments for post ID: 6840515e48241202cbf24164
+2025-06-04T14:00:17.553Z [INFO]: Fetching comments for post ID: 6840515e48241202cbf24164
+2025-06-04T14:00:17.639Z [INFO]: Post found: 6840515e48241202cbf24164, views: 0/0
+2025-06-04T14:00:17.676Z [INFO]: Post views updated: 1/0
+2025-06-04T14:00:17.696Z [INFO]: Fetching comments for post ID: 6840515e48241202cbf24164
+2025-06-04T14:00:17.696Z [INFO]: Fetching comments for post ID: 6840515e48241202cbf24164
+2025-06-04T14:00:17.717Z [INFO]: Fetching post with ID: 6840515e48241202cbf24164, userId: 683189f4417a5ff1adf23052
+2025-06-04T14:00:17.782Z [INFO]: Post found: 6840515e48241202cbf24164, views: 1/0
+2025-06-04T14:00:17.816Z [INFO]: Post views updated: 2/0
+2025-06-04T14:00:52.222Z [INFO]: Fetching post with ID: 6840515e48241202cbf24164, userId: 682f26de2adf3305e72d6465
+2025-06-04T14:00:52.285Z [INFO]: Post found: 6840515e48241202cbf24164, views: 2/0
+2025-06-04T14:00:52.320Z [INFO]: Post views updated: 3/0
+2025-06-04T14:18:02.004Z [INFO]: Fetching post with ID: 68405543fac93d4f99046243, userId: 682f26de2adf3305e72d6465
+2025-06-04T14:18:02.087Z [INFO]: Post found: 68405543fac93d4f99046243, views: 0/0
+2025-06-04T14:18:02.133Z [INFO]: Post views updated: 1/0
+2025-06-04T14:23:43.858Z [INFO]: Fetching post with ID: 6840566cfac93d4f99046336, userId: 682f26de2adf3305e72d6465
+2025-06-04T14:23:43.949Z [INFO]: Post found: 6840566cfac93d4f99046336, views: 0/0
+2025-06-04T14:23:44.000Z [INFO]: Post views updated: 1/0
+2025-06-04T14:24:17.190Z [ERROR]: Cannot find /api/threads/delete-reported-post/6840566cfac93d4f99046336 on this server
+2025-06-04T14:24:18.751Z [ERROR]: Cannot find /favicon.ico on this server
+2025-06-04T14:27:54.972Z [INFO]: Fetching post with ID: 684057be790254e6557d2795, userId: 682f26de2adf3305e72d6465
+2025-06-04T14:27:55.071Z [INFO]: Post found: 684057be790254e6557d2795, views: 0/0
+2025-06-04T14:27:55.125Z [INFO]: Post views updated: 1/0
+2025-06-04T14:30:17.461Z [ERROR]: ID is invalid
+2025-06-04T14:39:52.312Z [INFO]: Fetching post with ID: 683c5e6d1f8ddd0875dd424b, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T14:39:52.319Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:39:52.320Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:39:52.388Z [INFO]: Post found: 683c5e6d1f8ddd0875dd424b, views: 97/0
+2025-06-04T14:39:52.430Z [INFO]: Post views updated: 98/0
+2025-06-04T14:39:52.475Z [INFO]: Fetching post with ID: 683c5e6d1f8ddd0875dd424b, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T14:39:52.483Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:39:52.485Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:39:52.553Z [INFO]: Post found: 683c5e6d1f8ddd0875dd424b, views: 98/0
+2025-06-04T14:39:52.593Z [INFO]: Post views updated: 99/0
+2025-06-04T14:39:58.304Z [INFO]: Fetching post with ID: 683c5e6d1f8ddd0875dd424b, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T14:39:58.314Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:39:58.315Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:39:58.397Z [INFO]: Post found: 683c5e6d1f8ddd0875dd424b, views: 99/0
+2025-06-04T14:39:58.456Z [INFO]: Post views updated: 100/0
+2025-06-04T14:39:58.529Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:39:58.530Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:39:58.542Z [INFO]: Fetching post with ID: 683c5e6d1f8ddd0875dd424b, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T14:39:58.642Z [INFO]: Post found: 683c5e6d1f8ddd0875dd424b, views: 100/0
+2025-06-04T14:39:58.695Z [INFO]: Post views updated: 101/0
+2025-06-04T14:40:50.819Z [INFO]: Fetching post with ID: 683c5e6d1f8ddd0875dd424b, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T14:40:50.837Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:40:50.838Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:40:50.890Z [INFO]: Post found: 683c5e6d1f8ddd0875dd424b, views: 101/0
+2025-06-04T14:40:50.923Z [INFO]: Post views updated: 102/0
+2025-06-04T14:40:50.964Z [INFO]: Fetching post with ID: 683c5e6d1f8ddd0875dd424b, userId: 66dfbd050bdfe18c723f1066
+2025-06-04T14:40:50.991Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:40:50.992Z [INFO]: Fetching comments for post ID: 683c5e6d1f8ddd0875dd424b
+2025-06-04T14:40:51.025Z [INFO]: Post found: 683c5e6d1f8ddd0875dd424b, views: 102/0
+2025-06-04T14:40:51.056Z [INFO]: Post views updated: 103/0

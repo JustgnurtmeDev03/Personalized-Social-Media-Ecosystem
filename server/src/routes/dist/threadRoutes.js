@@ -29,5 +29,6 @@ router["delete"]("/delete/:id", auth_1["default"], threadController_1.deletePost
 router.post("/pin/:id", auth_1["default"], threadController_1.togglePinPost);
 router.get("/reports", auth_1["default"], threadController_1.getReports);
 router.post("/reports/:reportId/ignore", auth_1["default"], threadController_1.ignoreReport);
+router["delete"]("/delete-reported-post/:id", auth_1["default"], threadController_1.deleteReportedPost);
 router.post("/notifications", auth_1["default"], threadController_1.createNotification);
 exports["default"] = router;

@@ -5,6 +5,7 @@ import {
   createThread,
   deletePost,
   deletePostAdmin,
+  deleteReportedPost,
   getLikedThreads,
   getPostById,
   getRecommendedThreads,
@@ -54,6 +55,7 @@ router.delete("/delete/:id", authMiddleware, deletePostAdmin);
 router.post("/pin/:id", authMiddleware, togglePinPost);
 router.get("/reports", authMiddleware, getReports);
 router.post("/reports/:reportId/ignore", authMiddleware, ignoreReport);
+router.delete("/delete-reported-post/:id", authMiddleware, deleteReportedPost);
 router.post("/notifications", authMiddleware, createNotification);
 
 export default router;
