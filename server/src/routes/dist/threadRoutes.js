@@ -22,7 +22,12 @@ router.get("/:id/comments", auth_1["default"], commentController_1.getComments);
 router.get("/:_id/posts", auth_1["default"], threadController_1.getUserPosts);
 router.put("/posts/:id", auth_1["default"], threadController_1.updatePost);
 router["delete"]("/posts/:id", auth_1["default"], threadController_1.deletePost);
+router.post("/not-interested", auth_1["default"], threadController_1.markNotInterested);
+router.post("/report", auth_1["default"], threadController_1.reportPost);
 // Admin
 router["delete"]("/delete/:id", auth_1["default"], threadController_1.deletePostAdmin);
 router.post("/pin/:id", auth_1["default"], threadController_1.togglePinPost);
+router.get("/reports", auth_1["default"], threadController_1.getReports);
+router.post("/reports/:reportId/ignore", auth_1["default"], threadController_1.ignoreReport);
+router.post("/notifications", auth_1["default"], threadController_1.createNotification);
 exports["default"] = router;

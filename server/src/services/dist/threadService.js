@@ -54,11 +54,13 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
     return r;
 };
 exports.__esModule = true;
-exports.processPostContent = exports.RecommendationService = exports.PostService = void 0;
+exports.processPostContent = exports.ReportService = exports.RecommendationService = exports.PostService = void 0;
 var mongoose_1 = require("mongoose");
 var httpStatus_1 = require("~/constants/httpStatus");
 var Follow_1 = require("~/models/Follow");
 var Like_1 = require("~/models/Like");
+var NotInterested_1 = require("~/models/NotInterested");
+var Report_1 = require("~/models/Report");
 var Thread_1 = require("~/models/Thread");
 var comment_1 = require("~/models/comment");
 var httpError_1 = require("~/utils/httpError");
@@ -289,7 +291,7 @@ var RecommendationService = /** @class */ (function () {
                                 .sort({ createdAt: -1 }) // Bài mới nhất trước
                                 .limit(1000) // Giới hạn để tối ưu
                                 .populate("author", "username _id avatar")
-                                .select("content hashtags videos images author createdAt likesCount commentsCount")];
+                                .select("_id content hashtags videos images author createdAt likesCount commentsCount")];
                     case 5:
                         allThreads = _a.sent();
                         timeDecay_1 = function (createdAt) {
@@ -346,6 +348,80 @@ var RecommendationService = /** @class */ (function () {
     return RecommendationService;
 }());
 exports.RecommendationService = RecommendationService;
+var ReportService = /** @class */ (function () {
+    function ReportService() {
+    }
+    ReportService.markNotInterested = function (userId, postId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var post, existing, error_7;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 4, , 5]);
+                        console.log("Checking postId for not interested:", postId);
+                        if (!mongoose_1["default"].Types.ObjectId.isValid(postId)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid postId format");
+                        }
+                        return [4 /*yield*/, Thread_1["default"].findById(postId)];
+                    case 1:
+                        post = _a.sent();
+                        if (!post) {
+                            console.log("Post not found in database for postId:", postId); // Log để debug
+                            throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "Post not found");
+                        }
+                        return [4 /*yield*/, NotInterested_1.NotInterested.findOne({ userId: userId, postId: postId })];
+                    case 2:
+                        existing = _a.sent();
+                        if (existing) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Already marked as not interested");
+                        }
+                        return [4 /*yield*/, NotInterested_1.NotInterested.create({ userId: userId, postId: postId })];
+                    case 3:
+                        _a.sent();
+                        return [3 /*break*/, 5];
+                    case 4:
+                        error_7 = _a.sent();
+                        console.error("Error in markNotInterested:", error_7);
+                        throw error_7;
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ReportService.reportPost = function (userId, postId, reason) {
+        return __awaiter(this, void 0, void 0, function () {
+            var post, error_8;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        console.log("Checking postId for report:", postId);
+                        if (!mongoose_1["default"].Types.ObjectId.isValid(postId)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Invalid postId format");
+                        }
+                        return [4 /*yield*/, Thread_1["default"].findById(postId)];
+                    case 1:
+                        post = _a.sent();
+                        if (!post) {
+                            console.log("Post not found in database for postId:", postId); // Log để debug
+                            throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "Post not found");
+                        }
+                        return [4 /*yield*/, Report_1.Report.create({ userId: userId, postId: postId, reason: reason })];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        error_8 = _a.sent();
+                        console.error("Error in reportPost:", error_8);
+                        throw error_8;
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return ReportService;
+}());
+exports.ReportService = ReportService;
 exports.processPostContent = function (content) {
     var words = content.split(" ");
     var hashtags = [];

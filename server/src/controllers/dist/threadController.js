@@ -47,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.getRecommendedThreads = exports.createThread = exports.getThread = exports.deletePost = exports.updatePost = exports.getUserPosts = exports.getTotalPosts = void 0;
+exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.getRecommendedThreads = exports.createThread = exports.getThread = exports.createNotification = exports.ignoreReport = exports.getReports = exports.reportPost = exports.markNotInterested = exports.deletePost = exports.updatePost = exports.getUserPosts = exports.getTotalPosts = void 0;
 var Thread_1 = require("~/models/Thread");
 var User_1 = require("~/models/User");
 var Hashtag_1 = require("~/models/Hashtag");
@@ -62,6 +62,8 @@ var mongoose_1 = require("mongoose");
 var notificationService_1 = require("~/services/notificationService");
 var Follow_1 = require("~/models/Follow");
 var httpError_1 = require("~/utils/httpError");
+var Report_1 = require("~/models/Report");
+var Notification_1 = require("~/models/Notification");
 var createThread = asyncHandler_1["default"](function (req, res) { return __awaiter(void 0, void 0, Promise, function () {
     var _a, content, _b, visibility, _c, textContent, hashtags, files, uploadedMedia, _loop_1, _i, files_1, file, images, videos, newThread, post, followers, user, _d, followers_1, follower, _e, hashtags_1, hashtag, existingHashtag;
     var _f, _g;
@@ -510,6 +512,65 @@ exports.deletePost = asyncHandler_1["default"](function (req, res, next) { retur
         }
     });
 }); });
+exports.markNotInterested = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var postId, userId, error_9;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                postId = req.body.postId;
+                userId = req.user._id;
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, threadService_1.ReportService.markNotInterested(userId, postId)];
+            case 2:
+                _a.sent();
+                res.status(httpStatus_1["default"].OK).json({ message: "Marked as not interested" });
+                return [3 /*break*/, 4];
+            case 3:
+                error_9 = _a.sent();
+                res.status(error_9.statusCode || httpStatus_1["default"].INTERNAL_SERVER_ERROR).json({
+                    success: false,
+                    error: error_9.message || "Failed to mark as not interested"
+                });
+                return [3 /*break*/, 4];
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
+exports.reportPost = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var _a, postId, reason, userId, error_10;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
+            case 0:
+                _a = req.body, postId = _a.postId, reason = _a.reason;
+                userId = req.user._id;
+                if (!postId) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "postId is required");
+                }
+                if (!reason) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "reason is required");
+                }
+                _b.label = 1;
+            case 1:
+                _b.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, threadService_1.ReportService.reportPost(userId, postId, reason)];
+            case 2:
+                _b.sent();
+                res.status(httpStatus_1["default"].OK).json({ message: "Report submitted" });
+                return [3 /*break*/, 4];
+            case 3:
+                error_10 = _b.sent();
+                console.error("Controller error in reportPost:", error_10);
+                res.status(error_10.statusCode || httpStatus_1["default"].INTERNAL_SERVER_ERROR).json({
+                    success: false,
+                    error: error_10.message || "Failed to submit report"
+                });
+                return [3 /*break*/, 4];
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
 function generateRandomUsername() {
     var words = [
         "cool",
@@ -537,7 +598,7 @@ function generateRandomUsername() {
 }
 // ADMIN FUNCTION
 var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var postId, post, error_9;
+    var postId, post, error_11;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
@@ -560,8 +621,8 @@ var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { retu
                 res.json({ message: "Post deleted successfully" });
                 return [3 /*break*/, 4];
             case 3:
-                error_9 = _c.sent();
-                console.error(error_9);
+                error_11 = _c.sent();
+                console.error(error_11);
                 res.status(500).json({ message: "Error deleting post" });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];
@@ -570,7 +631,7 @@ var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { retu
 }); });
 exports.deletePostAdmin = deletePostAdmin;
 var togglePinPost = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var postId, post, error_10;
+    var postId, post, error_12;
     var _a, _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
@@ -601,8 +662,8 @@ var togglePinPost = asyncHandler_1["default"](function (req, res, next) { return
                 });
                 return [3 /*break*/, 4];
             case 3:
-                error_10 = _d.sent();
-                console.error(error_10);
+                error_12 = _d.sent();
+                console.error(error_12);
                 res.status(500).json({ message: "Error toggling pin status" });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];
@@ -610,3 +671,67 @@ var togglePinPost = asyncHandler_1["default"](function (req, res, next) { return
     });
 }); });
 exports.togglePinPost = togglePinPost;
+exports.getReports = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var reports;
+    var _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                // Kiểm tra xem người dùng có vai trò 'admin' trong mảng roles
+                if (!((_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.roles) === null || _b === void 0 ? void 0 : _b.includes("admin"))) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].FORBIDDEN, "Access denied");
+                }
+                return [4 /*yield*/, Report_1.Report.find()
+                        .populate({
+                        path: "postId",
+                        populate: {
+                            path: "author",
+                            select: "username avatar"
+                        }
+                    })
+                        .populate("userId")];
+            case 1:
+                reports = _c.sent();
+                res.status(httpStatus_1["default"].OK).json(reports);
+                return [2 /*return*/];
+        }
+    });
+}); });
+exports.ignoreReport = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var reportId;
+    var _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                reportId = req.params.reportId;
+                if (!((_b = (_a = req.user) === null || _a === void 0 ? void 0 : _a.roles) === null || _b === void 0 ? void 0 : _b.includes("admin"))) {
+                    throw new httpError_1.HttpError(httpStatus_1["default"].FORBIDDEN, "Access denied");
+                }
+                return [4 /*yield*/, Report_1.Report.findByIdAndDelete(reportId)];
+            case 1:
+                _c.sent();
+                res.status(httpStatus_1["default"].OK).json({ message: "Report ignored" });
+                return [2 /*return*/];
+        }
+    });
+}); });
+exports.createNotification = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var _a, recipient, type, content, relatedPost, notification;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
+            case 0:
+                _a = req.body, recipient = _a.recipient, type = _a.type, content = _a.content, relatedPost = _a.relatedPost;
+                notification = new Notification_1.Notification({
+                    recipient: recipient,
+                    type: type,
+                    content: content,
+                    relatedPost: relatedPost
+                });
+                return [4 /*yield*/, notification.save()];
+            case 1:
+                _b.sent();
+                res.status(httpStatus_1["default"].CREATED).json(notification);
+                return [2 /*return*/];
+        }
+    });
+}); });

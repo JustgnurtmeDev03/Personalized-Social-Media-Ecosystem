@@ -1,15 +1,20 @@
 import express from "express";
 import upload from "~/middlewares/uploadMiddleware";
 import {
+  createNotification,
   createThread,
   deletePost,
   deletePostAdmin,
   getLikedThreads,
   getPostById,
   getRecommendedThreads,
+  getReports,
   getThread,
   getTotalPosts,
   getUserPosts,
+  ignoreReport,
+  markNotInterested,
+  reportPost,
   toggleLike,
   togglePinPost,
   updatePost,
@@ -41,9 +46,14 @@ router.get("/:id/comments", authMiddleware, getComments);
 router.get("/:_id/posts", authMiddleware, getUserPosts);
 router.put("/posts/:id", authMiddleware, updatePost);
 router.delete("/posts/:id", authMiddleware, deletePost);
+router.post("/not-interested", authMiddleware, markNotInterested);
+router.post("/report", authMiddleware, reportPost);
 
 // Admin
 router.delete("/delete/:id", authMiddleware, deletePostAdmin);
 router.post("/pin/:id", authMiddleware, togglePinPost);
+router.get("/reports", authMiddleware, getReports);
+router.post("/reports/:reportId/ignore", authMiddleware, ignoreReport);
+router.post("/notifications", authMiddleware, createNotification);
 
 export default router;

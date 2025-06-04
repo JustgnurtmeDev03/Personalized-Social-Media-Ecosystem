@@ -13,6 +13,7 @@ import { CloudinaryUploadResponse } from "~/models/cloudinary";
 import {
   PostService,
   RecommendationService,
+  ReportService,
   processPostContent,
 } from "~/services/threadService";
 import HTTP_STATUS from "~/constants/httpStatus";
@@ -20,6 +21,9 @@ import mongoose from "mongoose";
 import { NotificationService } from "~/services/notificationService";
 import Follow from "~/models/Follow";
 import { HttpError } from "~/utils/httpError";
+import { NotInterested } from "~/models/NotInterested";
+import { Report } from "~/models/Report";
+import { Notification } from "~/models/Notification";
 
 const createThread = asyncHandler(
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -420,6 +424,48 @@ export const deletePost = asyncHandler(
   }
 );
 
+export const markNotInterested = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const { postId } = req.body;
+    const userId = req.user._id;
+
+    try {
+      await ReportService.markNotInterested(userId, postId);
+      res.status(HTTP_STATUS.OK).json({ message: "Marked as not interested" });
+    } catch (error: any) {
+      res.status(error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: error.message || "Failed to mark as not interested",
+      });
+    }
+  }
+);
+
+export const reportPost = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const { postId, reason } = req.body;
+    const userId = req.user._id;
+
+    if (!postId) {
+      throw new HttpError(HTTP_STATUS.BAD_REQUEST, "postId is required");
+    }
+    if (!reason) {
+      throw new HttpError(HTTP_STATUS.BAD_REQUEST, "reason is required");
+    }
+
+    try {
+      await ReportService.reportPost(userId, postId, reason);
+      res.status(HTTP_STATUS.OK).json({ message: "Report submitted" });
+    } catch (error: any) {
+      console.error("Controller error in reportPost:", error);
+      res.status(error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: error.message || "Failed to submit report",
+      });
+    }
+  }
+);
+
 function generateRandomUsername(): string {
   const words = [
     "cool",
@@ -516,6 +562,53 @@ const togglePinPost = asyncHandler(
       console.error(error);
       res.status(500).json({ message: "Error toggling pin status" });
     }
+  }
+);
+
+export const getReports = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    // Kiểm tra xem người dùng có vai trò 'admin' trong mảng roles
+    if (!req.user?.roles?.includes("admin")) {
+      throw new HttpError(HTTP_STATUS.FORBIDDEN, "Access denied");
+    }
+
+    const reports = await Report.find()
+      .populate({
+        path: "postId",
+        populate: {
+          path: "author",
+          select: "username avatar", // Chỉ lấy username và avatar
+        },
+      })
+      .populate("userId");
+
+    res.status(HTTP_STATUS.OK).json(reports);
+  }
+);
+
+export const ignoreReport = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const { reportId } = req.params;
+    if (!req.user?.roles?.includes("admin")) {
+      throw new HttpError(HTTP_STATUS.FORBIDDEN, "Access denied");
+    }
+
+    await Report.findByIdAndDelete(reportId);
+    res.status(HTTP_STATUS.OK).json({ message: "Report ignored" });
+  }
+);
+
+export const createNotification = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const { recipient, type, content, relatedPost } = req.body;
+    const notification = new Notification({
+      recipient,
+      type,
+      content,
+      relatedPost,
+    });
+    await notification.save();
+    res.status(HTTP_STATUS.CREATED).json(notification);
   }
 );
 

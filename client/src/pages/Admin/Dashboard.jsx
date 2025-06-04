@@ -236,7 +236,7 @@ const AdminDashBoard = () => {
           </button>
         </div>
 
-        <section className="mt-2 bg-white border border-gray-200 rounded-lg max-w-[1200px] grid grid-cols-4 text-center text-xs text-gray-700">
+        <section className="mt-2 bg-white border border-gray-200 rounded-lg max-w-[1200px] grid grid-cols-3 text-center text-xs text-gray-700">
           <div className="border-r border-gray-200 p-4">
             <p className="font-semibold text-black text-lg mb-1">Bài Đăng</p>
             <p className="text-blue-600 font-semibold text-lg mb-1">
@@ -324,29 +324,6 @@ const AdminDashBoard = () => {
               {totalUsers.percentage >= 0
                 ? `+${Math.abs(totalUsers.percentage)}%`
                 : `${totalUsers.percentage}%`}
-            </p>
-          </div>
-
-          <div className="border-r border-gray-200 p-4">
-            <p className="font-semibold text-black text-lg mb-1">Bình Luận</p>
-            <p className="text-blue-600 font-semibold text-lg mb-1">0</p>
-            <p className="flex justify-center items-center gap-1 text-gray-400">
-              <svg
-                aria-hidden="true"
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M17 13l-5 5m0 0l-5-5m5 5V6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                ></path>
-              </svg>
-              -20 (-2.3%)
             </p>
           </div>
 

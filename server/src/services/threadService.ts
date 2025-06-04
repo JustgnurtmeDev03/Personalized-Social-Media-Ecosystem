@@ -2,6 +2,8 @@ import mongoose, { Types } from "mongoose";
 import HTTP_STATUS from "~/constants/httpStatus";
 import Follow from "~/models/Follow";
 import Like from "~/models/Like";
+import { NotInterested } from "~/models/NotInterested";
+import { Report } from "~/models/Report";
 import Thread from "~/models/Thread";
 import Comment from "~/models/comment";
 import { HttpError } from "~/utils/httpError";
@@ -221,7 +223,7 @@ export class RecommendationService {
         .limit(1000) // Giới hạn để tối ưu
         .populate<{ author: IPopulatedAuthor }>("author", "username _id avatar")
         .select(
-          "content hashtags videos images author createdAt likesCount commentsCount"
+          "_id content hashtags videos images author createdAt likesCount commentsCount"
         );
 
       // Hàm giảm điểm theo thời gian
@@ -284,6 +286,56 @@ export class RecommendationService {
       return recommendedThreads;
     } catch (error) {
       console.error("Error in getRecommendedThreads:", error);
+      throw error;
+    }
+  }
+}
+
+export class ReportService {
+  static async markNotInterested(userId: string, postId: string) {
+    try {
+      console.log("Checking postId for not interested:", postId);
+      if (!mongoose.Types.ObjectId.isValid(postId)) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Invalid postId format");
+      }
+
+      const post = await Thread.findById(postId);
+      if (!post) {
+        console.log("Post not found in database for postId:", postId); // Log để debug
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "Post not found");
+      }
+
+      const existing = await NotInterested.findOne({ userId, postId });
+      if (existing) {
+        throw new HttpError(
+          HTTP_STATUS.BAD_REQUEST,
+          "Already marked as not interested"
+        );
+      }
+
+      await NotInterested.create({ userId, postId });
+    } catch (error) {
+      console.error("Error in markNotInterested:", error);
+      throw error;
+    }
+  }
+
+  static async reportPost(userId: string, postId: string, reason: string) {
+    try {
+      console.log("Checking postId for report:", postId);
+      if (!mongoose.Types.ObjectId.isValid(postId)) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Invalid postId format");
+      }
+
+      const post = await Thread.findById(postId);
+      if (!post) {
+        console.log("Post not found in database for postId:", postId); // Log để debug
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "Post not found");
+      }
+
+      await Report.create({ userId, postId, reason });
+    } catch (error) {
+      console.error("Error in reportPost:", error);
       throw error;
     }
   }

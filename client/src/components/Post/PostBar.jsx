@@ -69,8 +69,12 @@ const PostBar = ({ onClick }) => {
   const [selectedMedia, setSelectedMedia] = useState(null);
   const socket = useRef(null);
 
-  console.log("Auth data:", auth);
-  console.log(auth.userId);
+  // State cho menu và báo cáo
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [selectedPostId, setSelectedPostId] = useState(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -126,44 +130,29 @@ const PostBar = ({ onClick }) => {
             (post) => post && typeof post === "object" && post._id
           )
         : [];
-      console.log("Liked Posts Data:", likedPostsData);
 
       const response = await api.get("/recommended", {
         headers: { Authorization: `Bearer ${authToken}` },
       });
-      console.log("Recommended API Response:", response.data);
 
       const recommendedPostsData = Array.isArray(response.data.data)
         ? response.data.data
         : [];
       if (!recommendedPostsData.length) {
-        console.log("Không nhận được bài viết đề xuất từ API.");
         setRecommendedPosts([]);
         return;
       }
 
       const validPosts = recommendedPostsData.filter((post) => {
-        if (!post || typeof post !== "object" || !post._id) {
-          console.warn("Invalid post:", post);
-          return false;
-        }
-        if (
-          !post.author ||
-          typeof post.author !== "object" ||
-          !post.author._id
-        ) {
-          console.warn("Invalid author in post:", post);
-          return false;
-        }
-        return true;
+        return (
+          post &&
+          typeof post === "object" &&
+          post._id &&
+          post.author &&
+          typeof post.author === "object" &&
+          post.author._id
+        );
       });
-      console.log("Valid Posts:", validPosts);
-
-      if (!validPosts.length) {
-        console.log("Không có bài viết hợp lệ sau khi lọc.");
-        setRecommendedPosts([]);
-        return;
-      }
 
       const authorIds = [...new Set(validPosts.map((post) => post.author._id))];
       const authorMap = {};
@@ -177,11 +166,7 @@ const PostBar = ({ onClick }) => {
             const author = await fetchUserProfile(id, {
               headers: { Authorization: `Bearer ${authToken}` },
             });
-            if (!author || typeof author !== "object" || !author._id) {
-              console.warn(`Invalid author data for ID ${id}:`, author);
-              return null;
-            }
-            return author;
+            return author && author._id ? author : null;
           } catch (error) {
             console.error(`Error fetching author ${id}:`, error.message);
             return null;
@@ -193,7 +178,6 @@ const PostBar = ({ onClick }) => {
             authorMap[author._id] = author;
           }
         });
-        console.log("Author Map:", authorMap);
       }
 
       const formattedRecommendedPosts = validPosts.map((post) => {
@@ -218,7 +202,6 @@ const PostBar = ({ onClick }) => {
         };
       });
 
-      console.log("Formatted Recommended Posts:", formattedRecommendedPosts);
       setRecommendedPosts(formattedRecommendedPosts);
       setLikedPosts(likedPostsData.map((post) => post._id).filter(Boolean));
     } catch (error) {
@@ -313,24 +296,6 @@ const PostBar = ({ onClick }) => {
           setLikedPosts((prev) =>
             isLiked ? [...prev, postId] : prev.filter((id) => id !== postId)
           );
-        } else {
-          setRecommendedPosts((prev) =>
-            prev.map((post) =>
-              post._id === postId
-                ? {
-                    ...post,
-                    isLiked: isCurrentlyLiked,
-                    likesCount: post.likesCount,
-                  }
-                : post
-            )
-          );
-          setLikedPosts((prev) =>
-            isCurrentlyLiked
-              ? [...prev, postId]
-              : prev.filter((id) => id !== postId)
-          );
-          console.error("API trả về trạng thái không thành công");
         }
       } catch (error) {
         setRecommendedPosts((prev) =>
@@ -371,11 +336,84 @@ const PostBar = ({ onClick }) => {
     }
   };
 
+  // Hàm xử lý mở menu
+  const openMenu = (e, postId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!postId) {
+      console.error("postId is undefined or null in openMenu");
+      return;
+    }
+    setMenuPosition({ x: e.clientX - 150, y: e.clientY + 10 }); // Điều chỉnh vị trí menu
+    setSelectedPostId(postId);
+    setMenuOpen(true);
+  };
+
+  // Hàm xử lý đóng menu
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setSelectedPostId(null);
+  };
+
+  // Xử lý "Không hứng thú"
+  const handleNotInterested = async (postId) => {
+    if (!postId) {
+      console.error("postId is undefined or null in handleNotInterested");
+      return;
+    }
+    try {
+      await api.post(
+        "/not-interested",
+        { postId },
+        { headers: { Authorization: `Bearer ${auth.accessToken}` } }
+      );
+      setRecommendedPosts((prev) => prev.filter((post) => post._id !== postId));
+    } catch (error) {
+      console.error("Error marking post as not interested:", error);
+    } finally {
+      closeMenu();
+    }
+  };
+
+  // Xử lý "Báo cáo"
+  const handleReport = (e, postId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!postId) {
+      console.error("postId is undefined or null in handleReport");
+      return;
+    }
+    setSelectedPostId(postId);
+    setIsReportModalOpen(true); // Mở modal báo cáo ngay lập tức
+    setMenuOpen(false); // Đóng menu đồng bộ
+  };
+
+  // Xử lý submit báo cáo
+  const submitReport = async () => {
+    if (!selectedPostId || !reportReason) {
+      console.error("Missing selectedPostId or reportReason in submitReport");
+      return;
+    }
+    try {
+      await api.post(
+        "/report",
+        { postId: selectedPostId, reason: reportReason },
+        { headers: { Authorization: `Bearer ${auth.accessToken}` } }
+      );
+      alert("Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét bài viết này.");
+    } catch (error) {
+      console.error("Error submitting report:", error);
+    } finally {
+      setIsReportModalOpen(false);
+      setReportReason("");
+      setSelectedPostId(null);
+    }
+  };
+
   useEffect(() => {
     socket.current = io("http://localhost:8000", { path: "/socket.io" });
     socket.current.on("connect", () => {
       socket.current.emit("getLikedPosts");
-      console.log("Socket.IO connected");
     });
     socket.current.on("likePost", ({ postId, isLiked, likesCount }) => {
       setRecommendedPosts((prev) =>
@@ -389,45 +427,44 @@ const PostBar = ({ onClick }) => {
     });
 
     return () => {
-      if (socket.current) {
-        socket.current.disconnect();
-        console.log("Socket.IO disconnected");
-      }
+      if (socket.current) socket.current.disconnect();
     };
   }, []);
 
   useEffect(() => {
-    if (auth.userId) {
-      fetchUserData();
-    } else {
+    if (auth.userId) fetchUserData();
+    else {
       setUserError("Vui lòng đăng nhập để tiếp tục.");
       setUserLoading(false);
     }
   }, [auth.userId, fetchUserData]);
 
   useEffect(() => {
-    if (userData) {
-      fetchRecommendedPosts();
-    }
+    if (userData) fetchRecommendedPosts();
   }, [userData, fetchRecommendedPosts]);
 
   const preventDefaultDrag = (e) => e.preventDefault();
 
-  if (userLoading || isFollowingLoading) {
-    return <Loading />;
-  }
+  // Xử lý click ngoài để đóng menu
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuOpen && !e.target.closest(".menu-container")) {
+        closeMenu();
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [menuOpen]);
 
-  if (userError || isFollowingError) {
+  if (userLoading || isFollowingLoading) return <Loading />;
+  if (userError || isFollowingError)
     return (
       <p className="text-center text-red-500">
         {userError || "Lỗi khi tải dữ liệu theo dõi"}
       </p>
     );
-  }
-
-  if (!userData) {
+  if (!userData)
     return <p className="text-center">Không tìm thấy thông tin người dùng.</p>;
-  }
 
   return (
     <div className="bg-gray-100 p-4">
@@ -533,7 +570,7 @@ const PostBar = ({ onClick }) => {
                             )}
                             {post.visibility === "friends" && (
                               <img
-                                class="x1b0d499 x1d69dk1"
+                                className="x1b0d499 x1d69dk1"
                                 alt="Bạn bè"
                                 height="14"
                                 width="14"
@@ -542,7 +579,7 @@ const PostBar = ({ onClick }) => {
                             )}
                             {post.visibility === "only_me" && (
                               <img
-                                class="x1b0d499 x1d69dk1"
+                                className="x1b0d499 x1d69dk1"
                                 alt="Chỉ mình tôi"
                                 height="14"
                                 width="14"
@@ -558,6 +595,14 @@ const PostBar = ({ onClick }) => {
                         </div>
                       </div>
                     </div>
+                    <div className="absolute top-2 right-2">
+                      <button
+                        onClick={(e) => openMenu(e, post._id)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <i className="fas fa-ellipsis-h"></i>
+                      </button>
+                    </div>
                   </div>
                   <div className="mb-4">
                     <p className="post-content">{post.content}</p>
@@ -570,7 +615,6 @@ const PostBar = ({ onClick }) => {
                           ))
                         : ""}
                     </p>
-                    <span className="text-gray-500"></span>
                   </div>
                 </Link>
                 {(post.images.length > 0 || post.videos.length > 0) && (
@@ -686,6 +730,39 @@ const PostBar = ({ onClick }) => {
                     </div>
                   </div>
                 </Link>
+                {menuOpen && selectedPostId === post._id && (
+                  <div
+                    className="menu-container absolute bg-white shadow-lg rounded p-2 z-10"
+                    style={{ top: menuPosition.y, left: menuPosition.x }}
+                  >
+                    <button
+                      onClick={() => handleNotInterested(post._id)}
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center"
+                    >
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4.29-9.29c.39.39.39 1.02 0 1.41l-2.83 2.83c-.39.39-1.02.39-1.41 0l-2.83-2.83c-.39-.39-.39-1.02 0-1.41.39-.39 1.02-.39 1.41 0L12 12.59l2.88-2.88c.39-.39 1.02-.39 1.41 0z" />
+                      </svg>
+                      Không hứng thú
+                    </button>
+                    <button
+                      onClick={(e) => handleReport(e, post._id)}
+                      className="block w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100 flex items-center"
+                    >
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+                      </svg>
+                      Báo cáo
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           ) : (
@@ -700,6 +777,106 @@ const PostBar = ({ onClick }) => {
         onClose={() => setIsModalOpen(false)}
         mediaUrl={selectedMedia}
       />
+      {isReportModalOpen && selectedPostId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold">Báo cáo bài viết</h2>
+              <button
+                onClick={() => {
+                  setIsReportModalOpen(false);
+                  setReportReason("");
+                  setSelectedPostId(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <p className="text-gray-600 mb-4">
+              Báo cáo của bạn là ẩn danh. Nếu ai đó đang gặp nguy hiểm, hãy liên
+              hệ với dịch vụ khẩn cấp tại địa phương - đừng chờ đợi.
+            </p>
+            <h3 className="font-semibold mb-2">
+              Tại sao bạn báo cáo bài viết này?
+            </h3>
+            <div className="space-y-2">
+              {[
+                { value: "dislike", label: "Tôi không thích bài viết này" },
+                {
+                  value: "bullying",
+                  label: "Bắt nạt hoặc liên hệ không mong muốn",
+                },
+                {
+                  value: "self_harm",
+                  label: "Tự tử, tự làm hại hoặc rối loạn ăn uống",
+                },
+                {
+                  value: "violence",
+                  label: "Bạo lực, thù địch hoặc khai thác",
+                },
+                {
+                  value: "restricted_items",
+                  label: "Bán hoặc quảng bá các mặt hàng bị hạn chế",
+                },
+                {
+                  value: "nudity",
+                  label: "Ảnh khỏa thân hoặc hoạt động tình dục",
+                },
+                { value: "scam", label: "Lừa đảo, gian lận hoặc thư rác" },
+                { value: "false_info", label: "Thông tin sai lệch" },
+                { value: "intellectual_property", label: "Tài sản trí tuệ" },
+              ].map((option) => (
+                <label
+                  key={option.value}
+                  className="flex items-center p-2 hover:bg-gray-100 rounded cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="report-reason"
+                    value={option.value}
+                    checked={reportReason === option.value}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    className="mr-2 mb-0"
+                  />
+                  <span>{option.label}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => {
+                  setIsReportModalOpen(false);
+                  setReportReason("");
+                  setSelectedPostId(null);
+                }}
+                className="mr-2 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={submitReport}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+                disabled={!reportReason || !selectedPostId}
+              >
+                Gửi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

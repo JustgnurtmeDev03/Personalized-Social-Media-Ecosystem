@@ -106,4 +106,42 @@ export const deletePost = async (postId, accessToken) => {
   }
 };
 
+export const markNotInterested = async (postId, accessToken) => {
+  try {
+    const res = await api.post(
+      "/not-interested",
+      { postId },
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+    return res.data;
+  } catch (error) {
+    console.error(
+      "Error marking post as not interested:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+export const reportPost = async (postId, reason, accessToken) => {
+  try {
+    const res = await api.post(
+      "/report",
+      { postId, reason },
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+    return res.data;
+  } catch (error) {
+    console.error(
+      "Error reporting post:",
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
 export default api;
