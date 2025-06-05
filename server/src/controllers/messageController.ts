@@ -84,3 +84,13 @@ export const addReaction = asyncHandler(
     res.json(updatedMessage);
   }
 );
+
+// Lấy danh sách hội thoại
+export const getConversations = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const currentUserId = (req as any).user.id;
+
+    const conversations = await MessageService.getConversations(currentUserId);
+    res.json(conversations);
+  }
+);

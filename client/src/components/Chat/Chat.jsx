@@ -7,6 +7,7 @@ import {
   sendMessage,
   fetchMessages,
   markMessagesAsRead,
+  addReaction, // Thêm import
 } from "../../services/messageService";
 import { format } from "date-fns";
 import "../../styles/Chat.css";
@@ -28,9 +29,14 @@ const Chat = ({ user, onClose }) => {
 
   useEffect(() => {
     const loadMessages = async () => {
+      console.log(
+        "Fetching messages for user:",
+        user._id,
+        "with token:",
+        auth.accessToken
+      ); // Debug
       try {
         const fetchedMessages = await fetchMessages(user._id, auth.accessToken);
-        // Đảm bảo sắp xếp lại theo thời gian
         setMessages(
           fetchedMessages.sort(
             (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
@@ -71,10 +77,9 @@ const Chat = ({ user, onClose }) => {
 
   const handleSendMessage = async (type, content) => {
     try {
-      // Kiểm tra replyTo trước khi gửi
       if (replyingTo && !replyingTo._id) {
         console.error("replyingTo does not have a valid _id:", replyingTo);
-        setReplyingTo(null); // Reset nếu không hợp lệ
+        setReplyingTo(null);
         return;
       }
 
@@ -111,15 +116,11 @@ const Chat = ({ user, onClose }) => {
 
   const handleAddReaction = async (messageId, reaction) => {
     try {
-      const res = await fetch(`${API_URL}/messages/reaction`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.accessToken}`,
-        },
-        body: JSON.stringify({ messageId, reaction }),
-      });
-      const updatedMessage = await res.json();
+      const updatedMessage = await addReaction(
+        messageId,
+        reaction,
+        auth.accessToken
+      );
       setMessages((prev) =>
         prev.map((msg) => (msg._id === messageId ? updatedMessage : msg))
       );
@@ -168,8 +169,7 @@ const Chat = ({ user, onClose }) => {
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={handleClickOutside}
     >
-      <div className="bg-white rounded-lg w-full max-w-lg h-[80vh] flex flex-col">
-        {/* Header */}
+      <div className="bg-white rounded-lg w-full max-w-2xl h-[80vh] flex flex-col">
         <div className="p-4 border-b flex justify-between items-center">
           <div className="flex items-center">
             <img
@@ -187,7 +187,6 @@ const Chat = ({ user, onClose }) => {
           </button>
         </div>
 
-        {/* Profile Summary */}
         <div className="p-4 border-b text-center">
           <img
             src={user.avatar}
@@ -201,130 +200,132 @@ const Chat = ({ user, onClose }) => {
           </button>
         </div>
 
-        {/* Chat Area */}
         <div className="flex-1 p-4 overflow-y-auto">
-          {messages.map((msg) => (
-            <div key={msg._id} className="mb-4">
-              {/* Hiển thị tin nhắn gốc nếu có phản hồi */}
-              {msg.replyTo && (
+          {messages.length === 0 ? (
+            <div className="text-gray-500 text-center">
+              Chưa có tin nhắn nào. Hãy bắt đầu trò chuyện!
+            </div>
+          ) : (
+            messages.map((msg) => (
+              <div key={msg._id} className="mb-4">
+                {msg.replyTo && (
+                  <div
+                    className={`flex ${
+                      msg.sender._id === auth.userId
+                        ? "justify-end"
+                        : "justify-start"
+                    } mb-1`}
+                  >
+                    {msg.sender._id !== auth.userId && (
+                      <div className="w-8 h-8 mr-2" />
+                    )}
+                    <div className="max-w-[70%]">
+                      <div className="bg-gray-100 p-2 rounded-lg text-xs">
+                        <div className="font-semibold text-gray-600">
+                          {msg.replyTo.sender._id === auth.userId
+                            ? "Bạn"
+                            : msg.replyTo.sender.username}
+                        </div>
+                        <div className="truncate">{msg.replyTo.content}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div
-                  className={`flex ${
+                  className={`flex items-center ${
                     msg.sender._id === auth.userId
                       ? "justify-end"
                       : "justify-start"
-                  } mb-1`}
+                  }`}
+                  onMouseEnter={() => setHoveredMessage(msg._id)}
+                  onMouseLeave={() => setHoveredMessage(null)}
                 >
                   {msg.sender._id !== auth.userId && (
-                    <div className="w-8 h-8 mr-2" />
+                    <img
+                      src={msg.sender.avatar}
+                      alt=""
+                      className="w-8 h-8 rounded-full mr-2"
+                    />
                   )}
-                  <div className="max-w-[70%]">
-                    <div className="bg-gray-100 p-2 rounded-lg text-xs">
-                      <div className="font-semibold text-gray-600">
-                        {msg.replyTo.sender._id === auth.userId
-                          ? "Bạn"
-                          : msg.replyTo.sender.username}
-                      </div>
-                      <div className="truncate">{msg.replyTo.content}</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {/* Tin nhắn hiện tại */}
-              <div
-                className={`flex items-center ${
-                  msg.sender._id === auth.userId
-                    ? "justify-end"
-                    : "justify-start"
-                }`}
-                onMouseEnter={() => setHoveredMessage(msg._id)}
-                onMouseLeave={() => setHoveredMessage(null)}
-              >
-                {msg.sender._id !== auth.userId && (
-                  <img
-                    src={msg.sender.avatar}
-                    alt=""
-                    className="w-8 h-8 rounded-full mr-2"
-                  />
-                )}
-                <div className="flex flex-col items-end">
-                  <div className="flex items-center">
-                    {msg.type === "text" ? (
-                      <span
-                        className={`p-3 rounded-2xl ${
-                          msg.sender._id === auth.userId
-                            ? "bg-blue-500 text-white"
-                            : "bg-white text-gray-800 shadow-sm"
-                        }`}
-                      >
-                        {msg.content}
-                      </span>
-                    ) : (
-                      <img
-                        src={msg.content}
-                        alt=""
-                        className="max-w-full rounded-lg"
-                      />
-                    )}
-                    {hoveredMessage === msg._id && (
-                      <div
-                        className={`flex space-x-2 ml-2 ${
-                          msg.sender._id === auth.userId ? "order-first" : ""
-                        }`}
-                      >
-                        <button
-                          onClick={(e) => handleEmojiClick(msg._id, e)}
-                          className="emoji-btn text-gray-500 hover:text-blue-500"
-                        >
-                          😊
-                        </button>
-                        <button
-                          onClick={() => setReplyingTo(msg)}
-                          className="text-gray-500 hover:text-blue-500"
-                        >
-                          <svg
-                            className="w-5 h-5 mr-2"
-                            aria-label="Reply to message"
-                            fill="currentColor"
-                            height="16"
-                            role="img"
-                            viewBox="0 0 24 24"
-                            width="16"
-                          >
-                            <path d="M14 8.999H4.413l5.294-5.292a1 1 0 1 0-1.414-1.414l-7 6.998c-.014.014-.019.033-.032.048A.933.933 0 0 0 1 9.998V10c0 .027.013.05.015.076a.907.907 0 0 0 .282.634l6.996 6.998a1 1 0 0 0 1.414-1.414L4.415 11H14a7.008 7.008 0 0 1 7 7v3.006a1 1 0 0 0 2 0V18a9.01 9.01 0 0 0-9-9Z"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1 flex justify-center w-full">
-                    {formatTime(msg.createdAt)}
-                  </div>
-                  {msg.reactions && msg.reactions.length > 0 && (
-                    <div className="text-sm mt-1 flex justify-end items-center space-x-1">
-                      {Object.entries(
-                        msg.reactions.reduce((acc, r) => {
-                          acc[r.reaction] = (acc[r.reaction] || 0) + 1;
-                          return acc;
-                        }, {})
-                      ).map(([reaction, count]) => (
+                  <div className="flex flex-col items-end">
+                    <div className="flex items-center">
+                      {msg.type === "text" ? (
                         <span
-                          key={reaction}
-                          className="bg-gray-100 rounded-full px-2 py-1 flex items-center space-x-1 reaction-container"
+                          className={`p-3 rounded-2xl ${
+                            msg.sender._id === auth.userId
+                              ? "bg-blue-500 text-white"
+                              : "bg-white text-gray-800 shadow-sm"
+                          }`}
                         >
-                          <span>{reaction}</span>
-                          {count > 1 && <span>{count}</span>}
+                          {msg.content}
                         </span>
-                      ))}
+                      ) : (
+                        <img
+                          src={msg.content}
+                          alt=""
+                          className="max-w-full rounded-lg"
+                        />
+                      )}
+                      {hoveredMessage === msg._id && (
+                        <div
+                          className={`flex space-x-2 ml-2 ${
+                            msg.sender._id === auth.userId ? "order-first" : ""
+                          }`}
+                        >
+                          <button
+                            onClick={(e) => handleEmojiClick(msg._id, e)}
+                            className="emoji-btn text-gray-500 hover:text-blue-500"
+                          >
+                            😊
+                          </button>
+                          <button
+                            onClick={() => setReplyingTo(msg)}
+                            className="text-gray-500 hover:text-blue-500"
+                          >
+                            <svg
+                              className="w-5 h-5 mr-2"
+                              aria-label="Reply to message"
+                              fill="currentColor"
+                              height="16"
+                              role="img"
+                              viewBox="0 0 24 24"
+                              width="16"
+                            >
+                              <path d="M14 8.999H4.413l5.294-5.292a1 1 0 1 0-1.414-1.414l-7 6.998c-.014.014-.019.033-.032.048A.933.933 0 0 0 1 9.998V10c0 .027.013.05.015.076a.907.907 0 0 0 .282.634l6.996 6.998a1 1 0 0 0 1.414-1.414L4.415 11H14a7.008 7.008 0 0 1 7 7v3.006a1 1 0 0 0 2 0V18a9.01 9.01 0 0 0-9-9Z"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <div className="text-xs text-gray-500 mt-1 flex justify-center w-full">
+                      {formatTime(msg.createdAt)}
+                    </div>
+                    {msg.reactions && msg.reactions.length > 0 && (
+                      <div className="text-sm mt-1 flex justify-end items-center space-x-1">
+                        {Object.entries(
+                          msg.reactions.reduce((acc, r) => {
+                            acc[r.reaction] = (acc[r.reaction] || 0) + 1;
+                            return acc;
+                          }, {})
+                        ).map(([reaction, count]) => (
+                          <span
+                            key={reaction}
+                            className="bg-gray-100 rounded-full px-2 py-1 flex items-center space-x-1 reaction-container"
+                          >
+                            <span>{reaction}</span>
+                            {count > 1 && <span>{count}</span>}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Emoji Picker */}
         {showEmojiPicker && (
           <div className="absolute bg-white border rounded-lg shadow-lg p-2 z-50 emoji-picker top-[58%] left-[48%] transform -translate-x-1/2 -translate-y-1/2">
             <div className="flex space-x-2">
@@ -341,7 +342,6 @@ const Chat = ({ user, onClose }) => {
           </div>
         )}
 
-        {/* Input Area */}
         <div className="p-4 border-t flex flex-col">
           {replyingTo && (
             <div className="bg-gray-100 p-2 rounded-lg mb-2 text-xs flex justify-between items-center">

@@ -13,6 +13,7 @@ import { ModalProvider } from "../providers/ModalContext";
 import AdminLayout from "../layouts/Admin/AdminLayout";
 import { useAuth } from "../providers/AuthContext";
 import PostDetail from "../components/Post/PostDetail";
+import Messages from "../pages/Messages/Messages";
 
 const AUTO_LOGOUT_TIME = 60 * 60 * 1000; // 60 phút
 
@@ -135,6 +136,15 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute
               element={Profile}
+              isAuthenticated={!!isAuthenticated}
+            />
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute
+              element={Messages}
               isAuthenticated={!!isAuthenticated}
             />
           }

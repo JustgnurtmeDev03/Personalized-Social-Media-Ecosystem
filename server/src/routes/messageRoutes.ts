@@ -5,6 +5,7 @@ import {
   getMessages,
   markAsRead,
   addReaction,
+  getConversations,
 } from "../controllers/messageController";
 import multer from "multer"; // Để xử lý upload file
 import authMiddleware from "~/middlewares/auth";
@@ -18,8 +19,9 @@ router.post(
   authMiddleware,
   sendMessage
 ); // Gửi tin nhắn (có thể kèm ảnh)
-router.get("/:userId", authMiddleware, getMessages); // Lấy tin nhắn
-router.put("/:userId/read", authMiddleware, markAsRead); // Đánh dấu đã đọc
+router.get("/conversations", authMiddleware, getConversations);
+router.get("/:userId", authMiddleware, getMessages);
+router.put("/:userId/read", authMiddleware, markAsRead);
 router.post("/reaction", authMiddleware, addReaction);
 
 export default router;

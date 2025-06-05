@@ -1,0 +1,30 @@
+.messages-container {
+  display: flex;
+  height: 100vh;
+}
+
+.conversations-list {
+  width: 33.333%;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+}
+
+.chat-area {
+  width: 66.667%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.emoji-picker {
+  position: absolute;
+}
+
+.reaction-container {
+  font-size: 14px;
+  padding: 2px 6px;
+}
+
+.reaction-container:hover {
+  background-color: #e5e7eb;
+}

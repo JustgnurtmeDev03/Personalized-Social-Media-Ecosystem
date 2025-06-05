@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.addReaction = exports.markAsRead = exports.getMessages = exports.sendMessage = void 0;
+exports.getConversations = exports.addReaction = exports.markAsRead = exports.getMessages = exports.sendMessage = void 0;
 var asyncHandler_1 = require("~/middlewares/asyncHandler");
 var messageService_1 = require("../services/messageService");
 var cloudinary_1 = require("../config/cloudinary");
@@ -124,6 +124,21 @@ exports.addReaction = asyncHandler_1["default"](function (req, res, next) { retu
             case 1:
                 updatedMessage = _b.sent();
                 res.json(updatedMessage);
+                return [2 /*return*/];
+        }
+    });
+}); });
+// Lấy danh sách hội thoại
+exports.getConversations = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var currentUserId, conversations;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                currentUserId = req.user.id;
+                return [4 /*yield*/, messageService_1.MessageService.getConversations(currentUserId)];
+            case 1:
+                conversations = _a.sent();
+                res.json(conversations);
                 return [2 /*return*/];
         }
     });

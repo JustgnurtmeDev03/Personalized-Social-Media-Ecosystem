@@ -99,17 +99,21 @@ var MessageService = /** @class */ (function () {
     // Lấy lịch sử tin nhắn giữa hai người dùng
     MessageService.getMessages = function (userId, currentUserId) {
         return __awaiter(this, void 0, Promise, function () {
-            var messages, error_2;
+            var messages;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
+                        console.log("getMessages called with userId:", userId, "currentUserId:", currentUserId);
                         if (!userId || !currentUserId) {
                             throw new Error("Missing required fields: userId or currentUserId");
                         }
-                        if (!mongoose_1.Types.ObjectId.isValid(userId) ||
-                            !mongoose_1.Types.ObjectId.isValid(currentUserId)) {
-                            throw new Error("Invalid userId or currentUserId format");
+                        if (!mongoose_1.Types.ObjectId.isValid(userId)) {
+                            console.error("Invalid userId format:", userId);
+                            throw new Error("Invalid userId format");
+                        }
+                        if (!mongoose_1.Types.ObjectId.isValid(currentUserId)) {
+                            console.error("Invalid currentUserId format:", currentUserId);
+                            throw new Error("Invalid currentUserId format");
                         }
                         return [4 /*yield*/, Message_1["default"].find({
                                 $or: [
@@ -118,16 +122,13 @@ var MessageService = /** @class */ (function () {
                                 ]
                             })
                                 .sort({ createdAt: 1 })
-                                .populate("sender", "username avatar")
-                                .populate("recipient", "username avatar")
+                                .populate("sender", "username avatar name")
+                                .populate("recipient", "username avatar name")
                                 .populate("replyTo", "content sender")];
                     case 1:
                         messages = _a.sent();
+                        console.log("Messages found:", messages.length);
                         return [2 /*return*/, messages];
-                    case 2:
-                        error_2 = _a.sent();
-                        throw new Error("Failed to fetch messages: " + error_2.message);
-                    case 3: return [2 /*return*/];
                 }
             });
         });
@@ -135,7 +136,7 @@ var MessageService = /** @class */ (function () {
     // Đánh dấu tin nhắn là đã đọc
     MessageService.markMessagesAsRead = function (senderId, recipientId) {
         return __awaiter(this, void 0, Promise, function () {
-            var error_3;
+            var error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -152,8 +153,8 @@ var MessageService = /** @class */ (function () {
                         _a.sent();
                         return [3 /*break*/, 3];
                     case 2:
-                        error_3 = _a.sent();
-                        throw new Error("Failed to mark messages as read: " + error_3.message);
+                        error_2 = _a.sent();
+                        throw new Error("Failed to mark messages as read: " + error_2.message);
                     case 3: return [2 /*return*/];
                 }
             });
@@ -162,7 +163,7 @@ var MessageService = /** @class */ (function () {
     // Thêm biểu cảm (reaction) cho tin nhắn
     MessageService.addReaction = function (messageId, userId, reaction) {
         return __awaiter(this, void 0, Promise, function () {
-            var message, existingReaction, updatedMessage, error_4;
+            var message, existingReaction, updatedMessage, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -200,9 +201,88 @@ var MessageService = /** @class */ (function () {
                         updatedMessage = _a.sent();
                         return [2 /*return*/, updatedMessage];
                     case 4:
-                        error_4 = _a.sent();
-                        throw new Error("Failed to add reaction: " + error_4.message);
+                        error_3 = _a.sent();
+                        throw new Error("Failed to add reaction: " + error_3.message);
                     case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    // Lấy danh sách hội thoại
+    MessageService.getConversations = function (currentUserId) {
+        return __awaiter(this, void 0, Promise, function () {
+            var messages, conversationMap, _i, messages_1, message, otherUserId, otherUser, existing, conversations, error_4;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        if (!currentUserId) {
+                            throw new Error("Missing required field: currentUserId");
+                        }
+                        if (!mongoose_1.Types.ObjectId.isValid(currentUserId)) {
+                            throw new Error("Invalid currentUserId format");
+                        }
+                        return [4 /*yield*/, Message_1["default"].find({
+                                $or: [{ sender: currentUserId }, { recipient: currentUserId }]
+                            })
+                                .sort({ createdAt: -1 })
+                                .populate("sender", "name username avatar")
+                                .populate("recipient", "name username avatar")];
+                    case 1:
+                        messages = _a.sent();
+                        conversationMap = new Map();
+                        for (_i = 0, messages_1 = messages; _i < messages_1.length; _i++) {
+                            message = messages_1[_i];
+                            otherUserId = message.sender._id.toString() === currentUserId
+                                ? message.recipient._id.toString()
+                                : message.sender._id.toString();
+                            otherUser = message.sender._id.toString() === currentUserId
+                                ? message.recipient
+                                : message.sender;
+                            if (!conversationMap.has(otherUserId)) {
+                                conversationMap.set(otherUserId, {
+                                    user: otherUser,
+                                    lastMessage: message,
+                                    messages: [message]
+                                });
+                            }
+                            else {
+                                existing = conversationMap.get(otherUserId);
+                                existing.messages.push(message);
+                                if (new Date(message.createdAt) >
+                                    new Date(existing.lastMessage.createdAt)) {
+                                    existing.lastMessage = message;
+                                }
+                            }
+                        }
+                        conversations = Array.from(conversationMap.values()).map(function (conv) {
+                            var unreadCount = conv.messages.filter(function (msg) {
+                                return msg.sender._id.toString() !== currentUserId && !msg.isRead;
+                            }).length;
+                            return {
+                                user: {
+                                    _id: conv.user._id,
+                                    name: conv.user.name,
+                                    username: conv.user.username,
+                                    avatar: conv.user.avatar
+                                },
+                                lastMessage: {
+                                    content: conv.lastMessage.content,
+                                    createdAt: conv.lastMessage.createdAt
+                                },
+                                unreadCount: unreadCount
+                            };
+                        });
+                        // Sắp xếp hội thoại theo thời gian tin nhắn cuối cùng (mới nhất trước)
+                        conversations.sort(function (a, b) {
+                            return new Date(b.lastMessage.createdAt).getTime() -
+                                new Date(a.lastMessage.createdAt).getTime();
+                        });
+                        return [2 /*return*/, conversations];
+                    case 2:
+                        error_4 = _a.sent();
+                        throw new Error("Failed to fetch conversations: " + error_4.message);
+                    case 3: return [2 /*return*/];
                 }
             });
         });

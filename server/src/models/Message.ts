@@ -1,17 +1,17 @@
-import { Schema, Types, model } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-interface IMessage {
-  sender: Types.ObjectId;
-  recipient: Types.ObjectId;
+export interface IMessage extends Document {
+  sender: mongoose.Types.ObjectId;
+  recipient: mongoose.Types.ObjectId;
   type: "text" | "image" | "gif" | "sticker";
   content: string;
-  replyTo?: Types.ObjectId; // Trường mới để lưu tin nhắn gốc khi reply
-  reactions: { user: Types.ObjectId; reaction: string }[]; // Trường mới để lưu reactions
-  createdAt: Date;
+  replyTo?: mongoose.Types.ObjectId;
+  reactions: { user: mongoose.Types.ObjectId; reaction: string }[];
   isRead: boolean;
+  createdAt: Date;
 }
 
-const messageSchema = new Schema<IMessage>({
+const MessageSchema: Schema = new Schema({
   sender: { type: Schema.Types.ObjectId, ref: "User", required: true },
   recipient: { type: Schema.Types.ObjectId, ref: "User", required: true },
   type: {
@@ -20,16 +20,15 @@ const messageSchema = new Schema<IMessage>({
     required: true,
   },
   content: { type: String, required: true },
-  replyTo: { type: Schema.Types.ObjectId, ref: "Message" }, // Liên kết đến tin nhắn gốc
+  replyTo: { type: Schema.Types.ObjectId, ref: "Message" },
   reactions: [
     {
-      user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-      reaction: { type: String, required: true },
+      user: { type: Schema.Types.ObjectId, ref: "User" },
+      reaction: { type: String },
     },
   ],
-  createdAt: { type: Date, default: Date.now },
   isRead: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
 });
 
-const Message = model<IMessage>("Message", messageSchema);
-export default Message;
+export default mongoose.model<IMessage>("Message", MessageSchema);
