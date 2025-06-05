@@ -23,6 +23,7 @@ import { API_URL } from "../../services/threadService";
 import { fetchNotifications } from "../../services/notificationService";
 import EditPostModal from "../../pages/Profile/EditPostModal";
 import api from "../../services/threadService";
+import Chat from "../../components/Chat/Chat";
 
 export default function Profile() {
   const POLLING_INTERVAL = 30000;
@@ -44,8 +45,9 @@ export default function Profile() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // Thêm state cho modal xác nhận xóa
-  const [deletingPostId, setDeletingPostId] = useState(null); // ID bài viết cần xóa
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deletingPostId, setDeletingPostId] = useState(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     if (!auth.accessToken) {
@@ -335,7 +337,7 @@ export default function Profile() {
 
   const handleDelete = (postId) => {
     setDeletingPostId(postId);
-    setIsDeleteConfirmOpen(true); // Mở modal xác nhận
+    setIsDeleteConfirmOpen(true);
     closeMenu();
   };
 
@@ -358,6 +360,14 @@ export default function Profile() {
   const cancelDelete = () => {
     setIsDeleteConfirmOpen(false);
     setDeletingPostId(null);
+  };
+
+  const handleOpenChat = () => {
+    setIsChatOpen(true);
+  };
+
+  const handleCloseChat = () => {
+    setIsChatOpen(false);
   };
 
   if (
@@ -559,7 +569,10 @@ export default function Profile() {
                 >
                   {isFollowing ? "Đang theo dõi" : "Theo dõi"}
                 </button>
-                <button className="w-[300px] message-button bg-gray-200 text-black px-4 py-2 rounded-full hover:bg-gray-300">
+                <button
+                  onClick={handleOpenChat}
+                  className="w-[300px] message-button bg-gray-200 text-black px-4 py-2 rounded-full hover:bg-gray-300"
+                >
                   Nhắn tin
                 </button>
               </div>
@@ -781,7 +794,6 @@ export default function Profile() {
                 )}
               </div>
             )}
-            {/* Modal xác nhận xóa bài viết */}
             {isDeleteConfirmOpen && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
                 <div className="bg-white rounded-lg w-full max-w-xs p-6 shadow-lg">
@@ -809,6 +821,7 @@ export default function Profile() {
                 </div>
               </div>
             )}
+            {isChatOpen && <Chat user={userData} onClose={handleCloseChat} />}
           </div>
         </div>
       </div>

@@ -1,6 +1,9 @@
 import dotenv from "dotenv";
 import app from "./app";
+const http = require("http").createServer(app);
+const io = require("./middlewares/socket")(http);
 
+app.set("io", io);
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {

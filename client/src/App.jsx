@@ -4,6 +4,7 @@ import AppRoutes from "./routes/AppRoutes";
 import axios from "axios";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./providers/AuthContext";
+import { SocketProvider } from "./providers/socketContext";
 
 const QueryClientInstance = new QueryClient();
 
@@ -27,7 +28,9 @@ function App() {
     <QueryClientProvider client={QueryClientInstance}>
       <Router>
         <AuthProvider>
-          <AuthenticationApp />
+          <SocketProvider>
+            <AuthenticationApp />
+          </SocketProvider>
         </AuthProvider>
       </Router>
     </QueryClientProvider>

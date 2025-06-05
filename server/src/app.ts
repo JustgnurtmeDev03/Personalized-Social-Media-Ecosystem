@@ -8,6 +8,7 @@ import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import threadRoutes from "./routes/threadRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
+import messageRoutes from "./routes/messageRoutes";
 import { errorHandler } from "./middlewares/errorMiddleware";
 import { AppError } from "./utils/AppError";
 import { checkCloudinaryConnection } from "./config/cloudinary";
@@ -47,6 +48,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/threads", threadRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/messages", messageRoutes);
 
 // Xử lý route không tìm thấy
 app.all("*", (req, res, next) => {
