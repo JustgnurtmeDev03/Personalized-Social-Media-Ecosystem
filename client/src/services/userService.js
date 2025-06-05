@@ -18,19 +18,25 @@ export const fetchUserProfile = async (userId, options) => {
   }
 };
 
-export const fetchAllUsers = async (options) => {
+export const fetchAllUsers = async (options = {}) => {
   try {
-    const res = await axios.get(`${API_URL}/get-users`, options);
-
+    const { method = "GET", url = "/get-users", data, headers } = options;
+    const res = await axios({
+      method,
+      url: `${API_URL}${url}`,
+      data,
+      headers,
+    });
     // Kiểm tra dữ liệu trả về
-    if (res.data && Array.isArray(res.data.users)) {
-      return res.data.users;
-    } else {
-      throw new Error("Invalid response format: Expected 'users' array");
+    if (!res.data || !Array.isArray(res.data.users)) {
+      throw new Error(
+        "Dữ liệu trả về không đúng định dạng: Expected 'users' array"
+      );
     }
+    return res.data;
   } catch (error) {
-    console.error("Error fetching all users:", error.message);
-    throw error; // Để xử lý lỗi ở nơi gọi hàm
+    console.error("Error in fetchAllUsers:", error);
+    throw error;
   }
 };
 
@@ -178,6 +184,91 @@ export const removeFollower = async (followerId, followeeId, options) => {
     return res.data;
   } catch (error) {
     console.error("Error unfollowing user:", error);
+    throw error;
+  }
+};
+
+export const fetchTopUsers = async (accessToken, limit = 10) => {
+  try {
+    if (!accessToken) {
+      throw new Error("No access token provided");
+    }
+
+    console.log("Sending request to fetch top users with token:", accessToken);
+    const res = await axios.get(`${API_URL}/top-interactors?limit=${limit}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    console.log("fetchTopUsers response:", res.data);
+    if (res.data && res.data.topUsers) {
+      return res.data;
+    } else {
+      throw new Error("Invalid response format: " + JSON.stringify(res.data));
+    }
+  } catch (error) {
+    console.error(
+      "Error fetching top users:",
+      error.response?.data || error.message
+    );
+    if (error.response?.data?.error === "Please authenticate") {
+      throw new Error("Authentication failed. Please log in again.");
+    }
+    throw error;
+  }
+};
+
+export const createUser = async (userData, accessToken) => {
+  try {
+    const formData = new FormData();
+    for (const key in userData) {
+      formData.append(key, userData[key]);
+    }
+    const res = await fetchAllUsers({
+      method: "POST",
+      url: "/users",
+      data: formData,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return res.user;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateUser = async (userId, userData, accessToken) => {
+  try {
+    const formData = new FormData();
+    for (const key in userData) {
+      formData.append(key, userData[key]);
+    }
+    const res = await fetchAllUsers({
+      method: "PUT",
+      url: `/users/${userId}`,
+      data: formData,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return res.user;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const deleteUser = async (userId, accessToken) => {
+  try {
+    await fetchAllUsers({
+      method: "DELETE",
+      url: `/users/${userId}`,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  } catch (error) {
     throw error;
   }
 };

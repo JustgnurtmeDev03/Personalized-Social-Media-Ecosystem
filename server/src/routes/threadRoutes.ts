@@ -6,12 +6,14 @@ import {
   deletePost,
   deletePostAdmin,
   deleteReportedPost,
+  getChartData,
   getLikedThreads,
   getPostById,
   getRecommendedThreads,
   getReports,
   getThread,
   getTotalPosts,
+  getTotalReportedPosts,
   getUserPosts,
   ignoreReport,
   markNotInterested,
@@ -57,5 +59,7 @@ router.get("/reports", authMiddleware, getReports);
 router.post("/reports/:reportId/ignore", authMiddleware, ignoreReport);
 router.delete("/delete-reported-post/:id", authMiddleware, deleteReportedPost);
 router.post("/notifications", authMiddleware, createNotification);
+router.get("/total-reported-posts", authMiddleware, getTotalReportedPosts);
+router.get("/chart-data", authMiddleware, getChartData);
 
 export default router;

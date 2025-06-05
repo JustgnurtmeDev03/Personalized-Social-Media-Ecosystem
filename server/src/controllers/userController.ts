@@ -177,3 +177,23 @@ export const getTotalUsers = asyncHandler(
     }
   }
 );
+
+export const getTopUsers = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const topUsers = await UserService.getTopUsers(limit);
+      res.status(HTTP_STATUS.OK).json({
+        topUsers,
+      });
+    } catch (error: any) {
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .send({ error: "Failed to fetch top users" });
+    }
+  }
+);

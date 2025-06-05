@@ -31,4 +31,6 @@ router.get("/reports", auth_1["default"], threadController_1.getReports);
 router.post("/reports/:reportId/ignore", auth_1["default"], threadController_1.ignoreReport);
 router["delete"]("/delete-reported-post/:id", auth_1["default"], threadController_1.deleteReportedPost);
 router.post("/notifications", auth_1["default"], threadController_1.createNotification);
+router.get("/total-reported-posts", auth_1["default"], threadController_1.getTotalReportedPosts);
+router.get("/chart-data", auth_1["default"], threadController_1.getChartData);
 exports["default"] = router;

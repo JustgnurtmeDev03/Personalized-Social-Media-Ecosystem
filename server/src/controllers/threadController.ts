@@ -11,6 +11,7 @@ import Like from "~/models/Like";
 import cloudinary from "~/config/cloudinary";
 import { CloudinaryUploadResponse } from "~/models/cloudinary";
 import {
+  ChartService,
   PostService,
   RecommendationService,
   ReportService,
@@ -24,6 +25,7 @@ import { HttpError } from "~/utils/httpError";
 import { NotInterested } from "~/models/NotInterested";
 import { Report } from "~/models/Report";
 import { Notification } from "~/models/Notification";
+import { UserService } from "~/services/userService";
 
 const createThread = asyncHandler(
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -683,6 +685,83 @@ export const deleteReportedPost = asyncHandler(
           error.statusCode || 500
         )
       );
+    }
+  }
+);
+
+export const getTotalReportedPosts = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const totalReportedPosts = await ReportService.getTotalReportedPosts();
+      res.status(HTTP_STATUS.OK).json({
+        totalReportedPosts,
+      });
+    } catch (error: any) {
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .send({ error: "Failed to fetch reported posts totals" });
+    }
+  }
+);
+
+// Lấy dữ liệu biểu đồ
+export const getChartData = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const chartData = await ChartService.getChartData(days);
+      res.status(HTTP_STATUS.OK).json(chartData);
+    } catch (error: any) {
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .send({ error: "Failed to fetch chart data" });
+    }
+  }
+);
+
+export const createUser = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userData = req.body;
+      if (req.file) {
+        userData.avatar = req.file.path; // Lưu đường dẫn file avatar
+      }
+      const newUser = await UserService.createUser(userData);
+      res.status(HTTP_STATUS.CREATED).json({
+        user: newUser,
+      });
+    } catch (error: any) {
+      res.status(error.status || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        error: error.message || "Không thể tạo người dùng mới",
+      });
+    }
+  }
+);
+
+export const updateUser = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.params.userId;
+      const updateData = req.body;
+      if (req.file) {
+        updateData.avatar = req.file.path; // Cập nhật avatar nếu có file upload
+      }
+      const updatedUser = await UserService.updateUser(userId, updateData);
+      res.status(HTTP_STATUS.OK).json({
+        user: updatedUser,
+      });
+    } catch (error: any) {
+      res.status(error.status || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        error: error.message || "Không thể cập nhật người dùng",
+      });
     }
   }
 );

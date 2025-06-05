@@ -5,6 +5,7 @@ import Like from "~/models/Like";
 import { NotInterested } from "~/models/NotInterested";
 import { Report } from "~/models/Report";
 import Thread from "~/models/Thread";
+import User from "~/models/User";
 import Comment from "~/models/comment";
 import { HttpError } from "~/utils/httpError";
 import logger from "~/utils/logger";
@@ -337,6 +338,132 @@ export class ReportService {
     } catch (error) {
       console.error("Error in reportPost:", error);
       throw error;
+    }
+  }
+
+  static async getTotalReportedPosts(): Promise<{
+    current: number;
+    previous: number;
+  }> {
+    try {
+      const currentDate = new Date();
+      const sevenDaysAgo = new Date(currentDate);
+      sevenDaysAgo.setDate(currentDate.getDate() - 7);
+
+      const currentReportedPosts = await Report.countDocuments();
+      const previousReportedPosts = await Report.countDocuments({
+        createdAt: { $lt: sevenDaysAgo },
+      });
+
+      return {
+        current: currentReportedPosts,
+        previous: previousReportedPosts,
+      };
+    } catch (error: any) {
+      logger.error(`Get total reported posts service error: ${error.message}`, {
+        error,
+      });
+      throw new HttpError(
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Internal server error"
+      );
+    }
+  }
+}
+
+export class ChartService {
+  static async getChartData(days: number = 30): Promise<{
+    labels: string[];
+    posts: number[];
+    users: number[];
+    reportedPosts: number[];
+  }> {
+    try {
+      const currentDate = new Date();
+      const startDate = new Date(currentDate);
+      startDate.setDate(currentDate.getDate() - days);
+
+      // Tạo mảng labels (ngày) với định dạng %d/%m/%Y
+      const labels = [];
+      for (let i = 0; i < days; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        const formattedDate = `${date.getDate().toString().padStart(2, "0")}/${(
+          date.getMonth() + 1
+        )
+          .toString()
+          .padStart(2, "0")}/${date.getFullYear()}`;
+        labels.push(formattedDate);
+      }
+
+      console.log("Labels generated:", labels);
+      console.log("Date range:", { startDate, currentDate });
+
+      // Lấy dữ liệu bài đăng
+      const postsData = await Thread.aggregate([
+        {
+          $match: { createdAt: { $gte: startDate, $lte: currentDate } },
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%d/%m/%Y", date: "$createdAt" } },
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      // Lấy dữ liệu người dùng
+      const usersData = await User.aggregate([
+        {
+          $match: { createdAt: { $gte: startDate, $lte: currentDate } },
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%d/%m/%Y", date: "$createdAt" } },
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      // Lấy dữ liệu bài viết bị báo cáo
+      const reportedPostsData = await Report.aggregate([
+        {
+          $match: { createdAt: { $gte: startDate, $lte: currentDate } },
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%d/%m/%Y", date: "$createdAt" } },
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      console.log("Posts data:", postsData);
+      console.log("Users data:", usersData);
+      console.log("Reported posts data:", reportedPostsData);
+
+      // Tạo mảng dữ liệu cho biểu đồ
+      const posts = labels.map((label) => {
+        const found = postsData.find((item) => item._id === label);
+        return found ? found.count : 0;
+      });
+      const users = labels.map((label) => {
+        const found = usersData.find((item) => item._id === label);
+        return found ? found.count : 0;
+      });
+      const reportedPosts = labels.map((label) => {
+        const found = reportedPostsData.find((item) => item._id === label);
+        return found ? found.count : 0;
+      });
+
+      console.log("Final chart data:", { labels, posts, users, reportedPosts });
+      return { labels, posts, users, reportedPosts };
+    } catch (error: any) {
+      logger.error(`Get chart data service error: ${error.message}`, { error });
+      throw new HttpError(
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        "Internal server error"
+      );
     }
   }
 }

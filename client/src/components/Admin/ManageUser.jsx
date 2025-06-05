@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import { fetchAllUsers } from "../../services/userService";
+import {
+  fetchAllUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+} from "../../services/userService";
 import Authentication from "./Authentication";
 
 const ManageUsers = () => {
@@ -15,6 +20,7 @@ const ManageUsers = () => {
     name: "",
     username: "",
     email: "",
+    password: "", // Thêm trường password
     roles: ["user"],
     status: "active",
     bio: "",
@@ -22,6 +28,7 @@ const ManageUsers = () => {
     date_of_birth: { day: "", month: "", year: "" },
   });
   const [editUser, setEditUser] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const menuRef = useRef(null);
   const avatarInputRef = useRef(null);
 
@@ -35,9 +42,13 @@ const ManageUsers = () => {
         const usersData = await fetchAllUsers({
           headers: { Authorization: `Bearer ${authToken}` },
         });
-        setUsers(usersData);
+        // Kiểm tra dữ liệu trả về
+        if (!Array.isArray(usersData.users)) {
+          throw new Error("Dữ liệu người dùng không đúng định dạng");
+        }
+        setUsers(usersData.users);
       } catch (err) {
-        setError("Không thể tải danh sách người dùng: " + err.message);
+        setError(`Không thể tải danh sách người dùng: ${err.message}`);
       } finally {
         setLoading(false);
       }
@@ -60,117 +71,93 @@ const ManageUsers = () => {
   // Thêm người dùng mới
   const handleAddUser = async (e) => {
     e.preventDefault();
+    setIsProcessing(true);
     try {
       const authToken = localStorage.getItem("accessToken");
       const { day, month, year } = newUser.date_of_birth;
       const date_of_birth = `${year}-${month.toString().padStart(2, "0")}-${day
         .toString()
         .padStart(2, "0")}`;
-      const formData = new FormData();
-      formData.append("name", newUser.name);
-      formData.append("username", newUser.username);
-      formData.append("email", newUser.email);
-      formData.append("roles", newUser.roles[0]);
-      formData.append("status", newUser.status);
-      formData.append("bio", newUser.bio);
-      formData.append("date_of_birth", date_of_birth);
-      if (newUser.avatar) formData.append("avatar", newUser.avatar);
-
-      const response = await fetchAllUsers({
-        method: "POST",
-        url: "/users",
-        headers: { Authorization: `Bearer ${authToken}` },
-        data: formData,
+      const userData = {
+        ...newUser,
+        date_of_birth,
+      };
+      const createdUser = await createUser(userData, authToken);
+      setUsers((prev) => [...prev, createdUser]);
+      setAddModalOpen(false);
+      setNewUser({
+        name: "",
+        username: "",
+        email: "",
+        password: "", // Reset password
+        roles: ["user"],
+        status: "active",
+        bio: "",
+        avatar: "",
+        date_of_birth: { day: "", month: "", year: "" },
       });
-
-      if (response.data) {
-        setUsers((prev) => [...prev, response.data.user]);
-        setAddModalOpen(false);
-        setNewUser({
-          name: "",
-          username: "",
-          email: "",
-          roles: ["user"],
-          status: "active",
-          bio: "",
-          avatar: "",
-          date_of_birth: { day: "", month: "", year: "" },
-        });
-      }
     } catch (error) {
       console.error("Error adding user:", error);
-      alert("Không thể thêm người dùng");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   // Chỉnh sửa người dùng
   const handleEditUser = async (e, userId) => {
     e.preventDefault();
+    setIsProcessing(true);
     try {
       const authToken = localStorage.getItem("accessToken");
       const { day, month, year } = editUser.date_of_birth;
       const date_of_birth = `${year}-${month.toString().padStart(2, "0")}-${day
         .toString()
         .padStart(2, "0")}`;
-      const formData = new FormData();
-      formData.append("name", editUser.name);
-      formData.append("username", editUser.username);
-      formData.append("email", editUser.email);
-      formData.append("roles", editUser.roles[0]);
-      formData.append("status", editUser.status);
-      formData.append("bio", editUser.bio);
-      formData.append("date_of_birth", date_of_birth);
-      if (editUser.avatar) formData.append("avatar", editUser.avatar);
-
-      const response = await fetchAllUsers({
-        method: "PUT",
-        url: `/users/${userId}`,
-        headers: { Authorization: `Bearer ${authToken}` },
-        data: formData,
-      });
-
-      if (response.data) {
-        setUsers((prev) =>
-          prev.map((user) => (user._id === userId ? response.data.user : user))
-        );
-        setEditModalOpen(null);
-      }
+      const userData = {
+        ...editUser,
+        date_of_birth,
+      };
+      const updatedUser = await updateUser(userId, userData, authToken);
+      setUsers((prev) =>
+        prev.map((user) => (user._id === userId ? updatedUser : user))
+      );
+      setEditModalOpen(null);
     } catch (error) {
       console.error("Error editing user:", error);
-      alert("Không thể chỉnh sửa người dùng");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   // Xóa người dùng
   const handleDeleteUser = async (userId) => {
+    setIsProcessing(true);
     try {
       const authToken = localStorage.getItem("accessToken");
-      await fetchAllUsers({
-        method: "DELETE",
-        url: `/users/${userId}`,
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-
+      await deleteUser(userId, authToken);
       setUsers((prev) => prev.filter((user) => user._id !== userId));
       setDeleteModalOpen(null);
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("Không thể xóa người dùng");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   // Sắp xếp danh sách người dùng
-  const sortedUsers = [...users].sort((a, b) => {
-    let aValue = a[sortBy] || 0;
-    let bValue = b[sortBy] || 0;
+  const sortedUsers = Array.isArray(users)
+    ? [...users].sort((a, b) => {
+        let aValue = a[sortBy] || 0;
+        let bValue = b[sortBy] || 0;
 
-    if (sortBy === "createdAt") {
-      aValue = new Date(a.createdAt).getTime();
-      bValue = new Date(b.createdAt).getTime();
-    }
+        if (sortBy === "createdAt") {
+          aValue = new Date(a.createdAt).getTime();
+          bValue = new Date(b.createdAt).getTime();
+        }
 
-    return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
-  });
+        return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+      })
+    : [];
 
   if (loading) return <p>Đang tải danh sách người dùng...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -189,6 +176,7 @@ const ManageUsers = () => {
           <button
             className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
             onClick={() => setAddModalOpen(true)}
+            disabled={isProcessing}
           >
             Thêm Người Dùng
           </button>
@@ -241,7 +229,7 @@ const ManageUsers = () => {
                   </td>
                   <td
                     className="px-4 py-4 whitespace-nowrap max-w-[100px] truncate"
-                    title={user.roles?.join(", ")}
+                    title={user.roles?.join(", ") || "Người dùng"}
                   >
                     {user.roles?.join(", ") || "Người dùng"}
                   </td>
@@ -268,6 +256,7 @@ const ManageUsers = () => {
                           });
                           setEditModalOpen(user._id);
                         }}
+                        disabled={isProcessing}
                       >
                         <svg
                           className="size-4"
@@ -286,6 +275,7 @@ const ManageUsers = () => {
                       <button
                         className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100"
                         onClick={() => setDeleteModalOpen(user._id)}
+                        disabled={isProcessing}
                       >
                         <svg
                           className="w-4 h-4"
@@ -353,6 +343,22 @@ const ManageUsers = () => {
                       }
                       className="block w-full rounded-md border border-gray-300 py-2 px-3 text-sm"
                       required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Mật khẩu
+                    </label>
+                    <input
+                      type="password"
+                      value={newUser.password}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, password: e.target.value })
+                      }
+                      className="block w-full rounded-md border border-gray-300 py-2 px-3 text-sm"
+                      required
+                      minLength={8}
+                      placeholder="Nhập mật khẩu (tối thiểu 8 ký tự)"
                     />
                   </div>
                   <div>
@@ -488,14 +494,16 @@ const ManageUsers = () => {
                     type="button"
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                     onClick={() => setAddModalOpen(false)}
+                    disabled={isProcessing}
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600"
+                    disabled={isProcessing}
                   >
-                    Thêm
+                    {isProcessing ? "Đang thêm..." : "Thêm"}
                   </button>
                 </div>
               </form>
@@ -687,14 +695,16 @@ const ManageUsers = () => {
                     type="button"
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                     onClick={() => setEditModalOpen(null)}
+                    disabled={isProcessing}
                   >
                     Hủy
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600"
+                    disabled={isProcessing}
                   >
-                    Lưu
+                    {isProcessing ? "Đang lưu..." : "Lưu"}
                   </button>
                 </div>
               </form>
@@ -717,14 +727,16 @@ const ManageUsers = () => {
                 <button
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                   onClick={() => setDeleteModalOpen(null)}
+                  disabled={isProcessing}
                 >
                   Hủy
                 </button>
                 <button
                   className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
                   onClick={() => handleDeleteUser(deleteModalOpen)}
+                  disabled={isProcessing}
                 >
-                  Xóa
+                  {isProcessing ? "Đang xóa..." : "Xóa"}
                 </button>
               </div>
             </div>

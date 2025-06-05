@@ -40,6 +40,7 @@ type AccountStatus = (typeof ACCOUNTS_STATUS)[keyof typeof ACCOUNTS_STATUS];
 // Định nghĩa giao diện cho người dùng
 
 export interface IUser extends Document {
+  _id: mongoose.Types.ObjectId;
   name: string;
   username?: string;
   email: string;
@@ -101,6 +102,7 @@ const userSchema: Schema<IUser> = new Schema(
       trim: true,
       minlength: 3,
       maxlength: 30,
+      required: true,
       // validate: {
       //   validator: function (value: string) {
       //     // Kiểm tra username có bắt đầu bằng '@' và chỉ chứa ký tự hợp lệ

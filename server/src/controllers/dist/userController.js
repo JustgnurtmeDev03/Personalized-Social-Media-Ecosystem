@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.getTotalUsers = exports.updateUserProfile = exports.getProfileByID = exports.getProfile = exports.getAllUsers = void 0;
+exports.getTopUsers = exports.getTotalUsers = exports.updateUserProfile = exports.getProfileByID = exports.getProfile = exports.getAllUsers = void 0;
 var User_1 = require("~/models/User");
 var asyncHandler_1 = require("~/middlewares/asyncHandler");
 var AppError_1 = require("~/utils/AppError");
@@ -225,6 +225,30 @@ exports.getTotalUsers = asyncHandler_1["default"](function (req, res, next) { re
                 res
                     .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
                     .send({ error: "Failed to fetch totals" });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+exports.getTopUsers = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var limit, topUsers, error_6;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                limit = parseInt(req.query.limit) || 10;
+                return [4 /*yield*/, userService_1.UserService.getTopUsers(limit)];
+            case 1:
+                topUsers = _a.sent();
+                res.status(httpStatus_1["default"].OK).json({
+                    topUsers: topUsers
+                });
+                return [3 /*break*/, 3];
+            case 2:
+                error_6 = _a.sent();
+                res
+                    .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
+                    .send({ error: "Failed to fetch top users" });
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
         }

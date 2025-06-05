@@ -47,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.getRecommendedThreads = exports.createThread = exports.getThread = exports.deleteReportedPost = exports.createNotification = exports.ignoreReport = exports.getReports = exports.reportPost = exports.markNotInterested = exports.deletePost = exports.updatePost = exports.getUserPosts = exports.getTotalPosts = void 0;
+exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.getRecommendedThreads = exports.createThread = exports.getThread = exports.updateUser = exports.createUser = exports.getChartData = exports.getTotalReportedPosts = exports.deleteReportedPost = exports.createNotification = exports.ignoreReport = exports.getReports = exports.reportPost = exports.markNotInterested = exports.deletePost = exports.updatePost = exports.getUserPosts = exports.getTotalPosts = void 0;
 var Thread_1 = require("~/models/Thread");
 var User_1 = require("~/models/User");
 var Hashtag_1 = require("~/models/Hashtag");
@@ -64,6 +64,7 @@ var Follow_1 = require("~/models/Follow");
 var httpError_1 = require("~/utils/httpError");
 var Report_1 = require("~/models/Report");
 var Notification_1 = require("~/models/Notification");
+var userService_1 = require("~/services/userService");
 var createThread = asyncHandler_1["default"](function (req, res) { return __awaiter(void 0, void 0, Promise, function () {
     var _a, content, _b, visibility, _c, textContent, hashtags, files, uploadedMedia, _loop_1, _i, files_1, file, images, videos, newThread, post, followers, user, _d, followers_1, follower, _e, hashtags_1, hashtag, existingHashtag;
     var _f, _g;
@@ -794,6 +795,107 @@ exports.deleteReportedPost = asyncHandler_1["default"](function (req, res, next)
                 console.error("Error deleting post:", error_14);
                 return [2 /*return*/, next(new AppError_1.AppError(error_14.message || "Error deleting post", error_14.statusCode || 500))];
             case 5: return [2 /*return*/];
+        }
+    });
+}); });
+exports.getTotalReportedPosts = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var totalReportedPosts, error_15;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                return [4 /*yield*/, threadService_1.ReportService.getTotalReportedPosts()];
+            case 1:
+                totalReportedPosts = _a.sent();
+                res.status(httpStatus_1["default"].OK).json({
+                    totalReportedPosts: totalReportedPosts
+                });
+                return [3 /*break*/, 3];
+            case 2:
+                error_15 = _a.sent();
+                res
+                    .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
+                    .send({ error: "Failed to fetch reported posts totals" });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+// Lấy dữ liệu biểu đồ
+exports.getChartData = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var days, chartData, error_16;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                days = parseInt(req.query.days) || 30;
+                return [4 /*yield*/, threadService_1.ChartService.getChartData(days)];
+            case 1:
+                chartData = _a.sent();
+                res.status(httpStatus_1["default"].OK).json(chartData);
+                return [3 /*break*/, 3];
+            case 2:
+                error_16 = _a.sent();
+                res
+                    .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
+                    .send({ error: "Failed to fetch chart data" });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+exports.createUser = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var userData, newUser, error_17;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                userData = req.body;
+                if (req.file) {
+                    userData.avatar = req.file.path; // Lưu đường dẫn file avatar
+                }
+                return [4 /*yield*/, userService_1.UserService.createUser(userData)];
+            case 1:
+                newUser = _a.sent();
+                res.status(httpStatus_1["default"].CREATED).json({
+                    user: newUser
+                });
+                return [3 /*break*/, 3];
+            case 2:
+                error_17 = _a.sent();
+                res.status(error_17.status || httpStatus_1["default"].INTERNAL_SERVER_ERROR).json({
+                    error: error_17.message || "Không thể tạo người dùng mới"
+                });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+exports.updateUser = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var userId, updateData, updatedUser, error_18;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                userId = req.params.userId;
+                updateData = req.body;
+                if (req.file) {
+                    updateData.avatar = req.file.path; // Cập nhật avatar nếu có file upload
+                }
+                return [4 /*yield*/, userService_1.UserService.updateUser(userId, updateData)];
+            case 1:
+                updatedUser = _a.sent();
+                res.status(httpStatus_1["default"].OK).json({
+                    user: updatedUser
+                });
+                return [3 /*break*/, 3];
+            case 2:
+                error_18 = _a.sent();
+                res.status(error_18.status || httpStatus_1["default"].INTERNAL_SERVER_ERROR).json({
+                    error: error_18.message || "Không thể cập nhật người dùng"
+                });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
         }
     });
 }); });

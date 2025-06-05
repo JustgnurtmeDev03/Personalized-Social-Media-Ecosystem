@@ -144,4 +144,64 @@ export const reportPost = async (postId, reason, accessToken) => {
   }
 };
 
+export const fetchTotalReportedPosts = async (accessToken) => {
+  try {
+    if (!accessToken) {
+      throw new Error("No access token provided");
+    }
+
+    const res = await axios.get(`${API_URL}/total-reported-posts`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    console.log("fetchTotalReportedPosts response:", res.data); // Log dữ liệu trả về
+    if (res.data && res.data.totalReportedPosts) {
+      return res.data.totalReportedPosts;
+    } else {
+      throw new Error("Invalid response format: " + JSON.stringify(res.data));
+    }
+  } catch (error) {
+    console.error(
+      "Lỗi khi lấy tổng số bài viết bị báo cáo:",
+      error.response?.data || error.message
+    );
+    if (error.response?.data?.error === "Please authenticate") {
+      throw new Error("Authentication failed. Please log in again.");
+    }
+    throw error;
+  }
+};
+
+export const fetchChartData = async (accessToken, days = 30) => {
+  try {
+    if (!accessToken) {
+      throw new Error("No access token provided");
+    }
+
+    const res = await axios.get(`${API_URL}/chart-data?days=${days}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    console.log("fetchChartData response:", res.data); // Log dữ liệu trả về
+    if (
+      res.data &&
+      res.data.labels &&
+      res.data.posts &&
+      res.data.users &&
+      res.data.reportedPosts
+    ) {
+      return res.data;
+    } else {
+      throw new Error("Invalid response format: " + JSON.stringify(res.data));
+    }
+  } catch (error) {
+    console.error(
+      "Lỗi khi lấy dữ liệu biểu đồ:",
+      error.response?.data || error.message
+    );
+    if (error.response?.data?.error === "Please authenticate") {
+      throw new Error("Authentication failed. Please log in again.");
+    }
+    throw error;
+  }
+};
+
 export default api;

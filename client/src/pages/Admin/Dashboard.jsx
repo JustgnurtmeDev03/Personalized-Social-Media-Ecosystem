@@ -11,8 +11,16 @@ import {
   Legend,
 } from "chart.js";
 import { useAuth } from "../../providers/AuthContext";
-import { fetchUserProfile, fetchTotalUsers } from "../../services/userService";
-import { fetchTotalPosts } from "../../services/threadService";
+import {
+  fetchUserProfile,
+  fetchTotalUsers,
+  fetchTopUsers,
+} from "../../services/userService";
+import {
+  fetchTotalPosts,
+  fetchTotalReportedPosts,
+  fetchChartData,
+} from "../../services/threadService";
 import Avatar from "../../assets/Avatar";
 import { jwtDecode } from "jwt-decode";
 import Authentication from "../../components/Admin/Authentication";
@@ -45,80 +53,13 @@ const AdminDashBoard = () => {
     previous: 0,
     percentage: 0,
   });
-
-  const fetchAdminData = async () => {
-    console.log("fetchAdminData called");
-    try {
-      if (!auth.accessToken || !auth.userId) {
-        throw new Error("Không có token hoặc userId để xác thực");
-      }
-
-      const decoded = jwtDecode(auth.accessToken);
-      setRoles(decoded.roles || []);
-
-      const user = await fetchUserProfile(auth.userId, {
-        headers: { Authorization: `Bearer ${auth.accessToken}` },
-      });
-      setAdminData(user);
-
-      const postsResponse = await fetchTotalPosts(auth.accessToken);
-      const usersResponse = await fetchTotalUsers(auth.accessToken);
-
-      const postsData = postsResponse.totalPosts || postsResponse;
-      const usersData = usersResponse.totalUsers || usersResponse;
-
-      if (
-        !postsData ||
-        typeof postsData.current === "undefined" ||
-        typeof postsData.previous === "undefined"
-      ) {
-        throw new Error(
-          "Dữ liệu bài đăng không hợp lệ: " + JSON.stringify(postsResponse)
-        );
-      }
-      if (
-        !usersData ||
-        typeof usersData.current === "undefined" ||
-        typeof usersData.previous === "undefined"
-      ) {
-        throw new Error(
-          "Dữ liệu người dùng không hợp lệ: " + JSON.stringify(usersResponse)
-        );
-      }
-
-      const postsDiff = postsData.current - postsData.previous;
-      const postsPercentage =
-        postsData.previous !== 0 ? (postsDiff / postsData.previous) * 100 : 0;
-      setTotalPosts({
-        current: postsData.current,
-        previous: postsData.previous,
-        percentage: postsPercentage.toFixed(1),
-      });
-
-      const usersDiff = usersData.current - usersData.previous;
-      const usersPercentage =
-        usersData.previous !== 0 ? (usersDiff / usersData.previous) * 100 : 0;
-      setTotalUsers({
-        current: usersData.current,
-        previous: usersData.previous,
-        percentage: usersPercentage.toFixed(1),
-      });
-    } catch (error) {
-      setAdminError(`Lỗi khi lấy thông tin: ${error.message}`);
-      console.error(
-        "Error in fetchAdminData:",
-        error.response?.data || error.message
-      );
-    } finally {
-      setAdminLoading(false);
-    }
-  };
-
-  const adminRoles = ["Top Admin", "Admin", "Moderator"];
-  const normalizeRole = (role) =>
-    role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
-
-  const chartData = {
+  const [totalReportedPosts, setTotalReportedPosts] = useState({
+    current: 0,
+    previous: 0,
+    percentage: 0,
+  });
+  const [topUsers, setTopUsers] = useState([]);
+  const [chartData, setChartData] = useState({
     labels: [
       "May 14",
       "May 15",
@@ -138,7 +79,150 @@ const AdminDashBoard = () => {
         tension: 0.4,
       },
     ],
+  });
+
+  const fetchAdminData = async () => {
+    console.log("fetchAdminData called");
+    try {
+      if (!auth.accessToken || !auth.userId) {
+        throw new Error("Không có token hoặc userId để xác thực");
+      }
+
+      const decoded = jwtDecode(auth.accessToken);
+      setRoles(decoded.roles || []);
+
+      const [
+        user,
+        postsResponse,
+        usersResponse,
+        topUsersResponse,
+        reportedPostsResponse,
+        chartDataResponse,
+      ] = await Promise.all([
+        fetchUserProfile(auth.userId, {
+          headers: { Authorization: `Bearer ${auth.accessToken}` },
+        }),
+        fetchTotalPosts(auth.accessToken),
+        fetchTotalUsers(auth.accessToken),
+        fetchTopUsers(auth.accessToken).catch(() => ({ topUsers: [] })), // Fallback nếu API thất bại
+        fetchTotalReportedPosts(auth.accessToken).catch(() => ({
+          totalReportedPosts: { current: 0, previous: 0 },
+        })), // Fallback nếu API thất bại
+        fetchChartData(auth.accessToken).catch(() => null), // Fallback nếu API thất bại
+      ]);
+
+      setAdminData(user);
+
+      // Xử lý dữ liệu bài đăng
+      const postsData = postsResponse.totalPosts || postsResponse;
+      if (
+        !postsData ||
+        typeof postsData.current === "undefined" ||
+        typeof postsData.previous === "undefined"
+      ) {
+        throw new Error(
+          "Dữ liệu bài đăng không hợp lệ: " + JSON.stringify(postsResponse)
+        );
+      }
+      const postsDiff = postsData.current - postsData.previous;
+      const postsPercentage =
+        postsData.previous !== 0 ? (postsDiff / postsData.previous) * 100 : 0;
+      setTotalPosts({
+        current: postsData.current,
+        previous: postsData.previous,
+        percentage: postsPercentage.toFixed(1),
+      });
+
+      // Xử lý dữ liệu người dùng
+      const usersData = usersResponse.totalUsers || usersResponse;
+      if (
+        !usersData ||
+        typeof usersData.current === "undefined" ||
+        typeof usersData.previous === "undefined"
+      ) {
+        throw new Error(
+          "Dữ liệu người dùng không hợp lệ: " + JSON.stringify(usersResponse)
+        );
+      }
+      const usersDiff = usersData.current - usersData.previous;
+      const usersPercentage =
+        usersData.previous !== 0 ? (usersDiff / usersData.previous) * 100 : 0;
+      setTotalUsers({
+        current: usersData.current,
+        previous: usersData.previous,
+        percentage: usersPercentage.toFixed(1),
+      });
+
+      // Xử lý dữ liệu bài viết bị báo cáo
+      const reportedPostsData =
+        reportedPostsResponse.totalReportedPosts || reportedPostsResponse;
+      const reportedDiff =
+        reportedPostsData.current - reportedPostsData.previous;
+      const reportedPercentage =
+        reportedPostsData.previous !== 0
+          ? (reportedDiff / reportedPostsData.previous) * 100
+          : 0;
+      setTotalReportedPosts({
+        current: reportedPostsData.current,
+        previous: reportedPostsData.previous,
+        percentage: reportedPercentage.toFixed(1),
+      });
+
+      // Xử lý danh sách người dùng thường xuyên tương tác
+      setTopUsers(topUsersResponse.topUsers || []);
+
+      // Xử lý dữ liệu biểu đồ
+      if (
+        chartDataResponse &&
+        chartDataResponse.labels &&
+        chartDataResponse.posts &&
+        chartDataResponse.users &&
+        chartDataResponse.reportedPosts
+      ) {
+        setChartData({
+          labels: chartDataResponse.labels,
+          datasets: [
+            {
+              label: "Bài đăng",
+              data: chartDataResponse.posts,
+              borderColor: "#3b82f6",
+              backgroundColor: "rgba(59, 130, 246, 0.2)",
+              fill: true,
+              tension: 0.4,
+            },
+            {
+              label: "Người dùng",
+              data: chartDataResponse.users,
+              borderColor: "#10b981",
+              backgroundColor: "rgba(16, 185, 129, 0.2)",
+              fill: true,
+              tension: 0.4,
+            },
+            {
+              label: "Bài viết bị báo cáo",
+              data: chartDataResponse.reportedPosts,
+              borderColor: "#ef4444",
+              backgroundColor: "rgba(239, 68, 68, 0.2)",
+              fill: true,
+              tension: 0.4,
+            },
+          ],
+        });
+      }
+    } catch (error) {
+      setAdminError(`Lỗi khi lấy thông tin: ${error.message}`);
+      console.error(
+        "Error in fetchAdminData:",
+        error.response?.data || error.message
+      );
+    } finally {
+      setAdminLoading(false);
+    }
   };
+
+  const adminRoles = ["Top Admin", "Admin", "Moderator"];
+  const normalizeRole = (role) =>
+    role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
 
   const chartOptions = {
     responsive: true,
@@ -154,7 +238,7 @@ const AdminDashBoard = () => {
     },
     plugins: {
       legend: { display: true, position: "top" },
-      title: { display: true, text: "Xu hướng hoạt động" },
+      title: { display: true, text: "Xu hướng hoạt động trong 7 ngày qua" },
     },
   };
 
@@ -215,7 +299,7 @@ const AdminDashBoard = () => {
           <h2 className="font-semibold text-black text-base">Tổng quan ›</h2>
           <button
             aria-label="Select time range"
-            className="text-xs text-black bg-white border border-gray-300 rounded px-3 py-1 flex items-center gap-1"
+            className="text-xs text-black bg-white border border-gray-300 rounded px-4 py-1 flex items-center gap-1"
           >
             7 ngày trước
             <svg
@@ -270,9 +354,9 @@ const AdminDashBoard = () => {
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
-                    d="M17 13l-5 5m0 0l-5-5m5 5V6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    d="M17 13l-5 7m0 0l-5-5m5 5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   ></path>
                 </svg>
               )}
@@ -299,6 +383,50 @@ const AdminDashBoard = () => {
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
+                    d="M5 15l-7 7l7m0 0"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></path>
+                </svg>
+              ) : (
+                <svg
+                  aria-hidden="true"
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M17 13l-5 5m0 0-5-5m5 5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></path>
+                </svg>
+              )}
+              {totalUsers.percentage >= 0
+                ? `+${Math.abs(totalUsers.percentage)}%`
+                : `${totalUsers.percentage}%`}
+            </p>
+          </div>
+
+          <div className="p-4">
+            <p className="font-semibold text-black text-lg mb-1">Cảnh báo</p>
+            <p className="text-blue-600 font-semibold text-lg mb-1">
+              {totalReportedPosts.current}
+            </p>
+            <p className="flex justify-center items-center gap-1 text-gray-400">
+              {totalReportedPosts.percentage >= 0 ? (
+                <svg
+                  aria-hidden="true"
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
                     d="M5 15l7-7 7 7"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -315,38 +443,15 @@ const AdminDashBoard = () => {
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
-                    d="M17 13l-5 5m0 0l-5-5m5 5V6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                    d="M17 13l-5 5m0 0l-5-5m5 5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   ></path>
                 </svg>
               )}
-              {totalUsers.percentage >= 0
-                ? `+${Math.abs(totalUsers.percentage)}%`
-                : `${totalUsers.percentage}%`}
-            </p>
-          </div>
-
-          <div className="p-4">
-            <p className="font-semibold text-black text-lg mb-1">Cảnh Báo</p>
-            <p className="text-blue-600 font-semibold text-lg mb-1">0</p>
-            <p className="flex justify-center items-center gap-1 text-gray-400">
-              <svg
-                aria-hidden="true"
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M5 15l7-7 7 7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                ></path>
-              </svg>
-              +3 (+33.3%)
+              {totalReportedPosts.percentage >= 0
+                ? `+${Math.abs(totalReportedPosts.percentage)}%`
+                : `${totalReportedPosts.percentage}%`}
             </p>
           </div>
         </section>
@@ -358,6 +463,36 @@ const AdminDashBoard = () => {
           <div style={{ height: "300px" }}>
             <Line data={chartData} options={chartOptions} />
           </div>
+        </section>
+
+        <section className="mt-5 bg-white border border-gray-200 rounded-lg max-w-[1200px] p-4">
+          <h3 className="font-semibold text-black text-base mb-5">
+            Người dùng thường xuyên tương tác
+          </h3>
+          <table className="w-full text-left text-sm text-gray-700">
+            <thead>
+              <tr>
+                <th className="px-4 py-2">Tên người dùng</th>
+                <th className="px-4 py-2">Số lượng hoạt động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topUsers.length > 0 ? (
+                topUsers.map((user, index) => (
+                  <tr key={index} className="border-t border-gray-200">
+                    <td className="px-4 py-2">{user.username}</td>
+                    <td className="px-4 py-2">{user.activityCount}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="2" className="px-4 py-2 text-center">
+                    Không có dữ liệu
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </section>
       </div>
     </div>

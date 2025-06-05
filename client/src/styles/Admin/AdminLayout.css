@@ -10,7 +10,10 @@
   width: 1240px;
   height: 76.4px;
 }
+
 .admin-content {
+  overflow-y: auto;
+  scrollbar-width: none;
   flex: 1;
 }
 .fixed-table-container {

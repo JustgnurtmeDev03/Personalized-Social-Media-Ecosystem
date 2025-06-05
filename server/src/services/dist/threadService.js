@@ -54,7 +54,7 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
     return r;
 };
 exports.__esModule = true;
-exports.processPostContent = exports.ReportService = exports.RecommendationService = exports.PostService = void 0;
+exports.processPostContent = exports.ChartService = exports.ReportService = exports.RecommendationService = exports.PostService = void 0;
 var mongoose_1 = require("mongoose");
 var httpStatus_1 = require("~/constants/httpStatus");
 var Follow_1 = require("~/models/Follow");
@@ -62,6 +62,7 @@ var Like_1 = require("~/models/Like");
 var NotInterested_1 = require("~/models/NotInterested");
 var Report_1 = require("~/models/Report");
 var Thread_1 = require("~/models/Thread");
+var User_1 = require("~/models/User");
 var comment_1 = require("~/models/comment");
 var httpError_1 = require("~/utils/httpError");
 var logger_1 = require("~/utils/logger");
@@ -419,9 +420,135 @@ var ReportService = /** @class */ (function () {
             });
         });
     };
+    ReportService.getTotalReportedPosts = function () {
+        return __awaiter(this, void 0, Promise, function () {
+            var currentDate, sevenDaysAgo, currentReportedPosts, previousReportedPosts, error_9;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        currentDate = new Date();
+                        sevenDaysAgo = new Date(currentDate);
+                        sevenDaysAgo.setDate(currentDate.getDate() - 7);
+                        return [4 /*yield*/, Report_1.Report.countDocuments()];
+                    case 1:
+                        currentReportedPosts = _a.sent();
+                        return [4 /*yield*/, Report_1.Report.countDocuments({
+                                createdAt: { $lt: sevenDaysAgo }
+                            })];
+                    case 2:
+                        previousReportedPosts = _a.sent();
+                        return [2 /*return*/, {
+                                current: currentReportedPosts,
+                                previous: previousReportedPosts
+                            }];
+                    case 3:
+                        error_9 = _a.sent();
+                        logger_1["default"].error("Get total reported posts service error: " + error_9.message, {
+                            error: error_9
+                        });
+                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
     return ReportService;
 }());
 exports.ReportService = ReportService;
+var ChartService = /** @class */ (function () {
+    function ChartService() {
+    }
+    ChartService.getChartData = function (days) {
+        if (days === void 0) { days = 30; }
+        return __awaiter(this, void 0, Promise, function () {
+            var currentDate, startDate, labels, i, date, formattedDate, postsData_1, usersData_1, reportedPostsData_1, posts, users, reportedPosts, error_10;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 4, , 5]);
+                        currentDate = new Date();
+                        startDate = new Date(currentDate);
+                        startDate.setDate(currentDate.getDate() - days);
+                        labels = [];
+                        for (i = 0; i < days; i++) {
+                            date = new Date(startDate);
+                            date.setDate(startDate.getDate() + i);
+                            formattedDate = date.getDate().toString().padStart(2, "0") + "/" + (date.getMonth() + 1)
+                                .toString()
+                                .padStart(2, "0") + "/" + date.getFullYear();
+                            labels.push(formattedDate);
+                        }
+                        console.log("Labels generated:", labels);
+                        console.log("Date range:", { startDate: startDate, currentDate: currentDate });
+                        return [4 /*yield*/, Thread_1["default"].aggregate([
+                                {
+                                    $match: { createdAt: { $gte: startDate, $lte: currentDate } }
+                                },
+                                {
+                                    $group: {
+                                        _id: { $dateToString: { format: "%d/%m/%Y", date: "$createdAt" } },
+                                        count: { $sum: 1 }
+                                    }
+                                },
+                            ])];
+                    case 1:
+                        postsData_1 = _a.sent();
+                        return [4 /*yield*/, User_1["default"].aggregate([
+                                {
+                                    $match: { createdAt: { $gte: startDate, $lte: currentDate } }
+                                },
+                                {
+                                    $group: {
+                                        _id: { $dateToString: { format: "%d/%m/%Y", date: "$createdAt" } },
+                                        count: { $sum: 1 }
+                                    }
+                                },
+                            ])];
+                    case 2:
+                        usersData_1 = _a.sent();
+                        return [4 /*yield*/, Report_1.Report.aggregate([
+                                {
+                                    $match: { createdAt: { $gte: startDate, $lte: currentDate } }
+                                },
+                                {
+                                    $group: {
+                                        _id: { $dateToString: { format: "%d/%m/%Y", date: "$createdAt" } },
+                                        count: { $sum: 1 }
+                                    }
+                                },
+                            ])];
+                    case 3:
+                        reportedPostsData_1 = _a.sent();
+                        console.log("Posts data:", postsData_1);
+                        console.log("Users data:", usersData_1);
+                        console.log("Reported posts data:", reportedPostsData_1);
+                        posts = labels.map(function (label) {
+                            var found = postsData_1.find(function (item) { return item._id === label; });
+                            return found ? found.count : 0;
+                        });
+                        users = labels.map(function (label) {
+                            var found = usersData_1.find(function (item) { return item._id === label; });
+                            return found ? found.count : 0;
+                        });
+                        reportedPosts = labels.map(function (label) {
+                            var found = reportedPostsData_1.find(function (item) { return item._id === label; });
+                            return found ? found.count : 0;
+                        });
+                        console.log("Final chart data:", { labels: labels, posts: posts, users: users, reportedPosts: reportedPosts });
+                        return [2 /*return*/, { labels: labels, posts: posts, users: users, reportedPosts: reportedPosts }];
+                    case 4:
+                        error_10 = _a.sent();
+                        logger_1["default"].error("Get chart data service error: " + error_10.message, { error: error_10 });
+                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return ChartService;
+}());
+exports.ChartService = ChartService;
 exports.processPostContent = function (content) {
     var words = content.split(" ");
     var hashtags = [];

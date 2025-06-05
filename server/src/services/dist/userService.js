@@ -48,17 +48,74 @@ var __rest = (this && this.__rest) || function (s, e) {
 };
 exports.__esModule = true;
 exports.UserService = void 0;
+var mongoose_1 = require("mongoose");
 var httpStatus_1 = require("~/constants/httpStatus");
 var message_1 = require("~/constants/message");
+var Thread_1 = require("~/models/Thread");
 var User_1 = require("~/models/User");
+var comment_1 = require("~/models/comment");
 var httpError_1 = require("~/utils/httpError");
 var logger_1 = require("~/utils/logger");
 var UserService = /** @class */ (function () {
     function UserService() {
     }
-    UserService.getAllUsers = function () {
+    UserService.createUser = function (userData) {
         return __awaiter(this, void 0, Promise, function () {
-            var users, usersWithStats, error_1;
+            var newUser, error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        // Validate dữ liệu cơ bản
+                        if (!validator.isEmail(userData.email)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Email không hợp lệ");
+                        }
+                        if (userData.password && userData.password.length < 8) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Mật khẩu phải dài ít nhất 8 ký tự");
+                        }
+                        newUser = new User_1["default"](userData);
+                        return [4 /*yield*/, newUser.save()];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/, newUser];
+                    case 2:
+                        error_1 = _a.sent();
+                        logger_1["default"].error("Create user service error: " + error_1.message, { error: error_1 });
+                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Không thể tạo người dùng mới");
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    UserService.updateUser = function (userId, updateData) {
+        return __awaiter(this, void 0, Promise, function () {
+            var user, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, User_1["default"].findByIdAndUpdate(userId, updateData, {
+                                "new": true,
+                                runValidators: true
+                            })];
+                    case 1:
+                        user = _a.sent();
+                        if (!user) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "Người dùng không tồn tại");
+                        }
+                        return [2 /*return*/, user];
+                    case 2:
+                        error_2 = _a.sent();
+                        logger_1["default"].error("Update user service error: " + error_2.message, { error: error_2 });
+                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Không thể cập nhật người dùng");
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    UserService.getAllUsers = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var users, usersWithStats, error_3;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -67,7 +124,7 @@ var UserService = /** @class */ (function () {
                         return [4 /*yield*/, User_1["default"].find({}).select("_id avatar bio date_of_birth createdAt name username email roles status followers following link")];
                     case 1:
                         users = _a.sent();
-                        console.log("Raw users from MongoDB:", users); // Debug dữ liệu thô
+                        console.log("Raw users from MongoDB:", users);
                         return [4 /*yield*/, Promise.all(users.map(function (user) { return __awaiter(_this, void 0, void 0, function () {
                                 return __generator(this, function (_a) {
                                     return [2 /*return*/, {
@@ -89,12 +146,12 @@ var UserService = /** @class */ (function () {
                             }); }))];
                     case 2:
                         usersWithStats = _a.sent();
-                        console.log("Processed users:", usersWithStats); // Debug dữ liệu sau xử lý
+                        console.log("Processed users:", usersWithStats);
                         return [2 /*return*/, usersWithStats];
                     case 3:
-                        error_1 = _a.sent();
-                        logger_1["default"].error("Get all users service error: " + error_1.message, { error: error_1 });
-                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Không thể lấy danh sách người dùng");
+                        error_3 = _a.sent();
+                        logger_1["default"].error("Get all users service error: " + error_3.message, { error: error_3 });
+                        throw new httpError_1.HttpError(500, "Không thể lấy danh sách người dùng");
                     case 4: return [2 /*return*/];
                 }
             });
@@ -102,7 +159,7 @@ var UserService = /** @class */ (function () {
     };
     UserService.getUserProfilebyID = function (_id) {
         return __awaiter(this, void 0, Promise, function () {
-            var user, password, emailVerificationToken, emailVerificationTokenExpires, roles, status, tokenVersion, cloudinaryPublicId, userWithoutSensitiveFields, error_2;
+            var user, password, emailVerificationToken, emailVerificationTokenExpires, roles, status, tokenVersion, cloudinaryPublicId, userWithoutSensitiveFields, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -118,12 +175,12 @@ var UserService = /** @class */ (function () {
                         password = user.password, emailVerificationToken = user.emailVerificationToken, emailVerificationTokenExpires = user.emailVerificationTokenExpires, roles = user.roles, status = user.status, tokenVersion = user.tokenVersion, cloudinaryPublicId = user.cloudinaryPublicId, userWithoutSensitiveFields = __rest(user, ["password", "emailVerificationToken", "emailVerificationTokenExpires", "roles", "status", "tokenVersion", "cloudinaryPublicId"]);
                         return [2 /*return*/, { user: userWithoutSensitiveFields }];
                     case 2:
-                        error_2 = _a.sent();
-                        logger_1["default"].error("Get user profile service error: " + error_2.message, {
-                            error: error_2
+                        error_4 = _a.sent();
+                        logger_1["default"].error("Get user profile service error: " + error_4.message, {
+                            error: error_4
                         });
-                        throw error_2 instanceof httpError_1.HttpError
-                            ? error_2
+                        throw error_4 instanceof httpError_1.HttpError
+                            ? error_4
                             : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
                     case 3: return [2 /*return*/];
                 }
@@ -132,7 +189,7 @@ var UserService = /** @class */ (function () {
     };
     UserService.getTotalUsers = function () {
         return __awaiter(this, void 0, Promise, function () {
-            var currentDate, sevenDaysAgo, currentUsers, previousUsers, error_3;
+            var currentDate, sevenDaysAgo, currentUsers, previousUsers, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -150,10 +207,107 @@ var UserService = /** @class */ (function () {
                         previousUsers = _a.sent();
                         return [2 /*return*/, { current: currentUsers, previous: previousUsers }];
                     case 3:
-                        error_3 = _a.sent();
-                        logger_1["default"].error("Get total users service error: " + error_3.message, {
-                            error: error_3
+                        error_5 = _a.sent();
+                        logger_1["default"].error("Get total users service error: " + error_5.message, {
+                            error: error_5
                         });
+                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    UserService.getTopUsers = function (limit) {
+        if (limit === void 0) { limit = 10; }
+        return __awaiter(this, void 0, Promise, function () {
+            var userActivity, activityMap_1, userIds, users, topUsers, error_6;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        // Tính tổng số bài đăng và bình luận
+                        console.log("Starting Thread and Comment aggregation");
+                        return [4 /*yield*/, Promise.all([
+                                Thread_1["default"].aggregate([
+                                    {
+                                        $group: {
+                                            _id: "$author",
+                                            postCount: { $sum: 1 }
+                                        }
+                                    },
+                                ])["catch"](function (err) {
+                                    console.error("Thread aggregation error:", err);
+                                    return [];
+                                }),
+                                comment_1["default"].aggregate([
+                                    {
+                                        $group: {
+                                            _id: "$user",
+                                            commentCount: { $sum: 1 }
+                                        }
+                                    },
+                                ])["catch"](function (err) {
+                                    console.error("Comment aggregation error:", err);
+                                    return [];
+                                }),
+                            ])];
+                    case 1:
+                        userActivity = _a.sent();
+                        console.log("User activity result:", userActivity);
+                        activityMap_1 = new Map();
+                        userActivity.forEach(function (activity, index) {
+                            console.log("Processing activity " + index + ":", activity);
+                            activity.forEach(function (item) {
+                                if (!item._id) {
+                                    console.warn("Invalid item in activity, skipping:", item);
+                                    return;
+                                }
+                                var userId = item._id.toString();
+                                if (!activityMap_1.has(userId)) {
+                                    activityMap_1.set(userId, { postCount: 0, commentCount: 0 });
+                                }
+                                var current = activityMap_1.get(userId);
+                                if (item.postCount)
+                                    current.postCount += item.postCount;
+                                if (item.commentCount)
+                                    current.commentCount += item.commentCount;
+                            });
+                        });
+                        // Kiểm tra nếu activityMap rỗng
+                        if (activityMap_1.size === 0) {
+                            console.log("No user activity found, returning empty topUsers");
+                            return [2 /*return*/, []];
+                        }
+                        userIds = Array.from(activityMap_1.keys())
+                            .filter(function (id) { return mongoose_1["default"].Types.ObjectId.isValid(id); }) // Lọc ObjectId hợp lệ
+                            .map(function (id) { return new mongoose_1["default"].Types.ObjectId(id); });
+                        if (userIds.length === 0) {
+                            console.log("No valid user IDs found, returning empty topUsers");
+                            return [2 /*return*/, []];
+                        }
+                        console.log("Fetching users with IDs:", userIds);
+                        return [4 /*yield*/, User_1["default"].find({ _id: { $in: userIds } }).select("_id username")];
+                    case 2:
+                        users = _a.sent();
+                        console.log("Fetched users:", users);
+                        topUsers = users
+                            .filter(function (user) { return user.username !== undefined && user.username !== null; })
+                            .map(function (user) {
+                            var activity = activityMap_1.get(user._id.toString());
+                            var activityCount = activity.postCount + activity.commentCount;
+                            return {
+                                _id: user._id.toString(),
+                                username: user.username,
+                                activityCount: activityCount
+                            };
+                        })
+                            .sort(function (a, b) { return b.activityCount - a.activityCount; })
+                            .slice(0, limit);
+                        console.log("Returning topUsers:", topUsers);
+                        return [2 /*return*/, topUsers];
+                    case 3:
+                        error_6 = _a.sent();
+                        logger_1["default"].error("Get top users service error: " + error_6.message, { error: error_6 });
                         throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
                     case 4: return [2 /*return*/];
                 }

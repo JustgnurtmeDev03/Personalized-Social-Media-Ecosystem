@@ -6,10 +6,12 @@ import {
   removeFollower,
   unfollowUser,
 } from "~/controllers/followController";
+import { createUser, updateUser } from "~/controllers/threadController";
 import {
   getAllUsers,
   getProfile,
   getProfileByID,
+  getTopUsers,
   getTotalUsers,
   updateUserProfile,
 } from "~/controllers/userController";
@@ -20,6 +22,7 @@ import { validateObjectId } from "~/middlewares/validation";
 const router = express.Router();
 
 // USER
+
 router.get("/profile", authMiddleware, getProfile);
 router.get(
   "/profile/:_id",
@@ -69,5 +72,14 @@ router.get(
 
 // ADMIN
 router.get("/get-users", authMiddleware, getAllUsers);
+router.get("/total-users", authMiddleware, getTotalUsers);
+router.get("/top-interactors", authMiddleware, getTopUsers);
+router.post("/users", authMiddleware, upload.single("avatar"), createUser);
+router.put(
+  "/users/:userId",
+  authMiddleware,
+  upload.single("avatar"),
+  updateUser
+);
 
 export default router;
