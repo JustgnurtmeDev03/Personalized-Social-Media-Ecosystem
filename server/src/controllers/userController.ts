@@ -206,46 +206,105 @@ export const createUser = asyncHandler(
     next: NextFunction
   ): Promise<void> => {
     try {
-      // Log dữ liệu nhận được
       console.log("Received body:", req.body);
       console.log("Received file:", req.file);
 
-      // Kiểm tra lỗi từ multer
+      // Nếu Multer set lỗi, dừng
       if (req.fileValidationError) {
         throw new HttpError(400, req.fileValidationError);
       }
 
-      // Chuyển roles từ chuỗi JSON thành mảng
-      const userData = {
-        ...req.body,
-        roles: req.body.roles ? JSON.parse(req.body.roles) : ["user"],
-        avatar: req.file ? `/uploads/${req.file.filename}` : "",
-      };
+      // Chuẩn bị userData: băm trường roles tương tự trước kia
+      let parsedRoles: string[] = ["user"];
+      if (req.body.roles) {
+        try {
+          if (
+            typeof req.body.roles === "string" &&
+            req.body.roles.trim().startsWith("[")
+          ) {
+            parsedRoles = JSON.parse(req.body.roles);
+          } else if (typeof req.body.roles === "string") {
+            parsedRoles = [req.body.roles];
+          } else if (Array.isArray(req.body.roles)) {
+            parsedRoles = req.body.roles;
+          }
+        } catch {
+          parsedRoles = [req.body.roles as string];
+        }
+      }
 
-      // Kiểm tra dữ liệu bắt buộc và log chi tiết
-      if (
-        !userData.name ||
-        !userData.username ||
-        !userData.email ||
-        !userData.password
-      ) {
-        console.log("Missing fields:", {
-          name: userData.name,
-          username: userData.username,
-          email: userData.email,
-          password: userData.password,
-        });
+      // Kiểm tra các trường bắt buộc (Admin phải nhập đầy đủ)
+      const { name, username, email, password, date_of_birth, bio, status } =
+        req.body;
+      if (!name || !username || !email || !password || !date_of_birth) {
         throw new HttpError(
           400,
-          "Missing required fields: name, username, email, or password"
+          "Missing required fields: name, username, email, password, or date_of_birth"
         );
       }
 
+      // Đầu vào ngày sinh là string "YYYY-MM-DD"
+      const dob = new Date(date_of_birth);
+      if (isNaN(dob.getTime())) {
+        throw new HttpError(400, "Invalid date_of_birth format");
+      }
+
+      // Bắt đầu build đối tượng userData
+      const userData: any = {
+        name,
+        username,
+        email,
+        password,
+        date_of_birth: dob,
+        roles: parsedRoles,
+        bio: bio || "",
+        // Luôn active ngay
+        status: "active",
+        // Admin tạo thì đánh dấu emailVerified = true
+        emailVerified: true,
+      };
+
+      // Nếu admin muốn cho user upload avatar
+      if (req.file) {
+        // Gán req.file vào biến trung gian để TypeScript hiểu là không undefined
+        const file = req.file;
+
+        // Upload avatar lên Cloudinary
+        const folder = "Gens/Media/avatars";
+        const uploadResult = await new Promise<CloudinaryUploadResponse>(
+          (resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              {
+                resource_type: "image",
+                folder,
+                public_id: `${username}-avatar`, // gán tên public_id theo username
+                overwrite: true,
+              },
+              (error, result) => {
+                if (error) {
+                  reject(
+                    new AppError("Failed to upload avatar to Cloudinary", 500)
+                  );
+                } else {
+                  resolve(result as CloudinaryUploadResponse);
+                }
+              }
+            );
+            // Chú ý: dùng file.buffer (không phải req.file.buffer)
+            uploadStream.end(file.buffer);
+          }
+        );
+
+        userData.avatar = uploadResult.secure_url;
+        userData.cloudinaryPublicId = uploadResult.public_id;
+      }
+
+      // Gọi service để tạo user mới
       const newUser = await UserService.createUser(userData);
       res.status(201).json({ user: newUser });
     } catch (error: unknown) {
       const err = error as Error;
-      console.error("Controller error:", err.message);
+      console.error("createUser Controller error:", err.message);
       res.status(err instanceof HttpError ? err.statusCode : 500).json({
         error: err.message || "Không thể tạo người dùng mới",
       });
@@ -257,10 +316,50 @@ export const updateUser = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.params.userId;
-      const updateData = req.body;
-      if (req.file) {
-        updateData.avatar = `/uploads/${req.file.filename}`; // Lưu URL công khai
+      const updateData: any = { ...req.body };
+
+      // Nếu có upload avatar mới, phải upload lên Cloudinary, giống logic create
+      if ((req as any).file) {
+        const file = (req as any).file;
+        const folder = "Gens/Media/avatars";
+        const uploadResult = await new Promise<CloudinaryUploadResponse>(
+          (resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              {
+                resource_type: "image",
+                folder,
+                public_id: `${userId}-avatar`,
+                overwrite: true,
+              },
+              (error, result) => {
+                if (error) {
+                  reject(
+                    new AppError("Failed to upload avatar to Cloudinary", 500)
+                  );
+                } else {
+                  resolve(result as CloudinaryUploadResponse);
+                }
+              }
+            );
+            uploadStream.end(file.buffer);
+          }
+        );
+        updateData.avatar = uploadResult.secure_url;
+        updateData.cloudinaryPublicId = uploadResult.public_id;
       }
+
+      // Nếu Admin thay đổi date_of_birth, cần parse lại string thành Date
+      if (updateData.date_of_birth) {
+        const dob2 = new Date(updateData.date_of_birth);
+        if (isNaN(dob2.getTime())) {
+          throw new HttpError(400, "Invalid date_of_birth format");
+        }
+        updateData.date_of_birth = dob2;
+      }
+
+      // Nếu Admin xóa avatar (giả sử có flag deleteAvatar), có thể bổ sung:
+      // if (req.body.deleteAvatar === "1") { updateData.avatar = ""; updateData.cloudinaryPublicId = ""; }
+
       const updatedUser = await UserService.updateUser(userId, updateData);
       res.status(HTTP_STATUS.OK).json({
         user: updatedUser,
@@ -272,3 +371,17 @@ export const updateUser = asyncHandler(
     }
   }
 );
+
+export const deleteUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { userId } = req.params;
+    await UserService.deleteUser(userId);
+    return res.status(HTTP_STATUS.OK).json({ message: "Xóa thành công" });
+  } catch (error: any) {
+    return next(error);
+  }
+};

@@ -182,105 +182,113 @@ export class PostService {
     }
   }
 }
+
 export class RecommendationService {
   static async getRecommendedThreads(userId: string, limit: number = 10) {
     try {
-      // Lấy danh sách người dùng được theo dõi
+      // Lấy danh sách followee
       const follows = await Follow.find({ followerId: userId });
       const followeeIds = follows.map((f) => f.followeeId);
 
-      // Lấy các bài đăng đã tương tác (thích hoặc bình luận)
+      // Lấy danh sách các bài đã like và comment
       const likedThreads = await Like.find({ user: userId }).select("threadId");
       const commentedThreads = await Comment.find({ user: userId }).select(
         "threadId"
       );
-      const interactedThreadIds = [
-        ...likedThreads.map((l) => l.threadId),
-        ...commentedThreads.map((c) => c.threadId),
+      const likedThreadIds = likedThreads.map((l) => l.threadId.toString());
+      const commentedThreadIds = commentedThreads.map((c) =>
+        c.threadId.toString()
+      );
+
+      // Loại bỏ Not Interested
+      const notInterestedPosts = await NotInterested.find({ userId }).select(
+        "postId"
+      );
+      const notInterestedIds = notInterestedPosts.map((ni) =>
+        ni.postId.toString()
+      );
+
+      // Danh sách bài cần loại bỏ (like, comment, not interested)
+      const excludePostIds = [
+        ...likedThreadIds,
+        ...commentedThreadIds,
+        ...notInterestedIds,
       ];
 
+      // Lấy hashtags người dùng hay tương tác
+      const interactedThreadIds = [...likedThreadIds, ...commentedThreadIds];
       const interactedThreads = await Thread.find({
         _id: { $in: interactedThreadIds },
       })
-        .select("hashtags author createdAt")
-        .populate<{ author: IPopulatedAuthor }>("author", "username _id");
+        .select("hashtags author")
+        .lean();
 
-      // Đếm số lần xuất hiện của hashtag trong các bài đã tương tác
-      const hashtagCounts: { [key: string]: number } = {};
+      const hashtagCounts: Record<string, number> = {};
       interactedThreads.forEach((thread) => {
-        if (thread.author) {
-          thread.hashtags?.forEach((hashtag) => {
-            hashtagCounts[hashtag] = (hashtagCounts[hashtag] || 0) + 1;
-          });
-        }
+        thread.hashtags?.forEach((hashtag) => {
+          hashtagCounts[hashtag] = (hashtagCounts[hashtag] || 0) + 1;
+        });
       });
 
-      // Lấy tất cả bài đăng công khai (giới hạn và sắp xếp theo thời gian)
-      const allThreads = await Thread.find({
+      // Lấy danh sách bài public chưa từng like/comment/not interested
+      const threads = await Thread.find({
         visibility: "public",
         author: { $ne: userId },
+        _id: { $nin: excludePostIds },
       })
-        .sort({ createdAt: -1 }) // Bài mới nhất trước
-        .limit(1000) // Giới hạn để tối ưu
-        .populate<{ author: IPopulatedAuthor }>("author", "username _id avatar")
-        .select(
-          "_id content hashtags videos images author createdAt likesCount commentsCount"
-        );
+        .sort({ createdAt: -1 }) // Mới nhất trước
+        .limit(1000)
+        .populate("author", "username _id avatar")
+        .lean();
 
       // Hàm giảm điểm theo thời gian
       const timeDecay = (createdAt: Date) => {
         const daysSincePost =
           (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-        return Math.max(0, 1 - daysSincePost / 3); // Giảm trong 7 ngày
+        return Math.max(0.5, 1 - daysSincePost / 7);
       };
 
-      // Tính điểm cho từng bài đăng
-      const scoredThreads = allThreads
-        .filter((thread) => thread.author !== null)
-        .map((thread) => {
-          let score = 0;
+      // Tính điểm từng bài
+      const scoredThreads = threads.map((thread) => {
+        let score = 0;
 
-          // Điểm cho người dùng theo dõi
-          if (
-            thread.author &&
-            followeeIds.some(
-              (id) => id.toString() === thread.author._id.toString()
-            )
-          ) {
-            score += 10;
+        // Followee post
+        const authorId =
+          typeof thread.author === "object" && "_id" in thread.author
+            ? (thread.author as any)._id.toString()
+            : thread.author?.toString();
+        if (followeeIds.some((id) => id.toString() === authorId)) {
+          score += 10;
+        }
+
+        // Hashtag trùng
+        thread.hashtags?.forEach((hashtag) => {
+          if (hashtagCounts[hashtag]) {
+            score += 7 * hashtagCounts[hashtag];
           }
-
-          // Điểm cho hashtag
-          thread.hashtags?.forEach((hashtag) => {
-            if (hashtagCounts[hashtag]) {
-              score += 5 * hashtagCounts[hashtag];
-            }
-          });
-
-          // Điểm cho tác giả đã tương tác
-          const authorInteracted = interactedThreads.some(
-            (t) =>
-              t.author &&
-              thread.author &&
-              t.author._id.toString() === thread.author._id.toString()
-          );
-          if (authorInteracted) {
-            score += 3;
-          }
-
-          // Thêm điểm dựa trên số lượng tương tác
-          const interactionScore = thread.likesCount + thread.commentsCount;
-          score += interactionScore * 0.5;
-
-          // Áp dụng giảm điểm theo thời gian
-          score *= timeDecay(thread.createdAt);
-
-          return { thread, score };
         });
 
-      // Sắp xếp và lấy top bài đăng
-      scoredThreads.sort((a, b) => b.score - a.score);
+        // Tác giả đã tương tác
+        const threadAuthorId = authorId;
+        const interactedAuthor = interactedThreads.some(
+          (t) => t.author?.toString() === threadAuthorId
+        );
+        if (interactedAuthor) {
+          score += 5;
+        }
+
+        // Lượt tương tác
+        score += (thread.likesCount + thread.commentsCount) * 0.5;
+
+        // Giảm điểm theo thời gian
+        score *= timeDecay(thread.createdAt);
+
+        return { thread, score };
+      });
+
+      // Sắp xếp điểm giảm dần, lấy top
       const recommendedThreads = scoredThreads
+        .sort((a, b) => b.score - a.score)
         .slice(0, limit)
         .map((st) => st.thread);
 

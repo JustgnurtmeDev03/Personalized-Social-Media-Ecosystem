@@ -8,6 +8,7 @@ import {
 } from "~/controllers/followController";
 import {
   createUser,
+  deleteUser,
   getAllUsers,
   getProfile,
   getProfileByID,
@@ -82,5 +83,6 @@ router.put(
   authMiddleware,
   updateUser
 );
+router.delete("/:userId", authMiddleware, deleteUser);
 
 export default router;

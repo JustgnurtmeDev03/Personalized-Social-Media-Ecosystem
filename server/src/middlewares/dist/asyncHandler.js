@@ -2,7 +2,8 @@
 exports.__esModule = true;
 var asyncHandler = function (fn) {
     return function (req, res, next) {
-        fn(req, res, next)["catch"](next);
+        // Bọc mọi logic trong Promise để bắt cả lỗi đồng bộ
+        Promise.resolve(fn(req, res, next))["catch"](next);
     };
 };
 exports["default"] = asyncHandler;

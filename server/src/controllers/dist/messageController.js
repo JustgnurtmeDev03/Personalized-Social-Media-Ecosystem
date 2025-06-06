@@ -36,10 +36,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.getConversations = exports.addReaction = exports.markAsRead = exports.getMessages = exports.sendMessage = void 0;
+exports.recallMessage = exports.getConversations = exports.addReaction = exports.markAsRead = exports.getMessages = exports.sendMessage = void 0;
 var asyncHandler_1 = require("~/middlewares/asyncHandler");
 var messageService_1 = require("../services/messageService");
 var cloudinary_1 = require("../config/cloudinary");
+var Message_1 = require("~/models/Message");
 // Gửi tin nhắn
 exports.sendMessage = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
     var io, _a, recipientId, type, content, replyTo, senderId, messageContent, result, message;
@@ -140,6 +141,41 @@ exports.getConversations = asyncHandler_1["default"](function (req, res, next) {
                 conversations = _a.sent();
                 res.json(conversations);
                 return [2 /*return*/];
+        }
+    });
+}); });
+exports.recallMessage = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var io, messageId, userId, message;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                io = req.app.get("io");
+                messageId = req.body.messageId;
+                userId = req.user.id;
+                if (!messageId) {
+                    return [2 /*return*/, res.status(400).json({ message: "Missing messageId" })];
+                }
+                return [4 /*yield*/, Message_1["default"].findById(messageId)];
+            case 1:
+                message = _a.sent();
+                if (!message) {
+                    return [2 /*return*/, res.status(404).json({ message: "Message not found" })];
+                }
+                // 2. Chỉ cho phép sender thu hồi
+                if (message.sender.toString() !== userId) {
+                    return [2 /*return*/, res
+                            .status(403)
+                            .json({ message: "Not authorized to recall this message" })];
+                }
+                // 3. Cập nhật lại content và đánh dấu đã thu hồi
+                message.content = "Tin nhắn đã được thu hồi";
+                message.recalled = true;
+                return [4 /*yield*/, message.save()];
+            case 2:
+                _a.sent();
+                io.to(message.sender.toString()).emit("messageRecalled", { messageId: messageId });
+                io.to(message.recipient.toString()).emit("messageRecalled", { messageId: messageId });
+                return [2 /*return*/, res.json({ message: "Message recalled successfully" })];
         }
     });
 }); });

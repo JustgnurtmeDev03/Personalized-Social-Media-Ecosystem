@@ -8,6 +8,7 @@ import User, { IUser } from "~/models/User";
 import Comment from "~/models/comment";
 import { HttpError } from "~/utils/httpError";
 import logger from "~/utils/logger";
+import cloudinary from "~/config/cloudinary";
 
 interface UserWithUsername {
   _id: Types.ObjectId;
@@ -19,75 +20,213 @@ interface UserData {
   username: string;
   email: string;
   password: string;
+  date_of_birth: Date;
   roles?: string[];
   status?: string;
   bio?: string;
-  avatar?: string;
-  date_of_birth?: string;
+  avatar?: string; // URL avatar nếu có
+  cloudinaryPublicId?: string; // Public ID trên Cloudinary nếu có
+  link?: string;
+  emailVerified?: boolean;
 }
 
 export class UserService {
   static async createUser(userData: UserData): Promise<IUser> {
     try {
-      // Log dữ liệu nhận được
-      console.log("UserService received userData:", userData);
+      const {
+        name,
+        username,
+        email,
+        password,
+        date_of_birth,
+        roles,
+        status,
+        bio,
+        avatar,
+        cloudinaryPublicId,
+        link,
+        emailVerified,
+      } = userData;
 
-      // Validate dữ liệu cơ bản
-      if (!validator.isEmail(userData.email)) {
-        throw new HttpError(400, "Email không hợp lệ");
+      // Kiểm tra bắt buộc
+      if (!name || !username || !email || !password || !date_of_birth) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Thiếu trường bắt buộc");
       }
-      if (userData.password && userData.password.length < 8) {
-        throw new HttpError(400, "Mật khẩu phải dài ít nhất 8 ký tự");
+
+      // Kiểm tra email/username duy nhất
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Email đã tồn tại");
+      }
+      const existingUsername = await User.findOne({ username });
+      if (existingUsername) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Username đã tồn tại");
       }
 
-      // Đảm bảo các trường không bắt buộc có giá trị mặc định
-      userData.avatar = userData.avatar || "";
-      userData.bio = userData.bio || "";
-      userData.roles = Array.isArray(userData.roles)
-        ? userData.roles
-        : ["user"];
-      userData.status = userData.status || "active";
+      // Validate email và password
+      if (!validator.isEmail(email)) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Email không hợp lệ");
+      }
+      if (password.length < 8) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Mật khẩu phải ≥ 8 ký tự");
+      }
 
-      const newUser = new User(userData);
+      // Tạo đối tượng mới
+      const newUser = new User({
+        name,
+        username,
+        email,
+        password,
+        date_of_birth,
+        roles: Array.isArray(roles) ? roles : ["user"],
+        status: status || "active",
+        bio: bio || "",
+        avatar: avatar || "",
+        cloudinaryPublicId: cloudinaryPublicId || "",
+        link: link || "",
+        emailVerified: emailVerified === true,
+      });
+
       await newUser.save();
       return newUser;
-    } catch (error: unknown) {
-      const err = error as Error | mongoose.Error.ValidationError;
-
-      // Kiểm tra ValidationError của Mongoose
-      if (err instanceof mongoose.Error.ValidationError) {
-        const messages = Object.keys(err.errors).map((field) => {
-          const errorMessage = err.errors[field].message;
-          return `${field}: ${errorMessage}`;
-        });
-        logger.error(`Create user validation error: ${messages.join(", ")}`, {
-          error,
-        });
-        throw new HttpError(400, messages.join(", "));
+    } catch (error: any) {
+      // Xử lý Mongoose ValidationError
+      if (error instanceof mongoose.Error.ValidationError) {
+        const messages = Object.values(error.errors)
+          .map((e: any) => e.message)
+          .join(", ");
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, messages);
       }
+      if (error instanceof HttpError) throw error;
 
-      // Xử lý các lỗi khác
-      const message = err instanceof Error ? err.message : "Lỗi không xác định";
-      logger.error(`Create user service error: ${message}`, { error });
-      throw new HttpError(500, message || "Không thể tạo người dùng mới");
+      logger.error("Create user error: " + error.message, { error });
+      throw new HttpError(HTTP_STATUS.INTERNAL_SERVER_ERROR, "Server error");
     }
   }
-  static async updateUser(userId: string, updateData: any): Promise<any> {
+
+  static async updateUser(
+    userId: string,
+    updateData: Partial<UserData>
+  ): Promise<IUser> {
     try {
-      const user = await User.findByIdAndUpdate(userId, updateData, {
-        new: true, // Trả về document đã cập nhật
-        runValidators: true, // Chạy các validation trong schema
-      });
-      if (!user) {
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "ID không hợp lệ");
+      }
+
+      // Nếu update email hoặc username, kiểm tra không trùng
+      if (updateData.email) {
+        if (!validator.isEmail(updateData.email)) {
+          throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Email không hợp lệ");
+        }
+        const exist = await User.findOne({
+          email: updateData.email,
+          _id: { $ne: userId },
+        });
+        if (exist) {
+          throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Email đã tồn tại");
+        }
+      }
+      if (updateData.username) {
+        const exist = await User.findOne({
+          username: updateData.username,
+          _id: { $ne: userId },
+        });
+        if (exist) {
+          throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Username đã tồn tại");
+        }
+      }
+
+      // Nếu update password, kiểm tra độ dài
+      if (updateData.password && updateData.password.length < 8) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Mật khẩu phải ≥ 8 ký tự");
+      }
+
+      // Nếu updateData.date_of_birth có thể là string hoặc Date
+      if (updateData.date_of_birth) {
+        if (typeof updateData.date_of_birth === "string") {
+          const dobParsed = new Date(updateData.date_of_birth);
+          if (isNaN(dobParsed.getTime())) {
+            throw new HttpError(
+              HTTP_STATUS.BAD_REQUEST,
+              "date_of_birth không hợp lệ"
+            );
+          }
+          // Ép kiểu về Date
+          (updateData as any).date_of_birth = dobParsed;
+        } else if (!(updateData.date_of_birth instanceof Date)) {
+          // Nếu không phải string và không phải Date, sai format
+          throw new HttpError(
+            HTTP_STATUS.BAD_REQUEST,
+            "date_of_birth phải là chuỗi hoặc Date"
+          );
+        }
+      }
+
+      // Lấy user cũ để kiểm tra cloudinaryPublicId
+      const existingUser = await User.findById(userId);
+      if (!existingUser) {
         throw new HttpError(HTTP_STATUS.NOT_FOUND, "Người dùng không tồn tại");
       }
-      return user;
-    } catch (error: any) {
-      logger.error(`Update user service error: ${error.message}`, { error });
-      throw new HttpError(
-        HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        "Không thể cập nhật người dùng"
+
+      // Nếu updateData.cloudinaryPublicId (tức Admin vừa upload avatar mới),
+      // thì xóa avatar cũ trên Cloudinary (nếu có)
+      if (
+        updateData.cloudinaryPublicId &&
+        existingUser.cloudinaryPublicId &&
+        existingUser.cloudinaryPublicId !== updateData.cloudinaryPublicId
+      ) {
+        try {
+          await cloudinary.uploader.destroy(existingUser.cloudinaryPublicId);
+        } catch (destroyErr: any) {
+          logger.error(
+            `Không xóa được avatar cũ trên Cloudinary: ${destroyErr.message}`,
+            { error: destroyErr }
+          );
+          // Không ném lỗi, vì không bắt buộc phải xóa thành công
+        }
+      }
+
+      // Tiến hành cập nhật
+      const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
+        new: true,
+        runValidators: true,
+      }).select(
+        "_id name username email date_of_birth avatar bio link roles status created_at updated_at cloudinaryPublicId"
       );
+
+      if (!updatedUser) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "Người dùng không tồn tại");
+      }
+      return updatedUser;
+    } catch (error: any) {
+      // Xử lý ValidationError
+      if (error instanceof mongoose.Error.ValidationError) {
+        const messages = Object.values(error.errors)
+          .map((e: any) => e.message)
+          .join(", ");
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, messages);
+      }
+      if (error instanceof HttpError) throw error;
+
+      logger.error("Update user error: " + error.message, { error });
+      throw new HttpError(HTTP_STATUS.INTERNAL_SERVER_ERROR, "Server error");
+    }
+  }
+
+  // Xóa user (Admin)
+  static async deleteUser(userId: string): Promise<void> {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "ID không hợp lệ");
+      }
+      const deleted = await User.findByIdAndDelete(userId);
+      if (!deleted) {
+        throw new HttpError(HTTP_STATUS.NOT_FOUND, "Người dùng không tồn tại");
+      }
+    } catch (error: any) {
+      if (error instanceof HttpError) throw error;
+      logger.error("Delete user error: " + error.message, { error });
+      throw new HttpError(HTTP_STATUS.INTERNAL_SERVER_ERROR, "Server error");
     }
   }
   static async getAllUsers() {

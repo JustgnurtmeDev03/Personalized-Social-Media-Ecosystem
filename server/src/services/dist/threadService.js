@@ -253,11 +253,11 @@ var RecommendationService = /** @class */ (function () {
     RecommendationService.getRecommendedThreads = function (userId, limit) {
         if (limit === void 0) { limit = 10; }
         return __awaiter(this, void 0, void 0, function () {
-            var follows, followeeIds_1, likedThreads, commentedThreads, interactedThreadIds, interactedThreads_1, hashtagCounts_1, allThreads, timeDecay_1, scoredThreads, recommendedThreads, error_6;
+            var follows, followeeIds_1, likedThreads, commentedThreads, likedThreadIds, commentedThreadIds, notInterestedPosts, notInterestedIds, excludePostIds, interactedThreadIds, interactedThreads_1, hashtagCounts_1, threads, timeDecay_1, scoredThreads, recommendedThreads, error_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 6, , 7]);
+                        _a.trys.push([0, 7, , 8]);
                         return [4 /*yield*/, Follow_1["default"].find({ followerId: userId })];
                     case 1:
                         follows = _a.sent();
@@ -268,80 +268,85 @@ var RecommendationService = /** @class */ (function () {
                         return [4 /*yield*/, comment_1["default"].find({ user: userId }).select("threadId")];
                     case 3:
                         commentedThreads = _a.sent();
-                        interactedThreadIds = __spreadArrays(likedThreads.map(function (l) { return l.threadId; }), commentedThreads.map(function (c) { return c.threadId; }));
+                        likedThreadIds = likedThreads.map(function (l) { return l.threadId.toString(); });
+                        commentedThreadIds = commentedThreads.map(function (c) {
+                            return c.threadId.toString();
+                        });
+                        return [4 /*yield*/, NotInterested_1.NotInterested.find({ userId: userId }).select("postId")];
+                    case 4:
+                        notInterestedPosts = _a.sent();
+                        notInterestedIds = notInterestedPosts.map(function (ni) {
+                            return ni.postId.toString();
+                        });
+                        excludePostIds = __spreadArrays(likedThreadIds, commentedThreadIds, notInterestedIds);
+                        interactedThreadIds = __spreadArrays(likedThreadIds, commentedThreadIds);
                         return [4 /*yield*/, Thread_1["default"].find({
                                 _id: { $in: interactedThreadIds }
                             })
-                                .select("hashtags author createdAt")
-                                .populate("author", "username _id")];
-                    case 4:
+                                .select("hashtags author")
+                                .lean()];
+                    case 5:
                         interactedThreads_1 = _a.sent();
                         hashtagCounts_1 = {};
                         interactedThreads_1.forEach(function (thread) {
                             var _a;
-                            if (thread.author) {
-                                (_a = thread.hashtags) === null || _a === void 0 ? void 0 : _a.forEach(function (hashtag) {
-                                    hashtagCounts_1[hashtag] = (hashtagCounts_1[hashtag] || 0) + 1;
-                                });
-                            }
+                            (_a = thread.hashtags) === null || _a === void 0 ? void 0 : _a.forEach(function (hashtag) {
+                                hashtagCounts_1[hashtag] = (hashtagCounts_1[hashtag] || 0) + 1;
+                            });
                         });
                         return [4 /*yield*/, Thread_1["default"].find({
                                 visibility: "public",
-                                author: { $ne: userId }
+                                author: { $ne: userId },
+                                _id: { $nin: excludePostIds }
                             })
-                                .sort({ createdAt: -1 }) // Bài mới nhất trước
-                                .limit(1000) // Giới hạn để tối ưu
+                                .sort({ createdAt: -1 }) // Mới nhất trước
+                                .limit(1000)
                                 .populate("author", "username _id avatar")
-                                .select("_id content hashtags videos images author createdAt likesCount commentsCount")];
-                    case 5:
-                        allThreads = _a.sent();
+                                .lean()];
+                    case 6:
+                        threads = _a.sent();
                         timeDecay_1 = function (createdAt) {
                             var daysSincePost = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-                            return Math.max(0, 1 - daysSincePost / 3); // Giảm trong 7 ngày
+                            return Math.max(0.5, 1 - daysSincePost / 7);
                         };
-                        scoredThreads = allThreads
-                            .filter(function (thread) { return thread.author !== null; })
-                            .map(function (thread) {
-                            var _a;
+                        scoredThreads = threads.map(function (thread) {
+                            var _a, _b;
                             var score = 0;
-                            // Điểm cho người dùng theo dõi
-                            if (thread.author &&
-                                followeeIds_1.some(function (id) { return id.toString() === thread.author._id.toString(); })) {
+                            // Followee post
+                            var authorId = typeof thread.author === "object" && "_id" in thread.author
+                                ? thread.author._id.toString()
+                                : (_a = thread.author) === null || _a === void 0 ? void 0 : _a.toString();
+                            if (followeeIds_1.some(function (id) { return id.toString() === authorId; })) {
                                 score += 10;
                             }
-                            // Điểm cho hashtag
-                            (_a = thread.hashtags) === null || _a === void 0 ? void 0 : _a.forEach(function (hashtag) {
+                            // Hashtag trùng
+                            (_b = thread.hashtags) === null || _b === void 0 ? void 0 : _b.forEach(function (hashtag) {
                                 if (hashtagCounts_1[hashtag]) {
-                                    score += 5 * hashtagCounts_1[hashtag];
+                                    score += 7 * hashtagCounts_1[hashtag];
                                 }
                             });
-                            // Điểm cho tác giả đã tương tác
-                            var authorInteracted = interactedThreads_1.some(function (t) {
-                                return t.author &&
-                                    thread.author &&
-                                    t.author._id.toString() === thread.author._id.toString();
-                            });
-                            if (authorInteracted) {
-                                score += 3;
+                            // Tác giả đã tương tác
+                            var threadAuthorId = authorId;
+                            var interactedAuthor = interactedThreads_1.some(function (t) { var _a; return ((_a = t.author) === null || _a === void 0 ? void 0 : _a.toString()) === threadAuthorId; });
+                            if (interactedAuthor) {
+                                score += 5;
                             }
-                            // Thêm điểm dựa trên số lượng tương tác
-                            var interactionScore = thread.likesCount + thread.commentsCount;
-                            score += interactionScore * 0.5;
-                            // Áp dụng giảm điểm theo thời gian
+                            // Lượt tương tác
+                            score += (thread.likesCount + thread.commentsCount) * 0.5;
+                            // Giảm điểm theo thời gian
                             score *= timeDecay_1(thread.createdAt);
                             return { thread: thread, score: score };
                         });
-                        // Sắp xếp và lấy top bài đăng
-                        scoredThreads.sort(function (a, b) { return b.score - a.score; });
                         recommendedThreads = scoredThreads
+                            .sort(function (a, b) { return b.score - a.score; })
                             .slice(0, limit)
                             .map(function (st) { return st.thread; });
                         return [2 /*return*/, recommendedThreads];
-                    case 6:
+                    case 7:
                         error_6 = _a.sent();
                         console.error("Error in getRecommendedThreads:", error_6);
                         throw error_6;
-                    case 7: return [2 /*return*/];
+                    case 8: return [2 /*return*/];
                 }
             });
         });

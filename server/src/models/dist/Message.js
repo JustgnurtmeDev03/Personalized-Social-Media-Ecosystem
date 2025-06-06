@@ -18,6 +18,7 @@ var MessageSchema = new mongoose_1.Schema({
         },
     ],
     isRead: { type: Boolean, "default": false },
-    createdAt: { type: Date, "default": Date.now }
+    createdAt: { type: Date, "default": Date.now },
+    recalled: { type: Boolean, "default": false }
 });
 exports["default"] = mongoose_1["default"].model("Message", MessageSchema);

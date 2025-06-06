@@ -12,4 +12,5 @@ router.get("/conversations", auth_1["default"], messageController_1.getConversat
 router.get("/:userId", auth_1["default"], messageController_1.getMessages);
 router.put("/:userId/read", auth_1["default"], messageController_1.markAsRead);
 router.post("/reaction", auth_1["default"], messageController_1.addReaction);
+router.put("/recall", auth_1["default"], messageController_1.recallMessage);
 exports["default"] = router;

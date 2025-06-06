@@ -3,6 +3,7 @@ import asyncHandler from "~/middlewares/asyncHandler";
 import { MessageService } from "../services/messageService";
 import cloudinary from "../config/cloudinary";
 import { AuthenticatedRequest } from "~/middlewares/auth";
+import Message from "~/models/Message";
 
 // Gửi tin nhắn
 export const sendMessage = asyncHandler(
@@ -92,5 +93,40 @@ export const getConversations = asyncHandler(
 
     const conversations = await MessageService.getConversations(currentUserId);
     res.json(conversations);
+  }
+);
+
+export const recallMessage = asyncHandler(
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const io = req.app.get("io");
+    const { messageId } = req.body;
+    const userId = (req as any).user.id; // id người yêu cầu thu hồi
+
+    if (!messageId) {
+      return res.status(400).json({ message: "Missing messageId" });
+    }
+
+    // 1. Tìm tin nhắn trong DB
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    // 2. Chỉ cho phép sender thu hồi
+    if (message.sender.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to recall this message" });
+    }
+
+    // 3. Cập nhật lại content và đánh dấu đã thu hồi
+    message.content = "Tin nhắn đã được thu hồi";
+    message.recalled = true;
+    await message.save();
+
+    io.to(message.sender.toString()).emit("messageRecalled", { messageId });
+    io.to(message.recipient.toString()).emit("messageRecalled", { messageId });
+
+    return res.json({ message: "Message recalled successfully" });
   }
 );

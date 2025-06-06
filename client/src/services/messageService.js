@@ -168,4 +168,38 @@ export const fetchConversations = async (accessToken) => {
   }
 };
 
+export const recallMessage = async (messageId, accessToken) => {
+  try {
+    if (!accessToken) {
+      throw new Error("No access token provided");
+    }
+    if (!messageId) {
+      throw new Error("Missing messageId");
+    }
+
+    console.log("Recalling message with token:", accessToken);
+    const res = await axios.put(
+      `${API_URL}/recall`,
+      { messageId },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("API Response for recallMessage:", res.data);
+    return res.data;
+  } catch (error) {
+    console.error(
+      "Error recalling message:",
+      error.response?.data || error.message
+    );
+    if (error.response?.data?.error === "Please authenticate") {
+      throw new Error("Authentication failed. Please log in again.");
+    }
+    throw error;
+  }
+};
 export default api;

@@ -47,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.updateUser = exports.createUser = exports.getTopUsers = exports.getTotalUsers = exports.updateUserProfile = exports.getProfileByID = exports.getProfile = exports.getAllUsers = void 0;
+exports.deleteUser = exports.updateUser = exports.createUser = exports.getTopUsers = exports.getTotalUsers = exports.updateUserProfile = exports.getProfileByID = exports.getProfile = exports.getAllUsers = void 0;
 var User_1 = require("~/models/User");
 var asyncHandler_1 = require("~/middlewares/asyncHandler");
 var AppError_1 = require("~/utils/AppError");
@@ -266,74 +266,171 @@ exports.getTopUsers = asyncHandler_1["default"](function (req, res, next) { retu
     });
 }); });
 exports.createUser = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var userData, newUser, error_7, err;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var parsedRoles, _a, name, username_1, email, password, date_of_birth, bio, status, dob, userData, file_1, folder_2, uploadResult, newUser, error_7, err;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
-                _a.trys.push([0, 2, , 3]);
-                // Log dữ liệu nhận được
+                _b.trys.push([0, 4, , 5]);
                 console.log("Received body:", req.body);
                 console.log("Received file:", req.file);
-                // Kiểm tra lỗi từ multer
+                // Nếu Multer set lỗi, dừng
                 if (req.fileValidationError) {
                     throw new httpError_1.HttpError(400, req.fileValidationError);
                 }
-                userData = __assign(__assign({}, req.body), { roles: req.body.roles ? JSON.parse(req.body.roles) : ["user"], avatar: req.file ? "/uploads/" + req.file.filename : "" });
-                // Kiểm tra dữ liệu bắt buộc và log chi tiết
-                if (!userData.name ||
-                    !userData.username ||
-                    !userData.email ||
-                    !userData.password) {
-                    console.log("Missing fields:", {
-                        name: userData.name,
-                        username: userData.username,
-                        email: userData.email,
-                        password: userData.password
-                    });
-                    throw new httpError_1.HttpError(400, "Missing required fields: name, username, email, or password");
+                parsedRoles = ["user"];
+                if (req.body.roles) {
+                    try {
+                        if (typeof req.body.roles === "string" &&
+                            req.body.roles.trim().startsWith("[")) {
+                            parsedRoles = JSON.parse(req.body.roles);
+                        }
+                        else if (typeof req.body.roles === "string") {
+                            parsedRoles = [req.body.roles];
+                        }
+                        else if (Array.isArray(req.body.roles)) {
+                            parsedRoles = req.body.roles;
+                        }
+                    }
+                    catch (_c) {
+                        parsedRoles = [req.body.roles];
+                    }
                 }
-                return [4 /*yield*/, userService_1.UserService.createUser(userData)];
+                _a = req.body, name = _a.name, username_1 = _a.username, email = _a.email, password = _a.password, date_of_birth = _a.date_of_birth, bio = _a.bio, status = _a.status;
+                if (!name || !username_1 || !email || !password || !date_of_birth) {
+                    throw new httpError_1.HttpError(400, "Missing required fields: name, username, email, password, or date_of_birth");
+                }
+                dob = new Date(date_of_birth);
+                if (isNaN(dob.getTime())) {
+                    throw new httpError_1.HttpError(400, "Invalid date_of_birth format");
+                }
+                userData = {
+                    name: name,
+                    username: username_1,
+                    email: email,
+                    password: password,
+                    date_of_birth: dob,
+                    roles: parsedRoles,
+                    bio: bio || "",
+                    // Luôn active ngay
+                    status: "active",
+                    // Admin tạo thì đánh dấu emailVerified = true
+                    emailVerified: true
+                };
+                if (!req.file) return [3 /*break*/, 2];
+                file_1 = req.file;
+                folder_2 = "Gens/Media/avatars";
+                return [4 /*yield*/, new Promise(function (resolve, reject) {
+                        var uploadStream = cloudinary_1["default"].uploader.upload_stream({
+                            resource_type: "image",
+                            folder: folder_2,
+                            public_id: username_1 + "-avatar",
+                            overwrite: true
+                        }, function (error, result) {
+                            if (error) {
+                                reject(new AppError_1.AppError("Failed to upload avatar to Cloudinary", 500));
+                            }
+                            else {
+                                resolve(result);
+                            }
+                        });
+                        // Chú ý: dùng file.buffer (không phải req.file.buffer)
+                        uploadStream.end(file_1.buffer);
+                    })];
             case 1:
-                newUser = _a.sent();
+                uploadResult = _b.sent();
+                userData.avatar = uploadResult.secure_url;
+                userData.cloudinaryPublicId = uploadResult.public_id;
+                _b.label = 2;
+            case 2: return [4 /*yield*/, userService_1.UserService.createUser(userData)];
+            case 3:
+                newUser = _b.sent();
                 res.status(201).json({ user: newUser });
-                return [3 /*break*/, 3];
-            case 2:
-                error_7 = _a.sent();
+                return [3 /*break*/, 5];
+            case 4:
+                error_7 = _b.sent();
                 err = error_7;
-                console.error("Controller error:", err.message);
+                console.error("createUser Controller error:", err.message);
                 res.status(err instanceof httpError_1.HttpError ? err.statusCode : 500).json({
                     error: err.message || "Không thể tạo người dùng mới"
                 });
-                return [3 /*break*/, 3];
-            case 3: return [2 /*return*/];
+                return [3 /*break*/, 5];
+            case 5: return [2 /*return*/];
         }
     });
 }); });
 exports.updateUser = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var userId, updateData, updatedUser, error_8;
+    var userId_1, updateData, file_2, folder_3, uploadResult, dob2, updatedUser, error_8;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 4, , 5]);
+                userId_1 = req.params.userId;
+                updateData = __assign({}, req.body);
+                if (!req.file) return [3 /*break*/, 2];
+                file_2 = req.file;
+                folder_3 = "Gens/Media/avatars";
+                return [4 /*yield*/, new Promise(function (resolve, reject) {
+                        var uploadStream = cloudinary_1["default"].uploader.upload_stream({
+                            resource_type: "image",
+                            folder: folder_3,
+                            public_id: userId_1 + "-avatar",
+                            overwrite: true
+                        }, function (error, result) {
+                            if (error) {
+                                reject(new AppError_1.AppError("Failed to upload avatar to Cloudinary", 500));
+                            }
+                            else {
+                                resolve(result);
+                            }
+                        });
+                        uploadStream.end(file_2.buffer);
+                    })];
+            case 1:
+                uploadResult = _a.sent();
+                updateData.avatar = uploadResult.secure_url;
+                updateData.cloudinaryPublicId = uploadResult.public_id;
+                _a.label = 2;
+            case 2:
+                // Nếu Admin thay đổi date_of_birth, cần parse lại string thành Date
+                if (updateData.date_of_birth) {
+                    dob2 = new Date(updateData.date_of_birth);
+                    if (isNaN(dob2.getTime())) {
+                        throw new httpError_1.HttpError(400, "Invalid date_of_birth format");
+                    }
+                    updateData.date_of_birth = dob2;
+                }
+                return [4 /*yield*/, userService_1.UserService.updateUser(userId_1, updateData)];
+            case 3:
+                updatedUser = _a.sent();
+                res.status(httpStatus_1["default"].OK).json({
+                    user: updatedUser
+                });
+                return [3 /*break*/, 5];
+            case 4:
+                error_8 = _a.sent();
+                res.status(error_8.status || httpStatus_1["default"].INTERNAL_SERVER_ERROR).json({
+                    error: error_8.message || "Không thể cập nhật người dùng"
+                });
+                return [3 /*break*/, 5];
+            case 5: return [2 /*return*/];
+        }
+    });
+}); });
+exports.deleteUser = function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
+    var userId, error_9;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 _a.trys.push([0, 2, , 3]);
                 userId = req.params.userId;
-                updateData = req.body;
-                if (req.file) {
-                    updateData.avatar = "/uploads/" + req.file.filename; // Lưu URL công khai
-                }
-                return [4 /*yield*/, userService_1.UserService.updateUser(userId, updateData)];
+                return [4 /*yield*/, userService_1.UserService.deleteUser(userId)];
             case 1:
-                updatedUser = _a.sent();
-                res.status(httpStatus_1["default"].OK).json({
-                    user: updatedUser
-                });
-                return [3 /*break*/, 3];
+                _a.sent();
+                return [2 /*return*/, res.status(httpStatus_1["default"].OK).json({ message: "Xóa thành công" })];
             case 2:
-                error_8 = _a.sent();
-                res.status(error_8.status || httpStatus_1["default"].INTERNAL_SERVER_ERROR).json({
-                    error: error_8.message || "Không thể cập nhật người dùng"
-                });
-                return [3 /*break*/, 3];
+                error_9 = _a.sent();
+                return [2 /*return*/, next(error_9)];
             case 3: return [2 /*return*/];
         }
     });
-}); });
+}); };

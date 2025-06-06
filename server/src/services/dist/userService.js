@@ -56,80 +56,205 @@ var User_1 = require("~/models/User");
 var comment_1 = require("~/models/comment");
 var httpError_1 = require("~/utils/httpError");
 var logger_1 = require("~/utils/logger");
+var cloudinary_1 = require("~/config/cloudinary");
 var UserService = /** @class */ (function () {
     function UserService() {
     }
     UserService.createUser = function (userData) {
         return __awaiter(this, void 0, Promise, function () {
-            var newUser, error_1, err_1, messages, message;
+            var name, username, email, password, date_of_birth, roles, status, bio, avatar, cloudinaryPublicId, link, emailVerified, existingEmail, existingUsername, newUser, error_1, messages;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        // Log dữ liệu nhận được
-                        console.log("UserService received userData:", userData);
-                        // Validate dữ liệu cơ bản
-                        if (!validator.isEmail(userData.email)) {
-                            throw new httpError_1.HttpError(400, "Email không hợp lệ");
+                        _a.trys.push([0, 4, , 5]);
+                        name = userData.name, username = userData.username, email = userData.email, password = userData.password, date_of_birth = userData.date_of_birth, roles = userData.roles, status = userData.status, bio = userData.bio, avatar = userData.avatar, cloudinaryPublicId = userData.cloudinaryPublicId, link = userData.link, emailVerified = userData.emailVerified;
+                        // Kiểm tra bắt buộc
+                        if (!name || !username || !email || !password || !date_of_birth) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Thiếu trường bắt buộc");
                         }
-                        if (userData.password && userData.password.length < 8) {
-                            throw new httpError_1.HttpError(400, "Mật khẩu phải dài ít nhất 8 ký tự");
-                        }
-                        // Đảm bảo các trường không bắt buộc có giá trị mặc định
-                        userData.avatar = userData.avatar || "";
-                        userData.bio = userData.bio || "";
-                        userData.roles = Array.isArray(userData.roles)
-                            ? userData.roles
-                            : ["user"];
-                        userData.status = userData.status || "active";
-                        newUser = new User_1["default"](userData);
-                        return [4 /*yield*/, newUser.save()];
+                        return [4 /*yield*/, User_1["default"].findOne({ email: email })];
                     case 1:
+                        existingEmail = _a.sent();
+                        if (existingEmail) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Email đã tồn tại");
+                        }
+                        return [4 /*yield*/, User_1["default"].findOne({ username: username })];
+                    case 2:
+                        existingUsername = _a.sent();
+                        if (existingUsername) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Username đã tồn tại");
+                        }
+                        // Validate email và password
+                        if (!validator.isEmail(email)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Email không hợp lệ");
+                        }
+                        if (password.length < 8) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Mật khẩu phải ≥ 8 ký tự");
+                        }
+                        newUser = new User_1["default"]({
+                            name: name,
+                            username: username,
+                            email: email,
+                            password: password,
+                            date_of_birth: date_of_birth,
+                            roles: Array.isArray(roles) ? roles : ["user"],
+                            status: status || "active",
+                            bio: bio || "",
+                            avatar: avatar || "",
+                            cloudinaryPublicId: cloudinaryPublicId || "",
+                            link: link || "",
+                            emailVerified: emailVerified === true
+                        });
+                        return [4 /*yield*/, newUser.save()];
+                    case 3:
                         _a.sent();
                         return [2 /*return*/, newUser];
-                    case 2:
+                    case 4:
                         error_1 = _a.sent();
-                        err_1 = error_1;
-                        // Kiểm tra ValidationError của Mongoose
-                        if (err_1 instanceof mongoose_1["default"].Error.ValidationError) {
-                            messages = Object.keys(err_1.errors).map(function (field) {
-                                var errorMessage = err_1.errors[field].message;
-                                return field + ": " + errorMessage;
-                            });
-                            logger_1["default"].error("Create user validation error: " + messages.join(", "), {
-                                error: error_1
-                            });
-                            throw new httpError_1.HttpError(400, messages.join(", "));
+                        // Xử lý Mongoose ValidationError
+                        if (error_1 instanceof mongoose_1["default"].Error.ValidationError) {
+                            messages = Object.values(error_1.errors)
+                                .map(function (e) { return e.message; })
+                                .join(", ");
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, messages);
                         }
-                        message = err_1 instanceof Error ? err_1.message : "Lỗi không xác định";
-                        logger_1["default"].error("Create user service error: " + message, { error: error_1 });
-                        throw new httpError_1.HttpError(500, message || "Không thể tạo người dùng mới");
-                    case 3: return [2 /*return*/];
+                        if (error_1 instanceof httpError_1.HttpError)
+                            throw error_1;
+                        logger_1["default"].error("Create user error: " + error_1.message, { error: error_1 });
+                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Server error");
+                    case 5: return [2 /*return*/];
                 }
             });
         });
     };
     UserService.updateUser = function (userId, updateData) {
         return __awaiter(this, void 0, Promise, function () {
-            var user, error_2;
+            var exist, exist, dobParsed, existingUser, destroyErr_1, updatedUser, error_2, messages;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 11, , 12]);
+                        if (!mongoose_1["default"].Types.ObjectId.isValid(userId)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "ID không hợp lệ");
+                        }
+                        if (!updateData.email) return [3 /*break*/, 2];
+                        if (!validator.isEmail(updateData.email)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Email không hợp lệ");
+                        }
+                        return [4 /*yield*/, User_1["default"].findOne({
+                                email: updateData.email,
+                                _id: { $ne: userId }
+                            })];
+                    case 1:
+                        exist = _a.sent();
+                        if (exist) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Email đã tồn tại");
+                        }
+                        _a.label = 2;
+                    case 2:
+                        if (!updateData.username) return [3 /*break*/, 4];
+                        return [4 /*yield*/, User_1["default"].findOne({
+                                username: updateData.username,
+                                _id: { $ne: userId }
+                            })];
+                    case 3:
+                        exist = _a.sent();
+                        if (exist) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Username đã tồn tại");
+                        }
+                        _a.label = 4;
+                    case 4:
+                        // Nếu update password, kiểm tra độ dài
+                        if (updateData.password && updateData.password.length < 8) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Mật khẩu phải ≥ 8 ký tự");
+                        }
+                        // Nếu updateData.date_of_birth có thể là string hoặc Date
+                        if (updateData.date_of_birth) {
+                            if (typeof updateData.date_of_birth === "string") {
+                                dobParsed = new Date(updateData.date_of_birth);
+                                if (isNaN(dobParsed.getTime())) {
+                                    throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "date_of_birth không hợp lệ");
+                                }
+                                // Ép kiểu về Date
+                                updateData.date_of_birth = dobParsed;
+                            }
+                            else if (!(updateData.date_of_birth instanceof Date)) {
+                                // Nếu không phải string và không phải Date, sai format
+                                throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "date_of_birth phải là chuỗi hoặc Date");
+                            }
+                        }
+                        return [4 /*yield*/, User_1["default"].findById(userId)];
+                    case 5:
+                        existingUser = _a.sent();
+                        if (!existingUser) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "Người dùng không tồn tại");
+                        }
+                        if (!(updateData.cloudinaryPublicId &&
+                            existingUser.cloudinaryPublicId &&
+                            existingUser.cloudinaryPublicId !== updateData.cloudinaryPublicId)) return [3 /*break*/, 9];
+                        _a.label = 6;
+                    case 6:
+                        _a.trys.push([6, 8, , 9]);
+                        return [4 /*yield*/, cloudinary_1["default"].uploader.destroy(existingUser.cloudinaryPublicId)];
+                    case 7:
+                        _a.sent();
+                        return [3 /*break*/, 9];
+                    case 8:
+                        destroyErr_1 = _a.sent();
+                        logger_1["default"].error("Kh\u00F4ng x\u00F3a \u0111\u01B0\u1EE3c avatar c\u0169 tr\u00EAn Cloudinary: " + destroyErr_1.message, { error: destroyErr_1 });
+                        return [3 /*break*/, 9];
+                    case 9: return [4 /*yield*/, User_1["default"].findByIdAndUpdate(userId, updateData, {
+                            "new": true,
+                            runValidators: true
+                        }).select("_id name username email date_of_birth avatar bio link roles status created_at updated_at cloudinaryPublicId")];
+                    case 10:
+                        updatedUser = _a.sent();
+                        if (!updatedUser) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "Người dùng không tồn tại");
+                        }
+                        return [2 /*return*/, updatedUser];
+                    case 11:
+                        error_2 = _a.sent();
+                        // Xử lý ValidationError
+                        if (error_2 instanceof mongoose_1["default"].Error.ValidationError) {
+                            messages = Object.values(error_2.errors)
+                                .map(function (e) { return e.message; })
+                                .join(", ");
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, messages);
+                        }
+                        if (error_2 instanceof httpError_1.HttpError)
+                            throw error_2;
+                        logger_1["default"].error("Update user error: " + error_2.message, { error: error_2 });
+                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Server error");
+                    case 12: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    // Xóa user (Admin)
+    UserService.deleteUser = function (userId) {
+        return __awaiter(this, void 0, Promise, function () {
+            var deleted, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, User_1["default"].findByIdAndUpdate(userId, updateData, {
-                                "new": true,
-                                runValidators: true
-                            })];
+                        if (!mongoose_1["default"].Types.ObjectId.isValid(userId)) {
+                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "ID không hợp lệ");
+                        }
+                        return [4 /*yield*/, User_1["default"].findByIdAndDelete(userId)];
                     case 1:
-                        user = _a.sent();
-                        if (!user) {
+                        deleted = _a.sent();
+                        if (!deleted) {
                             throw new httpError_1.HttpError(httpStatus_1["default"].NOT_FOUND, "Người dùng không tồn tại");
                         }
-                        return [2 /*return*/, user];
+                        return [3 /*break*/, 3];
                     case 2:
-                        error_2 = _a.sent();
-                        logger_1["default"].error("Update user service error: " + error_2.message, { error: error_2 });
-                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Không thể cập nhật người dùng");
+                        error_3 = _a.sent();
+                        if (error_3 instanceof httpError_1.HttpError)
+                            throw error_3;
+                        logger_1["default"].error("Delete user error: " + error_3.message, { error: error_3 });
+                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Server error");
                     case 3: return [2 /*return*/];
                 }
             });
@@ -137,7 +262,7 @@ var UserService = /** @class */ (function () {
     };
     UserService.getAllUsers = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var users, usersWithStats, error_3;
+            var users, usersWithStats, error_4;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -171,8 +296,8 @@ var UserService = /** @class */ (function () {
                         console.log("Processed users:", usersWithStats);
                         return [2 /*return*/, usersWithStats];
                     case 3:
-                        error_3 = _a.sent();
-                        logger_1["default"].error("Get all users service error: " + error_3.message, { error: error_3 });
+                        error_4 = _a.sent();
+                        logger_1["default"].error("Get all users service error: " + error_4.message, { error: error_4 });
                         throw new httpError_1.HttpError(500, "Không thể lấy danh sách người dùng");
                     case 4: return [2 /*return*/];
                 }
@@ -181,7 +306,7 @@ var UserService = /** @class */ (function () {
     };
     UserService.getUserProfilebyID = function (_id) {
         return __awaiter(this, void 0, Promise, function () {
-            var user, password, emailVerificationToken, emailVerificationTokenExpires, roles, status, tokenVersion, cloudinaryPublicId, userWithoutSensitiveFields, error_4;
+            var user, password, emailVerificationToken, emailVerificationTokenExpires, roles, status, tokenVersion, cloudinaryPublicId, userWithoutSensitiveFields, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -197,12 +322,12 @@ var UserService = /** @class */ (function () {
                         password = user.password, emailVerificationToken = user.emailVerificationToken, emailVerificationTokenExpires = user.emailVerificationTokenExpires, roles = user.roles, status = user.status, tokenVersion = user.tokenVersion, cloudinaryPublicId = user.cloudinaryPublicId, userWithoutSensitiveFields = __rest(user, ["password", "emailVerificationToken", "emailVerificationTokenExpires", "roles", "status", "tokenVersion", "cloudinaryPublicId"]);
                         return [2 /*return*/, { user: userWithoutSensitiveFields }];
                     case 2:
-                        error_4 = _a.sent();
-                        logger_1["default"].error("Get user profile service error: " + error_4.message, {
-                            error: error_4
+                        error_5 = _a.sent();
+                        logger_1["default"].error("Get user profile service error: " + error_5.message, {
+                            error: error_5
                         });
-                        throw error_4 instanceof httpError_1.HttpError
-                            ? error_4
+                        throw error_5 instanceof httpError_1.HttpError
+                            ? error_5
                             : new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
                     case 3: return [2 /*return*/];
                 }
@@ -211,7 +336,7 @@ var UserService = /** @class */ (function () {
     };
     UserService.getTotalUsers = function () {
         return __awaiter(this, void 0, Promise, function () {
-            var currentDate, sevenDaysAgo, currentUsers, previousUsers, error_5;
+            var currentDate, sevenDaysAgo, currentUsers, previousUsers, error_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -229,9 +354,9 @@ var UserService = /** @class */ (function () {
                         previousUsers = _a.sent();
                         return [2 /*return*/, { current: currentUsers, previous: previousUsers }];
                     case 3:
-                        error_5 = _a.sent();
-                        logger_1["default"].error("Get total users service error: " + error_5.message, {
-                            error: error_5
+                        error_6 = _a.sent();
+                        logger_1["default"].error("Get total users service error: " + error_6.message, {
+                            error: error_6
                         });
                         throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
                     case 4: return [2 /*return*/];
@@ -242,7 +367,7 @@ var UserService = /** @class */ (function () {
     UserService.getTopUsers = function (limit) {
         if (limit === void 0) { limit = 10; }
         return __awaiter(this, void 0, Promise, function () {
-            var userActivity, activityMap_1, userIds, users, topUsers, error_6;
+            var userActivity, activityMap_1, userIds, users, topUsers, error_7;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -328,8 +453,8 @@ var UserService = /** @class */ (function () {
                         console.log("Returning topUsers:", topUsers);
                         return [2 /*return*/, topUsers];
                     case 3:
-                        error_6 = _a.sent();
-                        logger_1["default"].error("Get top users service error: " + error_6.message, { error: error_6 });
+                        error_7 = _a.sent();
+                        logger_1["default"].error("Get top users service error: " + error_7.message, { error: error_7 });
                         throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Internal server error");
                     case 4: return [2 /*return*/];
                 }

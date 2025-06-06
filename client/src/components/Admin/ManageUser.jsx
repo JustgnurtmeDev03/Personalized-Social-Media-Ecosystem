@@ -1,3 +1,5 @@
+// src/components/Admin/ManageUser.jsx
+
 import React, { useState, useEffect, useRef } from "react";
 import {
   fetchAllUsers,
@@ -11,8 +13,8 @@ const ManageUsers = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState("createdAt");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState("asc");
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(null);
@@ -24,13 +26,18 @@ const ManageUsers = () => {
     roles: ["user"],
     status: "active",
     bio: "",
-    avatar: "",
+    avatar: null,
     date_of_birth: { day: "", month: "", year: "" },
   });
   const [editUser, setEditUser] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // ref để xác định click ngoài menu hành động (nếu cần sử dụng sau này)
   const menuRef = useRef(null);
-  const avatarInputRef = useRef(null);
+  // ref cho modal Edit User
+  const editModalRef = useRef(null);
+  // ref cho modal Delete Confirmation
+  const deleteModalRef = useRef(null);
 
   // Fetch danh sách người dùng
   useEffect(() => {
@@ -39,9 +46,7 @@ const ManageUsers = () => {
         const authToken = localStorage.getItem("accessToken");
         if (!authToken) throw new Error("Không có token để xác thực");
 
-        const usersData = await fetchAllUsers({
-          headers: { Authorization: `Bearer ${authToken}` },
-        });
+        const usersData = await fetchAllUsers(authToken);
         if (!Array.isArray(usersData.users)) {
           throw new Error(
             "Dữ liệu người dùng không đúng định dạng: 'users' không phải là mảng"
@@ -57,17 +62,36 @@ const ManageUsers = () => {
     fetchUsers();
   }, []);
 
-  // Xử lý click ngoài để đóng menu hành động
+  // Click ngoài để đóng modal hoặc menu hành động
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      // Nếu modal edit đang mở, và click nằm ngoài phần chứa ref editModalRef, đóng modal edit
+      if (
+        editModalOpen &&
+        editModalRef.current &&
+        !editModalRef.current.contains(event.target)
+      ) {
         setEditModalOpen(null);
+        setEditUser(null);
+      }
+      // Nếu modal delete đang mở, và click nằm ngoài phần chứa ref deleteModalRef, đóng modal delete
+      if (
+        deleteModalOpen &&
+        deleteModalRef.current &&
+        !deleteModalRef.current.contains(event.target)
+      ) {
         setDeleteModalOpen(null);
       }
+      // Nếu menuRef cần dùng để đóng menu hành động, có thể để ở đây
+      // Ví dụ:
+      // if (menuRef.current && !menuRef.current.contains(event.target)) {
+      //   // ... đóng menu hành động nếu bạn có menu dropdown
+      // }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [editModalOpen, deleteModalOpen]);
 
   // Thêm người dùng mới
   const handleAddUser = async (e) => {
@@ -79,18 +103,30 @@ const ManageUsers = () => {
       if (!authToken) throw new Error("Không có token để xác thực");
 
       const { day, month, year } = newUser.date_of_birth;
-      const date_of_birth = `${year}-${month.toString().padStart(2, "0")}-${day
-        .toString()
-        .padStart(2, "0")}`;
-      const userData = {
-        ...newUser,
-        date_of_birth,
-      };
-      await createUser(userData, authToken);
-      // Làm mới danh sách người dùng từ server
-      const usersData = await fetchAllUsers({
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
+      if (!day || !month || !year)
+        throw new Error("Vui lòng điền đầy đủ ngày sinh");
+      const date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(
+        2,
+        "0"
+      )}`;
+
+      // FormData để gửi multipart/form-data
+      const formData = new FormData();
+      formData.append("name", newUser.name);
+      formData.append("username", newUser.username);
+      formData.append("email", newUser.email);
+      formData.append("password", newUser.password);
+      formData.append("roles", newUser.roles[0]);
+      formData.append("status", newUser.status);
+      formData.append("bio", newUser.bio);
+      formData.append("date_of_birth", date_of_birth);
+      if (newUser.avatar) {
+        formData.append("avatar", newUser.avatar);
+      }
+
+      await createUser(formData, authToken);
+
+      const usersData = await fetchAllUsers(authToken);
       if (!Array.isArray(usersData.users)) {
         throw new Error(
           "Dữ liệu người dùng không đúng định dạng: 'users' không phải là mảng"
@@ -106,7 +142,7 @@ const ManageUsers = () => {
         roles: ["user"],
         status: "active",
         bio: "",
-        avatar: "",
+        avatar: null,
         date_of_birth: { day: "", month: "", year: "" },
       });
     } catch (error) {
@@ -127,27 +163,39 @@ const ManageUsers = () => {
       if (!authToken) throw new Error("Không có token để xác thực");
 
       const { day, month, year } = editUser.date_of_birth;
-      const date_of_birth = `${year}-${month.toString().padStart(2, "0")}-${day
-        .toString()
-        .padStart(2, "0")}`;
-      const userData = {
-        ...editUser,
-        date_of_birth,
-      };
-      await updateUser(userId, userData, authToken);
-      // Làm mới danh sách người dùng từ server
-      const usersData = await fetchAllUsers({
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
+      if (!day || !month || !year)
+        throw new Error("Vui lòng điền đầy đủ ngày sinh");
+      const date_of_birth = `${year}-${month.padStart(2, "0")}-${day.padStart(
+        2,
+        "0"
+      )}`;
+
+      const formData = new FormData();
+      formData.append("name", editUser.name);
+      formData.append("username", editUser.username);
+      formData.append("email", editUser.email);
+      formData.append("roles", editUser.roles[0]);
+      formData.append("status", editUser.status);
+      formData.append("bio", editUser.bio || "");
+      formData.append("date_of_birth", date_of_birth);
+      if (editUser.avatar instanceof File) {
+        formData.append("avatar", editUser.avatar);
+      }
+
+      await updateUser(userId, formData, authToken);
+
+      const usersData = await fetchAllUsers(authToken);
       if (!Array.isArray(usersData.users)) {
         throw new Error(
           "Dữ liệu người dùng không đúng định dạng: 'users' không phải là mảng"
         );
       }
       setUsers(usersData.users);
-    } catch (error) {
       setEditModalOpen(null);
       setEditUser(null);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      setError(`Không thể cập nhật người dùng: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -162,9 +210,8 @@ const ManageUsers = () => {
       if (!authToken) throw new Error("Không có token để xác thực");
 
       await deleteUser(userId, authToken);
-      const usersData = await fetchAllUsers({
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
+
+      const usersData = await fetchAllUsers(authToken);
       if (!Array.isArray(usersData.users)) {
         throw new Error(
           "Dữ liệu người dùng không đúng định dạng: 'users' không phải là mảng"
@@ -183,15 +230,18 @@ const ManageUsers = () => {
   // Sắp xếp danh sách người dùng
   const sortedUsers = Array.isArray(users)
     ? [...users].sort((a, b) => {
-        let aValue = a[sortBy] || 0;
-        let bValue = b[sortBy] || 0;
+        let aValue = a[sortBy] || "";
+        let bValue = b[sortBy] || "";
 
-        if (sortBy === "createdAt") {
-          aValue = new Date(a.createdAt).getTime();
-          bValue = new Date(b.createdAt).getTime();
+        if (sortBy === "name" || sortBy === "email" || sortBy === "username") {
+          aValue = a[sortBy].toLowerCase();
+          bValue = b[sortBy].toLowerCase();
+          if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
+          if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
+          return 0;
         }
 
-        return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+        return 0;
       })
     : [];
 
@@ -217,18 +267,39 @@ const ManageUsers = () => {
             Thêm Người Dùng
           </button>
         </div>
-        <div className="mt-6 overflow-x-auto scrollbar-hide">
+        <div className="mt-6 overflow-x-auto">
           <table className="min-w-full border border-gray-100 rounded-md text-left text-sm">
             <thead className="bg-gray-50 text-gray-500">
               <tr>
                 <th className="px-4 py-3 whitespace-nowrap font-normal w-[80px]">
                   Avatar
                 </th>
-                <th className="px-4 py-3 whitespace-nowrap font-normal w-[150px]">
-                  Tên
+                <th
+                  className="px-4 py-3 whitespace-nowrap font-normal w-[150px] cursor-pointer"
+                  onClick={() => {
+                    if (sortBy === "name") {
+                      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+                    } else {
+                      setSortBy("name");
+                      setSortOrder("asc");
+                    }
+                  }}
+                >
+                  Tên {sortBy === "name" && (sortOrder === "asc" ? "▲" : "▼")}
                 </th>
-                <th className="px-4 py-3 whitespace-nowrap font-normal w-[200px]">
-                  Email
+                <th
+                  className="px-4 py-3 whitespace-nowrap font-normal w-[200px] cursor-pointer"
+                  onClick={() => {
+                    if (sortBy === "email") {
+                      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+                    } else {
+                      setSortBy("email");
+                      setSortOrder("asc");
+                    }
+                  }}
+                >
+                  Email{" "}
+                  {sortBy === "email" && (sortOrder === "asc" ? "▲" : "▼")}
                 </th>
                 <th className="px-4 py-3 whitespace-nowrap font-normal w-[100px]">
                   Vai trò
@@ -273,20 +344,23 @@ const ManageUsers = () => {
                     {user.status || "Hoạt động"}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <div className="relative flex items-center gap-3">
+                    <div
+                      className="relative flex items-center gap-3"
+                      ref={menuRef}
+                    >
                       <button
                         className="w-9 h-9 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-100"
                         onClick={() => {
+                          const dob = user.date_of_birth
+                            ? new Date(user.date_of_birth)
+                            : null;
                           setEditUser({
                             ...user,
-                            date_of_birth: user.date_of_birth
+                            date_of_birth: dob
                               ? {
-                                  day: new Date(user.date_of_birth).getDate(),
-                                  month:
-                                    new Date(user.date_of_birth).getMonth() + 1,
-                                  year: new Date(
-                                    user.date_of_birth
-                                  ).getFullYear(),
+                                  day: dob.getDate().toString(),
+                                  month: (dob.getMonth() + 1).toString(),
+                                  year: dob.getFullYear().toString(),
                                 }
                               : { day: "", month: "", year: "" },
                           });
@@ -295,17 +369,17 @@ const ManageUsers = () => {
                         disabled={isProcessing}
                       >
                         <svg
-                          className="size-4"
+                          className="w-4 h-4"
                           viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
                           fill="currentColor"
+                          xmlns="http://www.w3.org/2000/svg"
                         >
                           <path
                             fillRule="evenodd"
                             clipRule="evenodd"
                             d="M2 21.047a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1"
                           />
-                          <path d="M16.996 2a1.02 1.02 0 0 0-.72.281l-3 3.002L3.268 15.288c-.139.14-.21.338-.25.532l-1 5.003a.974.974 0 0 0 1.156 1.157l5.003-1c.194-.04.392-.112.532-.25l10.005-10.007c.445-.444 2.447-2.446 3.003-3a1.02 1.02 0 0 0 .28-.72c0-1.637-.417-2.807-1.282-3.69C19.844 2.423 18.678 2 16.997 2m.394 2.02c.902.052 1.488.26 1.889.67.41.417.669.997.724 1.882-.547.547-1.35 1.337-2.006 1.994l-2.565-2.564c.658-.657 1.41-1.436 1.958-1.983m-3.395 3.42 2.563 2.564-7.567 7.567-2.564-2.564zm-9.006 9.005 2.564 2.564-.094.094c-.66.132-1.993.411-3.22.657l.656-3.22z" />
+                          <path d="M16.996 2a1.02 1.02 0 0 0-.72.281l-3 3.002L3.268 15.288c-.139.14-.21.338-.25.532l-1 5.003a.974.974 0 0 0 1.156 1.157l5.003-1c.194-.04.392-.112.532-.25l10.005-10.007c.445-.444 2.447-2.446 3.003-3a1.02 1.02 0 0 0 .28-.72c0-1.637-.417-2.807-1.282-3.69C19.844 2.423 18.678 2 16.997 2m.394 2.02c.902.052 1.488.26 1.889.67.41.417.669.997.724 1.882-.547.547-1.35 1.337-2.006 1.994l-2.565-2-564c.658-.657 1.41-1.436 1.958-1.983m-3.395 3.42 2.563 2.564-7.567 7.567-2.564-2.564zm-9.006 9.005 2.564 2.564-.094.094c-.66.132-1.993.411-3.22.657l.656-3.22z" />
                         </svg>
                       </button>
                       <button
@@ -448,10 +522,11 @@ const ManageUsers = () => {
                           })
                         }
                         className="block w-1/3 rounded-md border border-gray-300 py-2 px-3 text-sm"
+                        required
                       >
                         <option value="">Ngày</option>
                         {Array.from({ length: 31 }, (_, i) => (
-                          <option key={i} value={i + 1}>
+                          <option key={i} value={(i + 1).toString()}>
                             {i + 1}
                           </option>
                         ))}
@@ -468,10 +543,11 @@ const ManageUsers = () => {
                           })
                         }
                         className="block w-1/3 rounded-md border border-gray-300 py-2 px-3 text-sm"
+                        required
                       >
                         <option value="">Tháng</option>
                         {Array.from({ length: 12 }, (_, i) => (
-                          <option key={i} value={i + 1}>
+                          <option key={i} value={(i + 1).toString()}>
                             {i + 1}
                           </option>
                         ))}
@@ -488,10 +564,11 @@ const ManageUsers = () => {
                           })
                         }
                         className="block w-1/3 rounded-md border border-gray-300 py-2 px-3 text-sm"
+                        required
                       >
                         <option value="">Năm</option>
                         {Array.from({ length: 100 }, (_, i) => (
-                          <option key={i} value={2025 - i}>
+                          <option key={i} value={(2025 - i).toString()}>
                             {2025 - i}
                           </option>
                         ))}
@@ -550,7 +627,10 @@ const ManageUsers = () => {
         {/* Modal chỉnh sửa người dùng */}
         {editModalOpen && editUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 w-full max-w-3xl shadow-lg">
+            <div
+              className="bg-white rounded-lg p-8 w-full max-w-3xl shadow-lg"
+              ref={editModalRef}
+            >
               <h3 className="text-lg font-semibold text-gray-900 mb-6">
                 Chỉnh sửa Người Dùng
               </h3>
@@ -649,10 +729,11 @@ const ManageUsers = () => {
                           })
                         }
                         className="block w-1/3 rounded-md border border-gray-300 py-2 px-3 text-sm"
+                        required
                       >
                         <option value="">Ngày</option>
                         {Array.from({ length: 31 }, (_, i) => (
-                          <option key={i} value={i + 1}>
+                          <option key={i} value={(i + 1).toString()}>
                             {i + 1}
                           </option>
                         ))}
@@ -669,10 +750,11 @@ const ManageUsers = () => {
                           })
                         }
                         className="block w-1/3 rounded-md border border-gray-300 py-2 px-3 text-sm"
+                        required
                       >
                         <option value="">Tháng</option>
                         {Array.from({ length: 12 }, (_, i) => (
-                          <option key={i} value={i + 1}>
+                          <option key={i} value={(i + 1).toString()}>
                             {i + 1}
                           </option>
                         ))}
@@ -689,10 +771,11 @@ const ManageUsers = () => {
                           })
                         }
                         className="block w-1/3 rounded-md border border-gray-300 py-2 px-3 text-sm"
+                        required
                       >
                         <option value="">Năm</option>
                         {Array.from({ length: 100 }, (_, i) => (
-                          <option key={i} value={2025 - i}>
+                          <option key={i} value={(2025 - i).toString()}>
                             {2025 - i}
                           </option>
                         ))}
@@ -751,7 +834,10 @@ const ManageUsers = () => {
         {/* Modal xác nhận xóa */}
         {deleteModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-lg shadow-lg">
+            <div
+              className="bg-white rounded-lg p-6 w-full max-w-lg shadow-lg"
+              ref={deleteModalRef}
+            >
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Xác nhận xóa người dùng
               </h3>

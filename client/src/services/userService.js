@@ -219,56 +219,42 @@ export const fetchTopUsers = async (accessToken, limit = 10) => {
 
 export const createUser = async (userData, accessToken) => {
   try {
-    const formData = new FormData();
-    for (const key in userData) {
-      formData.append(key, userData[key]);
-    }
-    const res = await fetchAllUsers({
-      method: "POST",
-      url: "/users",
-      data: formData,
+    // userData ở đây đã là FormData()
+    const res = await axios.post(`${API_URL}/users`, userData, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "multipart/form-data",
+        // Không tự set "Content-Type", để Axios tự xử lý multipart boundary
       },
     });
-    return res.user;
+    return res.data;
   } catch (error) {
-    throw error;
+    throw error.response?.data || error;
   }
 };
 
 export const updateUser = async (userId, userData, accessToken) => {
   try {
-    const formData = new FormData();
-    for (const key in userData) {
-      formData.append(key, userData[key]);
-    }
-    const res = await fetchAllUsers({
-      method: "PUT",
-      url: `/users/${userId}`,
-      data: formData,
+    const res = await axios.put(`${API_URL}/users/${userId}`, userData, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "multipart/form-data",
+        // Axios tự set Content-Type
       },
     });
-    return res.user;
+    return res.data;
   } catch (error) {
-    throw error;
+    throw error.response?.data || error;
   }
 };
 
 export const deleteUser = async (userId, accessToken) => {
   try {
-    await fetchAllUsers({
-      method: "DELETE",
-      url: `/users/${userId}`,
+    const res = await axios.delete(`${API_URL}/${userId}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     });
+    return res.data;
   } catch (error) {
-    throw error;
+    throw error.response?.data || error;
   }
 };

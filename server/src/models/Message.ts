@@ -9,6 +9,7 @@ export interface IMessage extends Document {
   reactions: { user: mongoose.Types.ObjectId; reaction: string }[];
   isRead: boolean;
   createdAt: Date;
+  recalled: boolean; // ← đánh dấu tin nhắn đã bị thu hồi
 }
 
 const MessageSchema: Schema = new Schema({
@@ -29,6 +30,7 @@ const MessageSchema: Schema = new Schema({
   ],
   isRead: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
+  recalled: { type: Boolean, default: false },
 });
 
 export default mongoose.model<IMessage>("Message", MessageSchema);

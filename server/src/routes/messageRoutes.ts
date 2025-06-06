@@ -6,6 +6,7 @@ import {
   markAsRead,
   addReaction,
   getConversations,
+  recallMessage,
 } from "../controllers/messageController";
 import multer from "multer"; // Để xử lý upload file
 import authMiddleware from "~/middlewares/auth";
@@ -23,5 +24,6 @@ router.get("/conversations", authMiddleware, getConversations);
 router.get("/:userId", authMiddleware, getMessages);
 router.put("/:userId/read", authMiddleware, markAsRead);
 router.post("/reaction", authMiddleware, addReaction);
+router.put("/recall", authMiddleware, recallMessage);
 
 export default router;

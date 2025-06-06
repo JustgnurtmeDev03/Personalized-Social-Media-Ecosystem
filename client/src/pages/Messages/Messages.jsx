@@ -1,3 +1,5 @@
+// File: src/pages/Messages.jsx
+
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../providers/AuthContext";
 import { useSocket } from "../../providers/socketContext";
@@ -9,6 +11,7 @@ import {
   markMessagesAsRead,
   fetchConversations,
   addReaction,
+  recallMessage,
 } from "../../services/messageService";
 import { format } from "date-fns";
 import "../../styles/Messages.css";
@@ -21,6 +24,7 @@ const Messages = () => {
   const { auth } = useAuth();
   const socket = useSocket();
   const navigate = useNavigate();
+
   const [conversations, setConversations] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -34,22 +38,22 @@ const Messages = () => {
     top: 0,
     left: 0,
   });
+
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({});
   const emojiPickerRef = useRef(null);
 
-  // Tính tổng số tin nhắn chưa đọc
+  // Tổng số tin nhắn chưa đọc
   const totalUnreadMSCount = conversations.reduce(
     (total, conv) => total + conv.unreadCount,
     0
   );
 
+  // 1. Load danh sách conversations
   useEffect(() => {
     const fetchConversationsList = async () => {
       try {
-        console.log("Fetching conversations with token:", auth.accessToken); // Debug
         const res = await fetchConversations(auth.accessToken);
-        console.log("Conversations fetched:", res);
         setConversations(res);
         if (res.length > 0) {
           setSelectedUser(res[0].user);
@@ -58,39 +62,43 @@ const Messages = () => {
         console.error("Failed to fetch conversations:", error);
       }
     };
-    fetchConversationsList();
+    if (auth.accessToken) {
+      fetchConversationsList();
+    }
   }, [auth.accessToken]);
 
+  // 2. Load messages khi bạn chọn một conversation
   useEffect(() => {
     if (selectedUser) {
       const loadMessages = async () => {
         try {
-          console.log(
-            "Fetching messages for user:",
-            selectedUser._id,
-            "with token:",
-            auth.accessToken
-          ); // Debug
           const fetchedMessages = await fetchMessages(
             selectedUser._id,
             auth.accessToken
           );
-          console.log("Messages fetched:", fetchedMessages); // Debug
           setMessages(
             fetchedMessages.sort(
               (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
             )
           );
           await markMessagesAsRead(selectedUser._id, auth.accessToken);
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.user._id === selectedUser._id
+                ? { ...conv, unreadCount: 0 }
+                : conv
+            )
+          );
         } catch (error) {
           console.error("Failed to load messages:", error);
-          setMessages([]); // Reset messages nếu lỗi
+          setMessages([]);
         }
       };
       loadMessages();
     }
   }, [selectedUser, auth.accessToken]);
 
+  // 3. Lắng nghe socket: newMessage và messageRecalled
   useEffect(() => {
     if (socket && selectedUser) {
       const handleNewMessage = (message) => {
@@ -108,7 +116,7 @@ const Messages = () => {
           });
           messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         } else {
-          // Cập nhật unreadCount cho các hội thoại khác
+          // Cập nhật unreadCount cho những conversation khác
           setConversations((prev) =>
             prev.map((conv) =>
               conv.user._id === message.sender._id
@@ -118,19 +126,54 @@ const Messages = () => {
           );
         }
       };
+
+      const handleRecalled = ({ messageId }) => {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === messageId
+              ? { ...msg, content: "Tin nhắn đã được thu hồi" }
+              : msg
+          )
+        );
+      };
+
       socket.on("newMessage", handleNewMessage);
-      return () => socket.off("newMessage", handleNewMessage);
+      socket.on("messageRecalled", handleRecalled);
+
+      return () => {
+        socket.off("newMessage", handleNewMessage);
+        socket.off("messageRecalled", handleRecalled);
+      };
     }
   }, [socket, selectedUser, auth.userId]);
 
+  // 4. Cuộn xuống cuối mỗi khi messages thay đổi
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // 5. Gọi API để thu hồi tin nhắn và cập nhật ngay lập tức trên chatbox
+  const handleRecall = async (messageId) => {
+    try {
+      await recallMessage(messageId, auth.accessToken);
+
+      // Nhận được response thành công => cập nhật local state ngay
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === messageId
+            ? { ...msg, content: "Tin nhắn đã được thu hồi", recalled: true }
+            : msg
+        )
+      );
+    } catch (error) {
+      console.error("Failed to recall message:", error);
+    }
+  };
+
+  // 6. Gửi tin nhắn (text, image, gif, sticker, reply)
   const handleSendMessage = async (type, content) => {
     try {
       if (replyingTo && !replyingTo._id) {
-        console.error("replyingTo does not have a valid _id:", replyingTo);
         setReplyingTo(null);
         return;
       }
@@ -166,6 +209,7 @@ const Messages = () => {
     }
   };
 
+  // 7. Thêm reaction (emoji) vào tin nhắn
   const handleAddReaction = async (messageId, reaction) => {
     try {
       const updatedMessage = await addReaction(
@@ -182,15 +226,18 @@ const Messages = () => {
     }
   };
 
+  // 8. Chọn file (hình ảnh) để gửi
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) handleSendMessage("image", file);
   };
 
+  // 9. Format thời gian hiển thị
   const formatTime = (date) => {
     return format(new Date(date), "dd/MM/yy, h:mm a");
   };
 
+  // 10. Hiển thị/ẩn Emoji Picker khi click vào nút emoji trên tin nhắn
   const handleEmojiClick = (messageId, e) => {
     e.stopPropagation();
     setShowEmojiPicker(messageId === showEmojiPicker ? null : messageId);
@@ -198,44 +245,31 @@ const Messages = () => {
       const messageElement = messageRefs.current[messageId];
       if (messageElement) {
         const message = messages.find((msg) => msg._id === messageId);
-        const isRightSide = message.sender._id === auth.userId; // Tin nhắn bên phải
+        const isRightSide = message.sender._id === auth.userId;
         const rect = messageElement.getBoundingClientRect();
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
         const chatArea = document.querySelector(".chat-area");
         const chatAreaRect = chatArea.getBoundingClientRect();
-
-        // Đo kích thước thực tế của emoji-picker
         const pickerElement = emojiPickerRef.current;
         const pickerWidth = pickerElement ? pickerElement.offsetWidth : 200;
         const pickerHeight = pickerElement ? pickerElement.offsetHeight : 50;
 
-        // Tính toán vị trí left dựa trên tin nhắn bên trái hay bên phải
+        // Tính toán vị trí left dựa trên tin nhắn nằm trái hay phải
         let left;
         if (isRightSide) {
-          // Tin nhắn bên phải: căn emoji-picker bên trái tin nhắn
           left = rect.right - pickerWidth;
-          if (left < chatAreaRect.left) {
-            left = rect.left;
-          }
-          if (left + pickerWidth > chatAreaRect.right) {
+          if (left < chatAreaRect.left) left = rect.left;
+          if (left + pickerWidth > chatAreaRect.right)
             left = chatAreaRect.right - pickerWidth - 10;
-          }
         } else {
-          // Tin nhắn bên trái: căn emoji-picker bên phải tin nhắn
           left = rect.left;
-          if (left + pickerWidth > chatAreaRect.right) {
+          if (left + pickerWidth > chatAreaRect.right)
             left = rect.right - pickerWidth;
-          }
-          if (left < chatAreaRect.left) {
-            left = chatAreaRect.left + 10;
-          }
+          if (left < chatAreaRect.left) left = chatAreaRect.left + 10;
         }
 
-        // Tính toán vị trí top ưu tiên gần tin nhắn
-        let top = rect.top + window.scrollY + rect.height + 5; // Hiển thị dưới tin nhắn
-        if (top + pickerHeight > windowHeight + window.scrollY) {
-          // Nếu không đủ không gian dưới, hiển thị phía trên
+        // Tính toán vị trí top ưu tiên ngay dưới tin nhắn
+        let top = rect.top + window.scrollY + rect.height + 5;
+        if (top + pickerHeight > window.innerHeight + window.scrollY) {
           top = rect.top + window.scrollY - pickerHeight - 5;
         }
 
@@ -244,16 +278,19 @@ const Messages = () => {
     }
   };
 
+  // 11. Đóng Emoji Picker khi click ra ngoài
   const handleClickOutside = (e) => {
     if (!e.target.closest(".emoji-picker") && !e.target.closest(".emoji-btn")) {
       setShowEmojiPicker(null);
     }
   };
 
+  // 12. Khi click avatar người gửi => chuyển sang trang profile
   const handleAvatarClick = (userId) => {
     navigate(`/profile/${userId}`);
   };
 
+  // 13. Component con: Giphy Picker
   const GiphyPicker = () => (
     <Grid
       width={300}
@@ -268,6 +305,7 @@ const Messages = () => {
     />
   );
 
+  // 14. Khi chọn một conversation bên trái
   const handleSelectConversation = async (user) => {
     setSelectedUser(user);
     // Cập nhật ngay lập tức unreadCount về 0 khi click
@@ -288,7 +326,9 @@ const Messages = () => {
       className="messages-container flex h-screen"
       onClick={handleClickOutside}
     >
+      {/* Sidebar bên trái: danh sách conversations */}
       <Sidebar unreadMSCount={totalUnreadMSCount} />
+
       <div className="conversations-list w-1/3 border-r border-gray-200 overflow-y-auto">
         <div className="p-4 border-b">
           <h2 className="text-xl font-semibold">
@@ -334,9 +374,11 @@ const Messages = () => {
         )}
       </div>
 
+      {/* Chat area bên phải */}
       <div className="chat-area w-2/3 flex flex-col">
         {selectedUser ? (
           <>
+            {/* Header chat */}
             <div className="p-4 border-b flex items-center">
               <img
                 src={selectedUser.avatar}
@@ -347,6 +389,7 @@ const Messages = () => {
               <div className="font-semibold">{selectedUser.name}</div>
             </div>
 
+            {/* Danh sách messages */}
             <div className="flex-1 p-4 overflow-y-auto">
               {messages.length === 0 ? (
                 <div className="text-gray-500 text-center">
@@ -359,6 +402,7 @@ const Messages = () => {
                     className="mb-4"
                     ref={(el) => (messageRefs.current[msg._id] = el)}
                   >
+                    {/* Nếu đây là tin nhắn reply */}
                     {msg.replyTo && (
                       <div
                         className={`flex ${
@@ -384,6 +428,8 @@ const Messages = () => {
                         </div>
                       </div>
                     )}
+
+                    {/* Khung tin nhắn (text hoặc hình) */}
                     <div
                       className={`flex items-center ${
                         msg.sender._id === auth.userId
@@ -393,6 +439,7 @@ const Messages = () => {
                       onMouseEnter={() => setHoveredMessage(msg._id)}
                       onMouseLeave={() => setHoveredMessage(null)}
                     >
+                      {/* Ảnh avatar người khác (nếu không phải tin nhắn của bạn) */}
                       {msg.sender._id !== auth.userId && (
                         <img
                           src={msg.sender.avatar}
@@ -420,6 +467,8 @@ const Messages = () => {
                               className="max-w-full rounded-lg"
                             />
                           )}
+
+                          {/* Khi hover lên chính tin nhắn của bạn, hiển thị 3 nút: emoji, reply, recall */}
                           {hoveredMessage === msg._id && (
                             <div
                               className={`flex space-x-2 ml-2 ${
@@ -428,18 +477,21 @@ const Messages = () => {
                                   : ""
                               }`}
                             >
+                              {/* Nút bật Emoji Picker */}
                               <button
                                 onClick={(e) => handleEmojiClick(msg._id, e)}
                                 className="emoji-btn text-gray-500 hover:text-blue-500"
                               >
                                 😊
                               </button>
+
+                              {/* Nút reply */}
                               <button
                                 onClick={() => setReplyingTo(msg)}
                                 className="text-gray-500 hover:text-blue-500"
                               >
                                 <svg
-                                  className="w-5 h-5 mr-2"
+                                  className="w-5 h-5"
                                   aria-label="Reply to message"
                                   fill="currentColor"
                                   height="16"
@@ -450,12 +502,27 @@ const Messages = () => {
                                   <path d="M14 8.999H4.413l5.294-5.292a1 1 0 1 0-1.414-1.414l-7 6.998c-.014.014-.019.033-.032.048A.933.933 0 0 0 1 9.998V10c0 .027.013.05.015.076a.907.907 0 0 0 .282.634l6.996 6.998a1 1 0 0 0 1.414-1.414L4.415 11H14a7.008 7.008 0 0 1 7 7v3.006a1 1 0 0 0 2 0V18a9.01 9.01 0 0 0-9-9Z"></path>
                                 </svg>
                               </button>
+
+                              {/* Nút thu hồi tin nhắn (chỉ khi là tin nhắn của bạn) */}
+                              {msg.sender._id === auth.userId && (
+                                <button
+                                  onClick={() => handleRecall(msg._id)}
+                                  className="text-red-500 hover:text-red-700"
+                                  title="Thu hồi tin nhắn"
+                                >
+                                  🗑️
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
+
+                        {/* Thời gian gửi */}
                         <div className="text-xs text-gray-500 mt-1 flex justify-center w-full">
                           {formatTime(msg.createdAt)}
                         </div>
+
+                        {/* Hiển thị reaction nếu có */}
                         {msg.reactions && msg.reactions.length > 0 && (
                           <div className="text-sm mt-1 flex justify-end items-center space-x-1">
                             {Object.entries(
@@ -466,7 +533,7 @@ const Messages = () => {
                             ).map(([reaction, count]) => (
                               <span
                                 key={reaction}
-                                className="bg-gray-100 rounded-full px-2 py-1 flex items-center space-x-1 reaction-container"
+                                className="bg-gray-100 rounded-full px-2 py-1 flex items-center space-x-1"
                               >
                                 <span>{reaction}</span>
                                 {count > 1 && <span>{count}</span>}
@@ -482,7 +549,9 @@ const Messages = () => {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Phần input & controls (gửi tin nhắn, ảnh, GIF, sticker... ) */}
             <div className="p-4 border-t flex flex-col">
+              {/* Nếu đang trả lời ai đó */}
               {replyingTo && (
                 <div className="bg-gray-100 p-2 rounded-lg mb-2 text-xs flex justify-between items-center">
                   <div>
@@ -507,12 +576,14 @@ const Messages = () => {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Nhắn tin..."
+                  placeholder="Nhắn tin."
                   className="flex-1 p-1 border rounded-full mr-2"
                   onKeyPress={(e) =>
                     e.key === "Enter" && handleSendMessage("text", input)
                   }
                 />
+
+                {/* Nút chọn ảnh */}
                 <input
                   type="file"
                   accept="image/*"
@@ -552,6 +623,8 @@ const Messages = () => {
                     />
                   </svg>
                 </label>
+
+                {/* Nút GIF */}
                 <button
                   onClick={() => {
                     setShowGiphy(true);
@@ -597,6 +670,8 @@ const Messages = () => {
                     />
                   </svg>
                 </button>
+
+                {/* Nút chọn sticker (nếu bạn có logic riêng) */}
                 <button
                   onClick={() => {
                     setShowGiphy(true);
@@ -619,6 +694,7 @@ const Messages = () => {
               </div>
             </div>
 
+            {/* Giphy Picker (hiện khi showGiphy = true) */}
             {showGiphy && (
               <div className="absolute bottom-16 left-0 right-0 p-4 bg-white border-t">
                 <GiphyPicker />
@@ -632,6 +708,7 @@ const Messages = () => {
         )}
       </div>
 
+      {/* Emoji Picker popup */}
       {showEmojiPicker && (
         <div
           className="absolute bg-white border rounded-lg shadow-lg p-2 z-50 emoji-picker"
