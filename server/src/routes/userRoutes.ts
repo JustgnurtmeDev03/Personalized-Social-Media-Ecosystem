@@ -6,13 +6,14 @@ import {
   removeFollower,
   unfollowUser,
 } from "~/controllers/followController";
-import { createUser, updateUser } from "~/controllers/threadController";
 import {
+  createUser,
   getAllUsers,
   getProfile,
   getProfileByID,
   getTopUsers,
   getTotalUsers,
+  updateUser,
   updateUserProfile,
 } from "~/controllers/userController";
 import authMiddleware from "~/middlewares/auth";
@@ -74,11 +75,11 @@ router.get(
 router.get("/get-users", authMiddleware, getAllUsers);
 router.get("/total-users", authMiddleware, getTotalUsers);
 router.get("/top-interactors", authMiddleware, getTopUsers);
-router.post("/users", authMiddleware, upload.single("avatar"), createUser);
+router.post("/users", upload.single("avatar"), authMiddleware, createUser);
 router.put(
   "/users/:userId",
-  authMiddleware,
   upload.single("avatar"),
+  authMiddleware,
   updateUser
 );
 

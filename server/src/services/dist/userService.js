@@ -61,18 +61,27 @@ var UserService = /** @class */ (function () {
     }
     UserService.createUser = function (userData) {
         return __awaiter(this, void 0, Promise, function () {
-            var newUser, error_1;
+            var newUser, error_1, err_1, messages, message;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
+                        // Log dữ liệu nhận được
+                        console.log("UserService received userData:", userData);
                         // Validate dữ liệu cơ bản
                         if (!validator.isEmail(userData.email)) {
-                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Email không hợp lệ");
+                            throw new httpError_1.HttpError(400, "Email không hợp lệ");
                         }
                         if (userData.password && userData.password.length < 8) {
-                            throw new httpError_1.HttpError(httpStatus_1["default"].BAD_REQUEST, "Mật khẩu phải dài ít nhất 8 ký tự");
+                            throw new httpError_1.HttpError(400, "Mật khẩu phải dài ít nhất 8 ký tự");
                         }
+                        // Đảm bảo các trường không bắt buộc có giá trị mặc định
+                        userData.avatar = userData.avatar || "";
+                        userData.bio = userData.bio || "";
+                        userData.roles = Array.isArray(userData.roles)
+                            ? userData.roles
+                            : ["user"];
+                        userData.status = userData.status || "active";
                         newUser = new User_1["default"](userData);
                         return [4 /*yield*/, newUser.save()];
                     case 1:
@@ -80,8 +89,21 @@ var UserService = /** @class */ (function () {
                         return [2 /*return*/, newUser];
                     case 2:
                         error_1 = _a.sent();
-                        logger_1["default"].error("Create user service error: " + error_1.message, { error: error_1 });
-                        throw new httpError_1.HttpError(httpStatus_1["default"].INTERNAL_SERVER_ERROR, "Không thể tạo người dùng mới");
+                        err_1 = error_1;
+                        // Kiểm tra ValidationError của Mongoose
+                        if (err_1 instanceof mongoose_1["default"].Error.ValidationError) {
+                            messages = Object.keys(err_1.errors).map(function (field) {
+                                var errorMessage = err_1.errors[field].message;
+                                return field + ": " + errorMessage;
+                            });
+                            logger_1["default"].error("Create user validation error: " + messages.join(", "), {
+                                error: error_1
+                            });
+                            throw new httpError_1.HttpError(400, messages.join(", "));
+                        }
+                        message = err_1 instanceof Error ? err_1.message : "Lỗi không xác định";
+                        logger_1["default"].error("Create user service error: " + message, { error: error_1 });
+                        throw new httpError_1.HttpError(500, message || "Không thể tạo người dùng mới");
                     case 3: return [2 /*return*/];
                 }
             });

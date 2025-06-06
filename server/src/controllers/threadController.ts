@@ -468,6 +468,102 @@ export const reportPost = asyncHandler(
   }
 );
 
+export const searchUsers = asyncHandler(async (req, res) => {
+  const { q } = req.query;
+
+  // Kiểm tra đầu vào
+  if (!q || typeof q !== "string" || q.trim() === "") {
+    throw new AppError("Từ khóa tìm kiếm là bắt buộc", HTTP_STATUS.BAD_REQUEST);
+  }
+
+  const searchQuery = q.trim().toLowerCase();
+
+  try {
+    const users = await User.find({
+      $or: [
+        { username: { $regex: searchQuery, $options: "i" } },
+        { name: { $regex: searchQuery, $options: "i" } },
+      ],
+    })
+      .select("username name avatar bio followers")
+      .limit(10);
+
+    if (!users.length) {
+      return res.status(200).json({
+        message: "Không tìm thấy người dùng nào",
+        users: [],
+      });
+    }
+
+    res.status(200).json({
+      message: "Danh sách người dùng tìm thấy",
+      users,
+    });
+  } catch (error) {
+    console.error("Lỗi khi tìm kiếm người dùng:", error);
+    throw new AppError(
+      "Đã xảy ra lỗi khi tìm kiếm người dùng",
+      HTTP_STATUS.INTERNAL_SERVER_ERROR
+    );
+  }
+});
+
+export const searchPosts = asyncHandler(async (req, res) => {
+  const { q } = req.query;
+
+  // Kiểm tra đầu vào
+  if (!q || typeof q !== "string" || q.trim() === "") {
+    throw new AppError("Từ khóa tìm kiếm là bắt buộc", HTTP_STATUS.BAD_REQUEST);
+  }
+
+  const searchQuery = q.trim().toLowerCase();
+
+  try {
+    // Tìm kiếm user dựa trên username hoặc name
+    const users = await User.find({
+      $or: [
+        { username: { $regex: searchQuery, $options: "i" } },
+        { name: { $regex: searchQuery, $options: "i" } },
+      ],
+    }).select("_id");
+
+    const userIds = users.map((user) => user._id);
+
+    // Tìm kiếm bài đăng dựa trên content, hashtags, hoặc author
+    const posts = await Thread.find({
+      $or: [
+        { content: { $regex: searchQuery, $options: "i" } },
+        { hashtags: { $elemMatch: { $regex: searchQuery, $options: "i" } } },
+        { author: { $in: userIds } }, // Tìm kiếm bài đăng của user có username hoặc name khớp
+      ],
+      visibility: "public", // Chỉ tìm kiếm bài public để bảo mật
+    })
+      .populate("author", "username avatar")
+      .select(
+        "content images videos createdAt likesCount commentsCount hashtags visibility"
+      )
+      .limit(10);
+
+    if (!posts.length) {
+      return res.status(200).json({
+        message: "Không tìm thấy bài đăng nào",
+        posts: [],
+      });
+    }
+
+    res.status(200).json({
+      message: "Danh sách bài đăng tìm thấy",
+      posts,
+    });
+  } catch (error) {
+    console.error("Lỗi khi tìm kiếm bài đăng:", error);
+    throw new AppError(
+      "Đã xảy ra lỗi khi tìm kiếm bài đăng",
+      HTTP_STATUS.INTERNAL_SERVER_ERROR
+    );
+  }
+});
+
 function generateRandomUsername(): string {
   const words = [
     "cool",
@@ -723,45 +819,6 @@ export const getChartData = asyncHandler(
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .send({ error: "Failed to fetch chart data" });
-    }
-  }
-);
-
-export const createUser = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const userData = req.body;
-      if (req.file) {
-        userData.avatar = req.file.path; // Lưu đường dẫn file avatar
-      }
-      const newUser = await UserService.createUser(userData);
-      res.status(HTTP_STATUS.CREATED).json({
-        user: newUser,
-      });
-    } catch (error: any) {
-      res.status(error.status || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        error: error.message || "Không thể tạo người dùng mới",
-      });
-    }
-  }
-);
-
-export const updateUser = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const userId = req.params.userId;
-      const updateData = req.body;
-      if (req.file) {
-        updateData.avatar = req.file.path; // Cập nhật avatar nếu có file upload
-      }
-      const updatedUser = await UserService.updateUser(userId, updateData);
-      res.status(HTTP_STATUS.OK).json({
-        user: updatedUser,
-      });
-    } catch (error: any) {
-      res.status(error.status || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        error: error.message || "Không thể cập nhật người dùng",
-      });
     }
   }
 );

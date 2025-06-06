@@ -102,7 +102,6 @@ const userSchema: Schema<IUser> = new Schema(
       trim: true,
       minlength: 3,
       maxlength: 30,
-      required: true,
       // validate: {
       //   validator: function (value: string) {
       //     // Kiểm tra username có bắt đầu bằng '@' và chỉ chứa ký tự hợp lệ

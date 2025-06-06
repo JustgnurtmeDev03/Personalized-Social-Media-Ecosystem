@@ -77,6 +77,37 @@ export default function Register({ onClose }) {
     return true;
   };
 
+  // Re-validate specific date issues (age and invalid date) in real-time
+  useEffect(() => {
+    if (day && month && year) {
+      const maxDays = getDaysInMonth(month, year);
+      const selectedDate = new Date(year, month - 1, day);
+      const today = new Date();
+      let age = today.getFullYear() - selectedDate.getFullYear();
+      const m = today.getMonth() - selectedDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < selectedDate.getDate())) {
+        age--;
+      }
+
+      if (day > maxDays) {
+        setError("date_of_birth", {
+          type: "manual",
+          message:
+            month === 2 && day === 29
+              ? `Năm ${year} không phải năm nhuận, tháng 2 chỉ có 28 ngày.`
+              : `Tháng ${month} chỉ có ${maxDays} ngày.`,
+        });
+      } else if (age < 13) {
+        setError("date_of_birth", {
+          type: "manual",
+          message: "Bạn phải từ 13 tuổi trở lên.",
+        });
+      } else {
+        clearErrors("date_of_birth");
+      }
+    }
+  }, [day, month, year, setError, clearErrors]);
+
   const onSubmit = async (data) => {
     setSubmitError("");
     setEmailError("");

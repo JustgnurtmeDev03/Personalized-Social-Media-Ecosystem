@@ -2,7 +2,6 @@
 exports.__esModule = true;
 var express_1 = require("express");
 var followController_1 = require("~/controllers/followController");
-var threadController_1 = require("~/controllers/threadController");
 var userController_1 = require("~/controllers/userController");
 var auth_1 = require("~/middlewares/auth");
 var uploadMiddleware_1 = require("~/middlewares/uploadMiddleware");
@@ -22,6 +21,6 @@ router.get("/:_id/is-following", auth_1["default"], validation_1.validateObjectI
 router.get("/get-users", auth_1["default"], userController_1.getAllUsers);
 router.get("/total-users", auth_1["default"], userController_1.getTotalUsers);
 router.get("/top-interactors", auth_1["default"], userController_1.getTopUsers);
-router.post("/users", auth_1["default"], uploadMiddleware_1["default"].single("avatar"), threadController_1.createUser);
-router.put("/users/:userId", auth_1["default"], uploadMiddleware_1["default"].single("avatar"), threadController_1.updateUser);
+router.post("/users", uploadMiddleware_1["default"].single("avatar"), auth_1["default"], userController_1.createUser);
+router.put("/users/:userId", uploadMiddleware_1["default"].single("avatar"), auth_1["default"], userController_1.updateUser);
 exports["default"] = router;

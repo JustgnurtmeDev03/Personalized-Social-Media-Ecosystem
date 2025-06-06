@@ -18,6 +18,8 @@ import {
   ignoreReport,
   markNotInterested,
   reportPost,
+  searchPosts,
+  searchUsers,
   toggleLike,
   togglePinPost,
   updatePost,
@@ -46,6 +48,8 @@ router.post("/like-comment", authMiddleware, likeComment);
 router.post("/unlike-comment", authMiddleware, unlikeComment);
 router.post("/reply", authMiddleware, addReply);
 router.get("/:id/comments", authMiddleware, getComments);
+router.get("/search/users", authMiddleware, searchUsers);
+router.get("/search/posts", authMiddleware, searchPosts);
 router.get("/:_id/posts", authMiddleware, getUserPosts);
 router.put("/posts/:id", authMiddleware, updatePost);
 router.delete("/posts/:id", authMiddleware, deletePost);

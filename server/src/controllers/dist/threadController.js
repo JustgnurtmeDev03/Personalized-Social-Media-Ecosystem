@@ -47,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.getRecommendedThreads = exports.createThread = exports.getThread = exports.updateUser = exports.createUser = exports.getChartData = exports.getTotalReportedPosts = exports.deleteReportedPost = exports.createNotification = exports.ignoreReport = exports.getReports = exports.reportPost = exports.markNotInterested = exports.deletePost = exports.updatePost = exports.getUserPosts = exports.getTotalPosts = void 0;
+exports.togglePinPost = exports.deletePostAdmin = exports.getPostById = exports.getLikedThreads = exports.toggleLike = exports.getRecommendedThreads = exports.createThread = exports.getThread = exports.getChartData = exports.getTotalReportedPosts = exports.deleteReportedPost = exports.createNotification = exports.ignoreReport = exports.getReports = exports.searchPosts = exports.searchUsers = exports.reportPost = exports.markNotInterested = exports.deletePost = exports.updatePost = exports.getUserPosts = exports.getTotalPosts = void 0;
 var Thread_1 = require("~/models/Thread");
 var User_1 = require("~/models/User");
 var Hashtag_1 = require("~/models/Hashtag");
@@ -64,7 +64,6 @@ var Follow_1 = require("~/models/Follow");
 var httpError_1 = require("~/utils/httpError");
 var Report_1 = require("~/models/Report");
 var Notification_1 = require("~/models/Notification");
-var userService_1 = require("~/services/userService");
 var createThread = asyncHandler_1["default"](function (req, res) { return __awaiter(void 0, void 0, Promise, function () {
     var _a, content, _b, visibility, _c, textContent, hashtags, files, uploadedMedia, _loop_1, _i, files_1, file, images, videos, newThread, post, followers, user, _d, followers_1, follower, _e, hashtags_1, hashtag, existingHashtag;
     var _f, _g;
@@ -572,6 +571,104 @@ exports.reportPost = asyncHandler_1["default"](function (req, res, next) { retur
         }
     });
 }); });
+exports.searchUsers = asyncHandler_1["default"](function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var q, searchQuery, users, error_11;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                q = req.query.q;
+                // Kiểm tra đầu vào
+                if (!q || typeof q !== "string" || q.trim() === "") {
+                    throw new AppError_1.AppError("Từ khóa tìm kiếm là bắt buộc", httpStatus_1["default"].BAD_REQUEST);
+                }
+                searchQuery = q.trim().toLowerCase();
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 3, , 4]);
+                return [4 /*yield*/, User_1["default"].find({
+                        $or: [
+                            { username: { $regex: searchQuery, $options: "i" } },
+                            { name: { $regex: searchQuery, $options: "i" } },
+                        ]
+                    })
+                        .select("username name avatar bio followers")
+                        .limit(10)];
+            case 2:
+                users = _a.sent();
+                if (!users.length) {
+                    return [2 /*return*/, res.status(200).json({
+                            message: "Không tìm thấy người dùng nào",
+                            users: []
+                        })];
+                }
+                res.status(200).json({
+                    message: "Danh sách người dùng tìm thấy",
+                    users: users
+                });
+                return [3 /*break*/, 4];
+            case 3:
+                error_11 = _a.sent();
+                console.error("Lỗi khi tìm kiếm người dùng:", error_11);
+                throw new AppError_1.AppError("Đã xảy ra lỗi khi tìm kiếm người dùng", httpStatus_1["default"].INTERNAL_SERVER_ERROR);
+            case 4: return [2 /*return*/];
+        }
+    });
+}); });
+exports.searchPosts = asyncHandler_1["default"](function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+    var q, searchQuery, users, userIds, posts, error_12;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                q = req.query.q;
+                // Kiểm tra đầu vào
+                if (!q || typeof q !== "string" || q.trim() === "") {
+                    throw new AppError_1.AppError("Từ khóa tìm kiếm là bắt buộc", httpStatus_1["default"].BAD_REQUEST);
+                }
+                searchQuery = q.trim().toLowerCase();
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 4, , 5]);
+                return [4 /*yield*/, User_1["default"].find({
+                        $or: [
+                            { username: { $regex: searchQuery, $options: "i" } },
+                            { name: { $regex: searchQuery, $options: "i" } },
+                        ]
+                    }).select("_id")];
+            case 2:
+                users = _a.sent();
+                userIds = users.map(function (user) { return user._id; });
+                return [4 /*yield*/, Thread_1["default"].find({
+                        $or: [
+                            { content: { $regex: searchQuery, $options: "i" } },
+                            { hashtags: { $elemMatch: { $regex: searchQuery, $options: "i" } } },
+                            { author: { $in: userIds } },
+                        ],
+                        visibility: "public"
+                    })
+                        .populate("author", "username avatar")
+                        .select("content images videos createdAt likesCount commentsCount hashtags visibility")
+                        .limit(10)];
+            case 3:
+                posts = _a.sent();
+                if (!posts.length) {
+                    return [2 /*return*/, res.status(200).json({
+                            message: "Không tìm thấy bài đăng nào",
+                            posts: []
+                        })];
+                }
+                res.status(200).json({
+                    message: "Danh sách bài đăng tìm thấy",
+                    posts: posts
+                });
+                return [3 /*break*/, 5];
+            case 4:
+                error_12 = _a.sent();
+                console.error("Lỗi khi tìm kiếm bài đăng:", error_12);
+                throw new AppError_1.AppError("Đã xảy ra lỗi khi tìm kiếm bài đăng", httpStatus_1["default"].INTERNAL_SERVER_ERROR);
+            case 5: return [2 /*return*/];
+        }
+    });
+}); });
 function generateRandomUsername() {
     var words = [
         "cool",
@@ -599,7 +696,7 @@ function generateRandomUsername() {
 }
 // ADMIN FUNCTION
 var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var postId, post, error_11;
+    var postId, post, error_13;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
@@ -622,8 +719,8 @@ var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { retu
                 res.json({ message: "Post deleted successfully" });
                 return [3 /*break*/, 4];
             case 3:
-                error_11 = _c.sent();
-                console.error(error_11);
+                error_13 = _c.sent();
+                console.error(error_13);
                 res.status(500).json({ message: "Error deleting post" });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];
@@ -632,7 +729,7 @@ var deletePostAdmin = asyncHandler_1["default"](function (req, res, next) { retu
 }); });
 exports.deletePostAdmin = deletePostAdmin;
 var togglePinPost = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var postId, post, error_12;
+    var postId, post, error_14;
     var _a, _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
@@ -663,8 +760,8 @@ var togglePinPost = asyncHandler_1["default"](function (req, res, next) { return
                 });
                 return [3 /*break*/, 4];
             case 3:
-                error_12 = _d.sent();
-                console.error(error_12);
+                error_14 = _d.sent();
+                console.error(error_14);
                 res.status(500).json({ message: "Error toggling pin status" });
                 return [3 /*break*/, 4];
             case 4: return [2 /*return*/];
@@ -717,7 +814,7 @@ exports.ignoreReport = asyncHandler_1["default"](function (req, res, next) { ret
     });
 }); });
 exports.createNotification = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, recipient, type, content, relatedPost, notification, error_13;
+    var _a, recipient, type, content, relatedPost, notification, error_15;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -748,15 +845,15 @@ exports.createNotification = asyncHandler_1["default"](function (req, res, next)
                 res.status(httpStatus_1["default"].CREATED).json(notification);
                 return [3 /*break*/, 4];
             case 3:
-                error_13 = _b.sent();
-                console.error("Error creating notification:", error_13);
-                return [2 /*return*/, next(new AppError_1.AppError(error_13.message || "Failed to create notification", error_13.statusCode || 500))];
+                error_15 = _b.sent();
+                console.error("Error creating notification:", error_15);
+                return [2 /*return*/, next(new AppError_1.AppError(error_15.message || "Failed to create notification", error_15.statusCode || 500))];
             case 4: return [2 /*return*/];
         }
     });
 }); });
 exports.deleteReportedPost = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var postId, post, error_14;
+    var postId, post, error_16;
     var _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
@@ -791,15 +888,15 @@ exports.deleteReportedPost = asyncHandler_1["default"](function (req, res, next)
                 res.json({ message: "Post deleted successfully" });
                 return [3 /*break*/, 5];
             case 4:
-                error_14 = _c.sent();
-                console.error("Error deleting post:", error_14);
-                return [2 /*return*/, next(new AppError_1.AppError(error_14.message || "Error deleting post", error_14.statusCode || 500))];
+                error_16 = _c.sent();
+                console.error("Error deleting post:", error_16);
+                return [2 /*return*/, next(new AppError_1.AppError(error_16.message || "Error deleting post", error_16.statusCode || 500))];
             case 5: return [2 /*return*/];
         }
     });
 }); });
 exports.getTotalReportedPosts = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var totalReportedPosts, error_15;
+    var totalReportedPosts, error_17;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -812,7 +909,7 @@ exports.getTotalReportedPosts = asyncHandler_1["default"](function (req, res, ne
                 });
                 return [3 /*break*/, 3];
             case 2:
-                error_15 = _a.sent();
+                error_17 = _a.sent();
                 res
                     .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
                     .send({ error: "Failed to fetch reported posts totals" });
@@ -823,7 +920,7 @@ exports.getTotalReportedPosts = asyncHandler_1["default"](function (req, res, ne
 }); });
 // Lấy dữ liệu biểu đồ
 exports.getChartData = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var days, chartData, error_16;
+    var days, chartData, error_18;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -835,65 +932,10 @@ exports.getChartData = asyncHandler_1["default"](function (req, res, next) { ret
                 res.status(httpStatus_1["default"].OK).json(chartData);
                 return [3 /*break*/, 3];
             case 2:
-                error_16 = _a.sent();
+                error_18 = _a.sent();
                 res
                     .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
                     .send({ error: "Failed to fetch chart data" });
-                return [3 /*break*/, 3];
-            case 3: return [2 /*return*/];
-        }
-    });
-}); });
-exports.createUser = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var userData, newUser, error_17;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                _a.trys.push([0, 2, , 3]);
-                userData = req.body;
-                if (req.file) {
-                    userData.avatar = req.file.path; // Lưu đường dẫn file avatar
-                }
-                return [4 /*yield*/, userService_1.UserService.createUser(userData)];
-            case 1:
-                newUser = _a.sent();
-                res.status(httpStatus_1["default"].CREATED).json({
-                    user: newUser
-                });
-                return [3 /*break*/, 3];
-            case 2:
-                error_17 = _a.sent();
-                res.status(error_17.status || httpStatus_1["default"].INTERNAL_SERVER_ERROR).json({
-                    error: error_17.message || "Không thể tạo người dùng mới"
-                });
-                return [3 /*break*/, 3];
-            case 3: return [2 /*return*/];
-        }
-    });
-}); });
-exports.updateUser = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
-    var userId, updateData, updatedUser, error_18;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                _a.trys.push([0, 2, , 3]);
-                userId = req.params.userId;
-                updateData = req.body;
-                if (req.file) {
-                    updateData.avatar = req.file.path; // Cập nhật avatar nếu có file upload
-                }
-                return [4 /*yield*/, userService_1.UserService.updateUser(userId, updateData)];
-            case 1:
-                updatedUser = _a.sent();
-                res.status(httpStatus_1["default"].OK).json({
-                    user: updatedUser
-                });
-                return [3 /*break*/, 3];
-            case 2:
-                error_18 = _a.sent();
-                res.status(error_18.status || httpStatus_1["default"].INTERNAL_SERVER_ERROR).json({
-                    error: error_18.message || "Không thể cập nhật người dùng"
-                });
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
         }

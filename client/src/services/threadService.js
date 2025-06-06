@@ -204,4 +204,64 @@ export const fetchChartData = async (accessToken, days = 30) => {
   }
 };
 
+// Thêm hàm tìm kiếm người dùng
+export const searchUsers = async (query, accessToken) => {
+  try {
+    if (!accessToken) {
+      throw new Error("No access token provided");
+    }
+    if (!query || typeof query !== "string") {
+      throw new Error("Search query is required");
+    }
+
+    console.log("Sending search users request with query:", query); // Debug
+    const res = await axios.get(`${API_URL}/search/users`, {
+      params: { q: query },
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    console.log("API Response for searchUsers:", res.data); // Debug
+    return res.data.users || [];
+  } catch (error) {
+    console.error(
+      "Error searching users:",
+      error.response?.data || error.message
+    );
+    if (error.response?.data?.error === "Please authenticate") {
+      throw new Error("Authentication failed. Please log in again.");
+    }
+    throw error;
+  }
+};
+
+// Thêm hàm tìm kiếm bài đăng
+export const searchPosts = async (query, accessToken) => {
+  try {
+    if (!accessToken) {
+      throw new Error("No access token provided");
+    }
+    if (!query || typeof query !== "string") {
+      throw new Error("Search query is required");
+    }
+
+    console.log("Sending search posts request with query:", query); // Debug
+    const res = await axios.get(`${API_URL}/search/posts`, {
+      params: { q: query },
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    console.log("API Response for searchPosts:", res.data); // Debug
+    return res.data.posts || [];
+  } catch (error) {
+    console.error(
+      "Error searching posts:",
+      error.response?.data || error.message
+    );
+    if (error.response?.data?.error === "Please authenticate") {
+      throw new Error("Authentication failed. Please log in again.");
+    }
+    throw error;
+  }
+};
+
 export default api;

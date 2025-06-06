@@ -20,7 +20,7 @@ const ManageUsers = () => {
     name: "",
     username: "",
     email: "",
-    password: "", // Thêm trường password
+    password: "",
     roles: ["user"],
     status: "active",
     bio: "",
@@ -42,9 +42,10 @@ const ManageUsers = () => {
         const usersData = await fetchAllUsers({
           headers: { Authorization: `Bearer ${authToken}` },
         });
-        // Kiểm tra dữ liệu trả về
         if (!Array.isArray(usersData.users)) {
-          throw new Error("Dữ liệu người dùng không đúng định dạng");
+          throw new Error(
+            "Dữ liệu người dùng không đúng định dạng: 'users' không phải là mảng"
+          );
         }
         setUsers(usersData.users);
       } catch (err) {
@@ -72,8 +73,11 @@ const ManageUsers = () => {
   const handleAddUser = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
+    setError(null);
     try {
       const authToken = localStorage.getItem("accessToken");
+      if (!authToken) throw new Error("Không có token để xác thực");
+
       const { day, month, year } = newUser.date_of_birth;
       const date_of_birth = `${year}-${month.toString().padStart(2, "0")}-${day
         .toString()
@@ -82,14 +86,23 @@ const ManageUsers = () => {
         ...newUser,
         date_of_birth,
       };
-      const createdUser = await createUser(userData, authToken);
-      setUsers((prev) => [...prev, createdUser]);
+      await createUser(userData, authToken);
+      // Làm mới danh sách người dùng từ server
+      const usersData = await fetchAllUsers({
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!Array.isArray(usersData.users)) {
+        throw new Error(
+          "Dữ liệu người dùng không đúng định dạng: 'users' không phải là mảng"
+        );
+      }
+      setUsers(usersData.users);
       setAddModalOpen(false);
       setNewUser({
         name: "",
         username: "",
         email: "",
-        password: "", // Reset password
+        password: "",
         roles: ["user"],
         status: "active",
         bio: "",
@@ -98,6 +111,7 @@ const ManageUsers = () => {
       });
     } catch (error) {
       console.error("Error adding user:", error);
+      setError(`Không thể thêm người dùng: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -107,8 +121,11 @@ const ManageUsers = () => {
   const handleEditUser = async (e, userId) => {
     e.preventDefault();
     setIsProcessing(true);
+    setError(null);
     try {
       const authToken = localStorage.getItem("accessToken");
+      if (!authToken) throw new Error("Không có token để xác thực");
+
       const { day, month, year } = editUser.date_of_birth;
       const date_of_birth = `${year}-${month.toString().padStart(2, "0")}-${day
         .toString()
@@ -117,13 +134,20 @@ const ManageUsers = () => {
         ...editUser,
         date_of_birth,
       };
-      const updatedUser = await updateUser(userId, userData, authToken);
-      setUsers((prev) =>
-        prev.map((user) => (user._id === userId ? updatedUser : user))
-      );
-      setEditModalOpen(null);
+      await updateUser(userId, userData, authToken);
+      // Làm mới danh sách người dùng từ server
+      const usersData = await fetchAllUsers({
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!Array.isArray(usersData.users)) {
+        throw new Error(
+          "Dữ liệu người dùng không đúng định dạng: 'users' không phải là mảng"
+        );
+      }
+      setUsers(usersData.users);
     } catch (error) {
-      console.error("Error editing user:", error);
+      setEditModalOpen(null);
+      setEditUser(null);
     } finally {
       setIsProcessing(false);
     }
@@ -132,13 +156,25 @@ const ManageUsers = () => {
   // Xóa người dùng
   const handleDeleteUser = async (userId) => {
     setIsProcessing(true);
+    setError(null);
     try {
       const authToken = localStorage.getItem("accessToken");
+      if (!authToken) throw new Error("Không có token để xác thực");
+
       await deleteUser(userId, authToken);
-      setUsers((prev) => prev.filter((user) => user._id !== userId));
+      const usersData = await fetchAllUsers({
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!Array.isArray(usersData.users)) {
+        throw new Error(
+          "Dữ liệu người dùng không đúng định dạng: 'users' không phải là mảng"
+        );
+      }
+      setUsers(usersData.users);
       setDeleteModalOpen(null);
     } catch (error) {
       console.error("Error deleting user:", error);
+      setError(`Không thể xóa người dùng: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -265,11 +301,11 @@ const ManageUsers = () => {
                           fill="currentColor"
                         >
                           <path
-                            fill-rule="evenodd"
-                            clip-rule="evenodd"
+                            fillRule="evenodd"
+                            clipRule="evenodd"
                             d="M2 21.047a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1"
-                          ></path>
-                          <path d="M16.996 2a1.02 1.02 0 0 0-.72.281l-3 3.002L3.268 15.288c-.139.14-.21.338-.25.532l-1 5.003a.974.974 0 0 0 1.156 1.157l5.003-1c.194-.04.392-.112.532-.25l10.005-10.007c.445-.444 2.447-2.446 3.003-3a1.02 1.02 0 0 0 .28-.72c0-1.637-.417-2.807-1.282-3.69C19.844 2.423 18.678 2 16.997 2m.394 2.02c.902.052 1.488.26 1.889.67.41.417.669.997.724 1.882-.547.547-1.35 1.337-2.006 1.994l-2.565-2.564c.658-.657 1.41-1.436 1.958-1.983m-3.395 3.42 2.563 2.564-7.567 7.567-2.564-2.564zm-9.006 9.005 2.564 2.564-.094.094c-.66.132-1.993.411-3.22.657l.656-3.22z"></path>
+                          />
+                          <path d="M16.996 2a1.02 1.02 0 0 0-.72.281l-3 3.002L3.268 15.288c-.139.14-.21.338-.25.532l-1 5.003a.974.974 0 0 0 1.156 1.157l5.003-1c.194-.04.392-.112.532-.25l10.005-10.007c.445-.444 2.447-2.446 3.003-3a1.02 1.02 0 0 0 .28-.72c0-1.637-.417-2.807-1.282-3.69C19.844 2.423 18.678 2 16.997 2m.394 2.02c.902.052 1.488.26 1.889.67.41.417.669.997.724 1.882-.547.547-1.35 1.337-2.006 1.994l-2.565-2.564c.658-.657 1.41-1.436 1.958-1.983m-3.395 3.42 2.563 2.564-7.567 7.567-2.564-2.564zm-9.006 9.005 2.564 2.564-.094.094c-.66.132-1.993.411-3.22.657l.656-3.22z" />
                         </svg>
                       </button>
                       <button

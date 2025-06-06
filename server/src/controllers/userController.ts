@@ -13,6 +13,7 @@ import logger from "~/utils/logger";
 
 interface AuthenticatedRequest extends Request {
   user?: any;
+  fileValidationError?: string;
 }
 
 export const getAllUsers = asyncHandler(
@@ -194,6 +195,80 @@ export const getTopUsers = asyncHandler(
       res
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .send({ error: "Failed to fetch top users" });
+    }
+  }
+);
+
+export const createUser = asyncHandler(
+  async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      // Log dữ liệu nhận được
+      console.log("Received body:", req.body);
+      console.log("Received file:", req.file);
+
+      // Kiểm tra lỗi từ multer
+      if (req.fileValidationError) {
+        throw new HttpError(400, req.fileValidationError);
+      }
+
+      // Chuyển roles từ chuỗi JSON thành mảng
+      const userData = {
+        ...req.body,
+        roles: req.body.roles ? JSON.parse(req.body.roles) : ["user"],
+        avatar: req.file ? `/uploads/${req.file.filename}` : "",
+      };
+
+      // Kiểm tra dữ liệu bắt buộc và log chi tiết
+      if (
+        !userData.name ||
+        !userData.username ||
+        !userData.email ||
+        !userData.password
+      ) {
+        console.log("Missing fields:", {
+          name: userData.name,
+          username: userData.username,
+          email: userData.email,
+          password: userData.password,
+        });
+        throw new HttpError(
+          400,
+          "Missing required fields: name, username, email, or password"
+        );
+      }
+
+      const newUser = await UserService.createUser(userData);
+      res.status(201).json({ user: newUser });
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error("Controller error:", err.message);
+      res.status(err instanceof HttpError ? err.statusCode : 500).json({
+        error: err.message || "Không thể tạo người dùng mới",
+      });
+    }
+  }
+);
+
+export const updateUser = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.params.userId;
+      const updateData = req.body;
+      if (req.file) {
+        updateData.avatar = `/uploads/${req.file.filename}`; // Lưu URL công khai
+      }
+      const updatedUser = await UserService.updateUser(userId, updateData);
+      res.status(HTTP_STATUS.OK).json({
+        user: updatedUser,
+      });
+    } catch (error: any) {
+      res.status(error.status || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        error: error.message || "Không thể cập nhật người dùng",
+      });
     }
   }
 );

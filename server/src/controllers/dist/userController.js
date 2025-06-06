@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -36,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.getTopUsers = exports.getTotalUsers = exports.updateUserProfile = exports.getProfileByID = exports.getProfile = exports.getAllUsers = void 0;
+exports.updateUser = exports.createUser = exports.getTopUsers = exports.getTotalUsers = exports.updateUserProfile = exports.getProfileByID = exports.getProfile = exports.getAllUsers = void 0;
 var User_1 = require("~/models/User");
 var asyncHandler_1 = require("~/middlewares/asyncHandler");
 var AppError_1 = require("~/utils/AppError");
@@ -249,6 +260,78 @@ exports.getTopUsers = asyncHandler_1["default"](function (req, res, next) { retu
                 res
                     .status(httpStatus_1["default"].INTERNAL_SERVER_ERROR)
                     .send({ error: "Failed to fetch top users" });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+exports.createUser = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var userData, newUser, error_7, err;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                // Log dữ liệu nhận được
+                console.log("Received body:", req.body);
+                console.log("Received file:", req.file);
+                // Kiểm tra lỗi từ multer
+                if (req.fileValidationError) {
+                    throw new httpError_1.HttpError(400, req.fileValidationError);
+                }
+                userData = __assign(__assign({}, req.body), { roles: req.body.roles ? JSON.parse(req.body.roles) : ["user"], avatar: req.file ? "/uploads/" + req.file.filename : "" });
+                // Kiểm tra dữ liệu bắt buộc và log chi tiết
+                if (!userData.name ||
+                    !userData.username ||
+                    !userData.email ||
+                    !userData.password) {
+                    console.log("Missing fields:", {
+                        name: userData.name,
+                        username: userData.username,
+                        email: userData.email,
+                        password: userData.password
+                    });
+                    throw new httpError_1.HttpError(400, "Missing required fields: name, username, email, or password");
+                }
+                return [4 /*yield*/, userService_1.UserService.createUser(userData)];
+            case 1:
+                newUser = _a.sent();
+                res.status(201).json({ user: newUser });
+                return [3 /*break*/, 3];
+            case 2:
+                error_7 = _a.sent();
+                err = error_7;
+                console.error("Controller error:", err.message);
+                res.status(err instanceof httpError_1.HttpError ? err.statusCode : 500).json({
+                    error: err.message || "Không thể tạo người dùng mới"
+                });
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
+        }
+    });
+}); });
+exports.updateUser = asyncHandler_1["default"](function (req, res, next) { return __awaiter(void 0, void 0, Promise, function () {
+    var userId, updateData, updatedUser, error_8;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                _a.trys.push([0, 2, , 3]);
+                userId = req.params.userId;
+                updateData = req.body;
+                if (req.file) {
+                    updateData.avatar = "/uploads/" + req.file.filename; // Lưu URL công khai
+                }
+                return [4 /*yield*/, userService_1.UserService.updateUser(userId, updateData)];
+            case 1:
+                updatedUser = _a.sent();
+                res.status(httpStatus_1["default"].OK).json({
+                    user: updatedUser
+                });
+                return [3 /*break*/, 3];
+            case 2:
+                error_8 = _a.sent();
+                res.status(error_8.status || httpStatus_1["default"].INTERNAL_SERVER_ERROR).json({
+                    error: error_8.message || "Không thể cập nhật người dùng"
+                });
                 return [3 /*break*/, 3];
             case 3: return [2 /*return*/];
         }

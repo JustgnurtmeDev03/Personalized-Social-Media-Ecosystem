@@ -1,0 +1,109 @@
+.search-container {
+  max-width: 672px;
+  margin: 0 auto;
+}
+
+.post-results {
+  height: 80vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.search-header {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-right: 8px;
+}
+
+.search-bar button {
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.search-bar button:hover {
+  background: #2563eb;
+}
+
+.search-bar button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.search-tabs {
+  display: flex;
+}
+
+.search-tabs button {
+  flex: 1;
+  padding: 8px;
+  transition: background 0.2s;
+}
+
+.search-tabs button:disabled {
+  background: #f0f0f0;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.error-message {
+  color: #ef4444;
+  margin-top: 8px;
+}
+
+.follow-suggestions .user-item,
+.post-results .post-item {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
+}
+
+.user-item .username,
+.post-item .username {
+  font-weight: 600;
+}
+
+.post-item .post-content {
+  margin-bottom: 8px;
+}
+
+.post-item .post-hashtags {
+  color: #3b82f6;
+}
+
+.post-item .post-media {
+  margin-bottom: 16px;
+}
+
+.post-item .post-stats {
+  display: flex;
+  align-items: center;
+  color: #6b7280;
+}
+
+.post-item .post-stats i {
+  margin-right: 4px;
+}
+
+.post-item .post-stats span {
+  margin-left: 4px;
+}

@@ -19,6 +19,8 @@ router.post("/like-comment", auth_1["default"], commentController_1.likeComment)
 router.post("/unlike-comment", auth_1["default"], commentController_1.unlikeComment);
 router.post("/reply", auth_1["default"], commentController_1.addReply);
 router.get("/:id/comments", auth_1["default"], commentController_1.getComments);
+router.get("/search/users", auth_1["default"], threadController_1.searchUsers);
+router.get("/search/posts", auth_1["default"], threadController_1.searchPosts);
 router.get("/:_id/posts", auth_1["default"], threadController_1.getUserPosts);
 router.put("/posts/:id", auth_1["default"], threadController_1.updatePost);
 router["delete"]("/posts/:id", auth_1["default"], threadController_1.deletePost);

@@ -24,7 +24,8 @@
     "src/components/Footer/Footer.jsx",
     "src/pages/Register/Register.jsx",
     "src/pages/Home/Following.jsx",
-    "src/pages/Profile/Profile.jsx"
+    "src/pages/Profile/Profile.jsx",
+    "src/pages/Search/Search.jsx"
   ],
   "exclude": ["node_modules"]
 }

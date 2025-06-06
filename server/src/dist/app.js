@@ -34,6 +34,7 @@ app.use(body_parser_1["default"].urlencoded({ extended: true }));
 // Cấu hình EJS
 app.set("view engine", "ejs");
 app.set("views", path_1["default"].join(__dirname, "views"));
+app.use("/uploads", express_1["default"].static(path_1["default"].join(__dirname, "uploads")));
 // Routes
 app.use("/api/auth", authRoutes_1["default"]);
 // app.use("/api/post", postRoutes);

@@ -14,29 +14,62 @@ interface UserWithUsername {
   username: string;
 }
 
+interface UserData {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  roles?: string[];
+  status?: string;
+  bio?: string;
+  avatar?: string;
+  date_of_birth?: string;
+}
+
 export class UserService {
-  static async createUser(userData: any): Promise<any> {
+  static async createUser(userData: UserData): Promise<IUser> {
     try {
+      // Log dữ liệu nhận được
+      console.log("UserService received userData:", userData);
+
       // Validate dữ liệu cơ bản
       if (!validator.isEmail(userData.email)) {
-        throw new HttpError(HTTP_STATUS.BAD_REQUEST, "Email không hợp lệ");
+        throw new HttpError(400, "Email không hợp lệ");
       }
       if (userData.password && userData.password.length < 8) {
-        throw new HttpError(
-          HTTP_STATUS.BAD_REQUEST,
-          "Mật khẩu phải dài ít nhất 8 ký tự"
-        );
+        throw new HttpError(400, "Mật khẩu phải dài ít nhất 8 ký tự");
       }
+
+      // Đảm bảo các trường không bắt buộc có giá trị mặc định
+      userData.avatar = userData.avatar || "";
+      userData.bio = userData.bio || "";
+      userData.roles = Array.isArray(userData.roles)
+        ? userData.roles
+        : ["user"];
+      userData.status = userData.status || "active";
 
       const newUser = new User(userData);
       await newUser.save();
       return newUser;
-    } catch (error: any) {
-      logger.error(`Create user service error: ${error.message}`, { error });
-      throw new HttpError(
-        HTTP_STATUS.INTERNAL_SERVER_ERROR,
-        "Không thể tạo người dùng mới"
-      );
+    } catch (error: unknown) {
+      const err = error as Error | mongoose.Error.ValidationError;
+
+      // Kiểm tra ValidationError của Mongoose
+      if (err instanceof mongoose.Error.ValidationError) {
+        const messages = Object.keys(err.errors).map((field) => {
+          const errorMessage = err.errors[field].message;
+          return `${field}: ${errorMessage}`;
+        });
+        logger.error(`Create user validation error: ${messages.join(", ")}`, {
+          error,
+        });
+        throw new HttpError(400, messages.join(", "));
+      }
+
+      // Xử lý các lỗi khác
+      const message = err instanceof Error ? err.message : "Lỗi không xác định";
+      logger.error(`Create user service error: ${message}`, { error });
+      throw new HttpError(500, message || "Không thể tạo người dùng mới");
     }
   }
   static async updateUser(userId: string, updateData: any): Promise<any> {
